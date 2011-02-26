@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="about">icons/about_48.png</file>
+        <file alias="exit">icons/exit_48.png</file>
+        <file alias="settings">icons/settings_48.png</file>
+        <file alias="platform">icons/yplatform_256.png</file>
+        <file alias="minimize">icons/minimize_128.png</file>
+        <file alias="restore">icons/restore_128.png</file>
+        <file alias="console">icons/console_48.png</file>
+        <file alias="panic">icons/panic_48.png</file>
+        <file alias="module">icons/module_128.png</file>
+        <file alias="close">icons/close_48.png</file>
+        <file alias="exec">icons/exec_48.png</file>
+        <file alias="refresh">icons/refresh_48.png</file>
+    </qresource>
+</RCC>
