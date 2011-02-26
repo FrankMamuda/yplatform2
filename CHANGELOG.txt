@@ -1,0 +1,231 @@
+NOTE: all releases 2.8.98.* (alphas) and 2.7.99.* (betas) are pre-releases
+      of YCommons 2.8.0.0 (unless stated otherwise)
+
+10nov (initial release, forked from YCommons 2.7):
+    -fixed fsWrite to create non-existant directories (should this be forced)?
+    -using forward slash as path separator exclusively
+    -fixes in fs.readFile
+    -proper console completion (legacy style)
+    -adding cmd descriptions for easier use
+    -removed qt completer
+    -minor fixes
+
+11nov (YCommons 2.8.98.2):
+    -text auto advance plus fixed append html
+
+
+29nov (YCommons 2.8.98.3) (GUI 0.9.1)
+    -fixed console completion flitering
+    -gui improvements
+
+1dec (YCommons 2.8.98.4)
+    -text colouring and translations
+    -about dialog
+
+3dec (YCommons 2.8.98.5)
+    -extensive xml parsing changes (also for xconfig reading)
+    -found BUG: reset strings are inaccurate
+    -TODO: show cvar values in available command and cvar list
+    -started work on modules (pre pre pte pre ALPHA)
+
+17dec (YCommons 2.8.98.6)
+    -fix: cvar value proper reading
+    -cmd find algorithm
+    -minor fixes, cleanups and algorithm rewrite
+    -license change BSD->GPL3
+    -cmd_exec full implementation
+    -cv_list filtering
+    -up/down console history implementation (per-session, no saving yet)
+    -removed gui_consoleedit -> replaced with event filtering in Gui_Main
+
+19dec (YCommons 2.8.98.7)
+    -console history saving/loading
+    -critical fsWrite fix (WriteOnly mode instead of ReadWrite which appends stuff)
+    -gui_toolBarIconSize
+
+24jan (YCommons 2.8.98.8)
+    -platform specific stuff, cleanup
+
+25jan (YCommons 2.8.98.9)
+    -some work on modules
+    -started replacing xmlstream with dom
+
+26jan (YCommons 2.8.98.10)
+    -removed xmlstreamreader, implemented dom for history, config
+    -module manifest parser
+
+27jan (YCommons 2.8.98.11-2.8.98.12)
+    -fixed crash with no history
+    -ERR_SOFT is now yellow
+    -module loading implemented
+    -modules sort of work:
+     (no functionality beyond print yet, but we're getting there step by step)
+    -fixed: fs exists is case insensitive for packages
+    -cvar descriptions
+    -implemented flags for package/local dir search only
+    -consts and references
+    -fixed argc bogus count
+    -cvar callbacks
+    -return of milliseconds to commons
+    -and a whole fucking lot of other fixes! huge release!
+
+28jan (YCommons 2.8.98.13)
+    -tab completion fix
+
+31jan (YCommons 2.8.98.14)
+    -gui: about window tweak
+    -modules:
+      using moduleName if filename is null to load libs
+      string passing fixes
+      filesystem calls (still completing api for version 1)
+    -filesystem:
+      loading of absolute path filenames now supported
+      seek modes support
+      support for win32 links (as pseudo-symlinks) as files (not dirs)
+
+1feb (YCommons 2.8.98.15)
+    -filesystem:
+      general fixes and improvements
+      improved win32 link handling
+      fileExists inlines
+      cvar fs_ignoreLinks
+    -modules:
+      module loading now supported from win32 links
+    -general:
+      references vs pointers
+
+2feb (YCommons 2.8.98.16)
+    -filesystem:
+      reducing verbosity (more FS_FLAGS_SILENT)
+      fixed pointers and references in platformCalls
+      addition of LOTS of new platform calls (for api 1)
+
+5feb (YCommons 2.8.98.17)
+    -commons::filesystem:
+      verbose debug shutdown
+      introducted file buffer collection
+    -gui::main:
+      handling shutdown events (close window) properly
+    -commons:
+      not printing to gui console when gui is down
+    -commons::module:
+      more commands for API 1
+    -app:
+      command line is parsed as series of comands
+      starting with '+'
+
+8feb (YCommons 2.8.98.18)
+    -overall:
+      macro wrappers for commands for easier addition of commands
+    -filesystem:
+      list and touch commands
+
+10feb (YCommons 2.8.98.19)
+    -file listing removed for now (poor implementation)
+    -gui:
+      quit -> exit
+      gui_raise, gui_hide
+      custom actions
+    -modules
+      various gui syscall additions for api 1 (nearing completion)
+    -overall:
+      lots of  bugfixes & cleanups
+
+11feb (YCommons 2.8.98.20)
+    -gui:
+      sysTray remove crash fix
+      history offset fix
+      icons are loaded from yp fs and qrc
+      tab widget
+      custom tabs
+      mainwindow layout!
+      dynamic toolbaricon size modification
+      printing of images to console (from fs and qrc)
+      lots of fixes
+    -modules:
+      new stuff from gui
+      need to rethink cvar handling and add finish fs.list()
+       to complete API1
+    -closing in on beta1, modules is the last milestone
+    -overall
+      i18n
+
+15feb (YCommons 2.8.98.20):
+    -client side syscall handling (modules) completion
+
+
+16feb (YCommons 2.8.98.21 (pre-b1):
+    -modules:
+      done LOTs of module calls
+      almost completed API1 (missing file listing)
+      update call
+      shutdown call
+    -cvars:
+      separated pCvars (platform) from mCvars (modules),
+       using dynamic updates for cvar subsystem in modules
+    FEATURE FREEZE:
+      current goals:
+        -search & eliminate bugs
+        -finish i18n
+        -check all allocs and deletions
+        -fix file listing
+
+17feb (YCommons 2.8.98.22 (pre-b1):
+    -filesystem:
+      file listing fully implemented
+    -modules:
+      file listing call
+      completed API1 server and client side (RC)
+
+19feb (YCommons 2.8.98.23)
+    -module loading widget
+    -restructulizing whole module loading routine
+    -mod_load is currently disabled
+    TODO:
+      deleteWidget
+      recache modules
+      clear modules
+      mod_load
+      rm gui_modules!
+
+21feb (YCommons 2.8.98.24)
+    -separated pModule from Sys_Module
+    -proper load/unload commands
+
+26feb (YCommons 2.8.98.25)
+    -gui:
+       icons on buttons
+    -modules (lots!):
+       recaching now works
+       mod_load/unload commands
+       proper createWidget/deleteWidget
+       cleanup
+       modules are now more or less functional
+       fixed module sorting
+     -cmds
+       config files have <cmd> tag
+       TODO: cmd_exec -> exec?
+
+TODO:
+    -test freeBSD compatibility (or at least on glibc kFreeBSD Debian build)
+    -better command completion (if completing whole command append space afterwards)
+    -fs read files from qrc
+    -host on google projects?
+
+TODO/LONGTERM:
+    -release a beta1 (mod API1 - YP2 functionality minus precomp, renderer, soundsys):
+        mod completion - done (API1 complete, using dynamic cvars (different code from YP2.8))
+        init args - done (at least for current functionality)
+        visuals (gui) - done (proper scaling and so on)
+        i18n - partly done (modules and platformSyscall left)
+        bugfixes, allocs, etc. - working on it!
+    -release a beta2 (mod API2):
+        module load dialogue
+        settings dialogue
+        bugfixes, allocs, etc.
+    -release a beta3 (mod API3 - implement new functions when renderer/soundsystem is ready)
+        renderer & soundsystem loading (not actual modules)
+        platform scripts (or just use xml extended with cmds?)
+    -release a rc1 (beta with ALL pre pure-Qt functionality (without precomp of course)
+    -release a stable version (a 'polished' rc*)
+
