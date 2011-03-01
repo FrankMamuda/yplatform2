@@ -61,7 +61,6 @@ typedef struct imageResourceDef_s {
     QString name;
 } imageResourceDef_t;
 
-
 //
 // classes
 //

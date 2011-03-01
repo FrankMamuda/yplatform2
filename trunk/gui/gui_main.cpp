@@ -156,7 +156,6 @@ void Gui_Main::shutdown() {
 
     // remove image resources
     foreach ( imageResourceDef_t *imagePtr, this->imageResources ) {
-        //delete imagePtr->image;
         this->imageResources.removeOne( imagePtr );
         delete imagePtr;
     }
@@ -187,7 +186,6 @@ createActions
 void Gui_Main::createActions() {
     // settings
     this->settigsAction = new QAction( QIcon( ":/icons/settings" ), this->tr( "Settings" ), this );
-    //this->connect( this->settigsAction, SIGNAL( triggered()), this, SLOT());
     // for now this is disabled
     this->settigsAction->setEnabled( false );
     this->ui->toolBar->addAction( this->settigsAction );
@@ -339,6 +337,7 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
             if ( event->type() == QEvent::KeyPress ) {
                 QKeyEvent* keyEvent = static_cast<QKeyEvent*>( event );
 
+                // history list -> up
                 if ( keyEvent->key() == Qt::Key_Up ) {
                     if ( !this->history.isEmpty()) {
                         if ( this->historyOffset < this->history.count() )
@@ -352,6 +351,8 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                             this->ui->consoleInput->setText( this->history.first());
                     }
                     return true;
+
+                    // history list -> down
                 } else if ( keyEvent->key() == Qt::Key_Down ) {
                     if ( !this->history.isEmpty()) {
                         if ( this->historyOffset > 0 )
@@ -370,6 +371,8 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                             this->ui->consoleInput->setText( this->history.last());
                     }
                     return true;
+
+                    // complete command
                 } else if ( keyEvent->key() == Qt::Key_Tab ) {
                     QStringList match;
 
@@ -412,7 +415,7 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                     com.print( this->tr( " ^5Available commands and cvars:\n" ));
                     foreach ( QString str, match ) {
                         // check commands
-                        cmdFunction_t *cmdPtr;
+                        pCmd *cmdPtr;
                         cmdPtr = cmd.find( str );
                         if ( cmdPtr != NULL ) {
                             if ( !cmdPtr->description.isEmpty()) {

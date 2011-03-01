@@ -151,6 +151,7 @@ typedef struct unz_s {
 //
 class Sys_Package : public QObject {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Filesystem package support class" )
 
 private:
     int getByte( FILE*, int* );

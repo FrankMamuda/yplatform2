@@ -61,9 +61,6 @@ init
 ============
 */
 void Sys_Filesystem::init() {
-    // announce - no need
-    //com.print( this->tr( "^2Sys_Filesystem: ^5initializing filesystem\n" ));
-
     // get homeDir
     QString homeDir = QDir::homePath();
     homeDir.append( FS_PATH_SEPARATOR );
@@ -316,6 +313,7 @@ bool Sys_Filesystem::fileExistsExt( QString &filename, int &flags, int &searchPa
     }
 
 #ifdef Q_OS_WIN
+    // handle win32 lnks
     if ( !( flags & FS_FLAGS_LINKED ) && !fs_ignoreLinks->integer()) {
         QString linkedFilename;
         int linkedFlags;
@@ -342,15 +340,12 @@ bool Sys_Filesystem::fileExistsExt( QString &filename, int &flags, int &searchPa
         }
     }
 #endif
-
     return false;
 }
 
 /*
 ============
 fOpenFileRead
-
- this should only be called from fsOpenFile( mode, etc. )
 ============
 */
 int Sys_Filesystem::fOpenFileRead( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, int flags ) {
@@ -427,8 +422,6 @@ int Sys_Filesystem::fOpenFileRead( const QString &filename, fileHandle_t &fHandl
 /*
 ============
 fOpenFileWrite
-
- this should only be called from fsOpenFile( mode, etc. )
 ============
 */
 void Sys_Filesystem::fOpenFileWrite( const QString &filename, fileHandle_t &fHandle, int flags ) {
@@ -486,8 +479,6 @@ void Sys_Filesystem::fOpenFileWrite( const QString &filename, fileHandle_t &fHan
 /*
 ============
 fOpenFileAppend
-
- this should only be called from fsOpenFile( mode, etc. )
 ============
 */
 int Sys_Filesystem::fOpenFileAppend( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, int flags ) {
@@ -533,11 +524,6 @@ int Sys_Filesystem::fOpenFile( int mode, const QString &filename, fileHandle_t &
 
     // minus one means fail
     int fileLength = -1;
-#ifndef Q_OS_WIN
-    bool exists;
-#else
-    int exists;
-#endif
 
     // copy path
     path = filename;
@@ -548,12 +534,6 @@ int Sys_Filesystem::fOpenFile( int mode, const QString &filename, fileHandle_t &
         return fileLength;
     }
 
-    /*if ( !fHandle ) {
-        if ( !( flags & FS_FLAGS_SILENT ))
-            com.error( ERR_SOFT, this->tr( "Sys_Filesystem::fOpenFile: no handle for \"%1\", aborting\n" ).arg( path ));
-        return fileLength;
-    }*/
-
     // we cannot have these symbols in paths
     if ( path.contains( ".." ) || path.contains( "::" )) {
         com.error( ERR_SOFT, this->tr( "Sys_Filesystem::fOpenFile: invalid path \"%1\"\n" ).arg( path ));
@@ -561,10 +541,7 @@ int Sys_Filesystem::fOpenFile( int mode, const QString &filename, fileHandle_t &
     }
 
     // check if it exists at all
-    exists = this->fileExists( path, flags, fsp );
-
-    // check if it exists at all
-    if ( !exists && mode != FS_MODE_WRITE ) {
+    if ( !this->fileExists( path, flags, fsp ) && mode != FS_MODE_WRITE ) {
         if ( !( flags & FS_FLAGS_SILENT ))
             com.error( ERR_SOFT, this->tr( "Sys_Filesystem::fOpenFile: could not open file \"%1\"\n" ).arg( path ));
         return fileLength;
@@ -643,7 +620,7 @@ void Sys_Filesystem::fCloseFile( const QString &filename, int flags ) {
     }
 
     foreach ( fsFileInfo_t *fsFile, this->fileList ) {
-        if ( !QString::compare( filename, fsFile->filename/*, Qt::CaseInsensitive*/ )) {
+        if ( !QString::compare( filename, fsFile->filename )) {
             if ( fsFile->openMode == FS_MODE_CLOSED ) {
                 if ( !( flags & FS_FLAGS_SILENT ))
                     com.print( this->tr( "^2Sys_Filesystem::fCloseFile: ^3file \"%1\" already closed\n" ).arg( filename ));
@@ -987,12 +964,11 @@ touch
 */
 void Sys_Filesystem::touch() {
     if ( cmd.argc() < 2 ) {
-        com.print( this->tr( "^3usage: fs_touch [file]\n" ));
+        com.print( this->tr( "^3usage: fs_touch [filename]\n" ));
         return;
     }
     this->touch( cmd.argv(1));
 }
-
 
 /*
 ============

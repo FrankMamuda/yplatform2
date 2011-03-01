@@ -36,6 +36,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 class App_Main : public QObject {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Application platform" )
 
 public:
     int startup( int, char*[] );

@@ -38,6 +38,7 @@ enum {
 //
 class Sys_Common : public QObject {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Platform common functions" )
 
 public:
     void print( const QString &msg, int fontSize = 10 );
@@ -45,7 +46,6 @@ public:
     void error( int type, const QString &msg );
     bool caughtFatalError;
     int milliseconds();
-    void strncpyz( char *, const char *, int );
 
 private:
     unsigned long timeBase;

@@ -130,23 +130,3 @@ float floatSwap( const float *f ) {
 
     return out.f;
 }
-
-/*
-=============
-strncpyz
-=============
-*/
-void Sys_Common::strncpyz( char *dest, const char *src, int destsize ) {
-    if ( !dest )
-        this->print( this->tr( "Sys_Common::strncpyz: NULL dest\n" ));
-
-    if ( !src )
-        this->print( this->tr( "Sys_Common::strncpyz: NULL src\n" ));
-
-    if ( destsize < 1 )
-        this->print( this->tr( "Sys_Common::strncpyz: destsize < 1\n" ));
-
-    strncpy( dest, src, destsize-1 );
-    dest[destsize-1] = 0;
-}
-

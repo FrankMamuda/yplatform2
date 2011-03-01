@@ -49,17 +49,10 @@ pCvar *mod_extract;
 //
 createCommand( mod, load )
 createCommand( mod, unload )
-#ifndef YP2_FINAL_RELEASE
-createCommand( mod, update )
-#endif
 
 /*
 ============
 parseManifest
-
- dd, must add flag for a simple parse (to fill list in Gui_Module smth smth)
- or just write a more simple parser to just read description and api version
- those with mismatch appear red
 ============
 */
 pModule *Sys_Module::parseManifest( const QString &filename ) {
@@ -70,7 +63,6 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
 
     // just allocate a new pointer with the current filename
     modPtr = new pModule( filename );
-    modPtr->manifestName = filename;
 
     // read buffer
     byte *buffer;
@@ -78,7 +70,6 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
 
     // failsafe
     if ( len <= 0 ) {
-        //com.error( ERR_SOFT, this->tr( "Sys_Module::load: could not find module manifest \"%1\"\n" ).arg( filename ));
         modPtr->errorMessage = this->tr( "Invalid manifest" );
         return modPtr;
     }
@@ -94,7 +85,6 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
 
             // check element name
             if ( QString::compare( moduleElement.tagName(), "module" )) {
-                //com.error( ERR_SOFT, this->tr( "Sys_Module::parseManifest: expected <module> in \"%1\"\n" ).arg( filename ));
                 modPtr->errorMessage = this->tr( "Manifest syntax error: expected <module>" );
                 return modPtr;
             } else
@@ -107,7 +97,6 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
                 // set the parsed name
                 modPtr->name = modName;
             } else {
-                //com.error( ERR_SOFT, this->tr( "Sys_Module::parseManifest: found unnamed module in \"%1\"\n" ).arg( filename ));
                 modPtr->errorMessage = this->tr( "Module missing name" );
                 return modPtr;
             }
@@ -125,7 +114,6 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
                     else if ( !QString::compare( infoElement.tagName(), "api", Qt::CaseInsensitive )) {
                         modPtr->apiVersion = infoElement.text().toInt();
                         if ( modPtr->apiVersion > MODULE_API_VERSION ) {
-                            //com.error( ERR_SOFT, this->tr( "Sys_Module::parseManifest: (%1) API version mismatch - %2, expected less or equal to %3\n" ).arg( modPtr->name ).arg( modPtr->apiVersion ).arg( MODULE_API_VERSION ));
                             modPtr->errorMessage = this->tr( "API version mismatch - %1, expected less or equal to %2" ).arg( modPtr->apiVersion ).arg( MODULE_API_VERSION );
                             return modPtr;
                         }
@@ -133,14 +121,7 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
                         modPtr->filename = infoElement.text();
                     else if ( !QString::compare( infoElement.tagName(), "version", Qt::CaseInsensitive ))
                         modPtr->versionString = infoElement.text();
-                    else if ( !QString::compare( infoElement.nodeName(), "postInit", Qt::CaseInsensitive ))
-                        modPtr->postInit = true;
-                    else if ( !QString::compare( infoElement.nodeName(), "renderer", Qt::CaseInsensitive )) {
-                        modPtr->renderer = true;
-
-                        // TODO: dd, check if renderer is loaded
-                    } else {
-                        //com.error( ERR_SOFT, this->tr( "Sys_Module::parseManifest: expected module info element, found <%1> in \"%2\"\n" ).arg( infoElement.tagName(), filename ));
+                    else {
                         modPtr->errorMessage = this->tr( "Manifest syntax error: expected module info element, found <%1>" ).arg( infoElement.tagName());
                         return modPtr;
                     }
@@ -177,7 +158,7 @@ void Sys_Module::load() {
     // find module
     QString mName = cmd.argv( 1 );
 
-    // loading actual modules, not manifests
+    // loading actual modules, not manifest filenames
     QList<QListWidgetItem*>list = this->modListWidget->findItems( mName, Qt::MatchExactly );
     foreach ( QListWidgetItem *item, list ) {
         foreach ( pModule *modPtr, this->preCachedList ) {
@@ -205,7 +186,7 @@ void Sys_Module::unload() {
     // find module
     QString mName = cmd.argv( 1 );
 
-    // loading actual modules, not manifests
+    // unloading actual modules, not manifest filenames
     QList<QListWidgetItem*>list = this->modListWidget->findItems( mName, Qt::MatchExactly );
     foreach ( QListWidgetItem *item, list ) {
         foreach ( pModule *modPtr, this->preCachedList ) {
@@ -238,9 +219,6 @@ void Sys_Module::init() {
     // add commands
     cmd.addCommand( "mod_load", loadCmd, this->tr( "load module by name" ));
     cmd.addCommand( "mod_unload", unloadCmd, this->tr( "unload module" ));
-#ifndef YP2_FINAL_RELEASE
-    cmd.addCommand( "mod_update", updateCmd );
-#endif
 
     // init cvars
     mod_extract = cv.create( "mod_extract", "1", CVAR_ARCHIVE, "toggle module copying from packages" );
@@ -261,9 +239,6 @@ void Sys_Module::shutdown() {
     // remove commands
     cmd.removeCommand( "mod_load" );
     cmd.removeCommand( "mod_unload" );
-#ifndef YP2_FINAL_RELEASE
-    cmd.removeCommand( "mod_update" );
-#endif
 
     // destroy widget
     this->destroyWidget();
@@ -765,14 +740,8 @@ void Sys_Module::createWidget() {
 
     // recache modules
     this->refreshButton = new QPushButton( QIcon( ":/icons/refresh" ),this->tr( "Refresh" ));
-    ///this->refreshButton->setDisabled( true );
     this->connect( this->refreshButton, SIGNAL( clicked()), this, SLOT( reCacheModules()));
     this->bLayout->addWidget( this->refreshButton );
-
-    // clear
-    //this->clearButton = new QPushButton( this->tr( "Clear" ));
-    //this->clearButton->setDisabled( true );
-    //this->bLayout->addWidget( this->clearButton );
 
     // close
     this->closeButton = new QPushButton( QIcon( ":/icons/close" ), this->tr( "Close" ));

@@ -47,8 +47,6 @@ construct
 */
 pModule::pModule( const QString &moduleName ) {
     this->loaded = false;
-    this->renderer = false;
-    this->postInit = false;
     this->name = moduleName;
 }
 
@@ -112,8 +110,6 @@ void pModule::loadHandle() {
 
                 // perform initialization
                 if ( this->call( MOD_INIT )) {
-                    //this->modList << this;
-
                     // success
                     return;
                 } else {
