@@ -60,6 +60,7 @@ validate
 ============
 */
 bool Sys_Cvar::validate( const QString &s ) {
+    // check for illegal chars
     if ( s.isNull())
         return false;
 
@@ -209,7 +210,7 @@ void Sys_Cvar::create() {
     if ( numArgs == 4 ) {
         flags = cmd.argv(3).toInt();
 
-        if ( flags < 0 || flags > CVAR_PASSWORD ) {
+        if ( flags < 0 /*|| flags > CVAR_PASSWORD*/ ) {
             com.error( ERR_SOFT, this->tr( "Sys_Cvar::create: invalid flags\n" ));
             return;
         }
@@ -225,9 +226,6 @@ init
 ============
 */
 void Sys_Cvar::init() {
-    // announce - no need
-    //com.print( this->tr( "^2Sys_Cvar: ^5initializing cvar subsystem\n" ));
-
     // add commands
     cmd.addCommand( "cv_set", setCmd, this->tr( "set console variable value" ));
     cmd.addCommand( "cv_reset", resetCmd, this->tr( "reset console variable value to default" ));
@@ -273,6 +271,7 @@ void Sys_Cvar::list() {
     if ( cmd.argc() > 1 )
         match = true;
 
+    // announce
     com.print( this->tr( "^2Sys_Cvar::list: ^5registered ^3%1 ^5cvars:\n" ).arg( this->cvars.count()));
     foreach ( pCvar *cvarPtr, this->cvars ) {
         if ( match && !cvarPtr->name.startsWith( cmd.argv( 1 )))
@@ -280,6 +279,7 @@ void Sys_Cvar::list() {
 
         com.print( QString( "  ^5'%1': ^2'%2' " ).arg( cvarPtr->name, cvarPtr->stringValue ));
 
+        // append flags
         if ( cvarPtr->flags & CVAR_ROM )
             com.print( "^3R" );
 
@@ -288,10 +288,10 @@ void Sys_Cvar::list() {
 
         if ( cvarPtr->flags & CVAR_LATCH )
             com.print( "^3L" );
-
+#if 0
         if ( cvarPtr->flags & CVAR_PASSWORD )
             com.print( "^3P" );
-
+#endif
         com.print( "\n" );
     }
 }
@@ -299,8 +299,6 @@ void Sys_Cvar::list() {
 /*
 ============
 command
-
- handles variable inspection and changing from the console
 ============
 */
 bool Sys_Cvar::command() {
@@ -417,7 +415,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
 
                         // now find the cvar
                         QString cmdName = cvarElement.attribute( "name" );
-                        foreach ( cmdFunction_t *cmdPtr, cmd.cmdList ) {
+                        foreach ( pCmd *cmdPtr, cmd.cmdList ) {
                             if ( !QString::compare( cmdName, cmdPtr->name )) {
                                 cmd.execute( cmdName + " " + cvarElement.text());
                                 break;

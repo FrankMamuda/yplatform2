@@ -57,7 +57,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //
 #define SYSTITLE            "YPlatform 2 PureQt"
 #define SYSCOPYRIGHT        QT_TR_NOOP( "Copyright (c) 2009-2011, Edd 'Double Dee' Psycho." )
-#define SYSVERSION          "Yuna Commons: v2.8.98.25"
+#define SYSVERSION          "Yuna Commons: v2.8.98.26"
 #define GUIVERSION          "GUI: v0.13.0b"
 
 // colours

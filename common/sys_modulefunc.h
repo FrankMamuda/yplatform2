@@ -44,19 +44,18 @@ typedef void ( *modEntryDef )( intptr_t (*)( int, int, intptr_t * ));
 //
 class pModule : public QObject {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Platform module" )
+    Q_DISABLE_COPY( pModule )
 
 public:
     // module info
     QString name;
     QString description;
-    bool renderer;
-    bool postInit;
     QString versionString;
     int apiVersion;
     QString icon;
     QString filename;
     QString errorMessage;
-    QString manifestName;
     bool loaded;
 
     // constructor

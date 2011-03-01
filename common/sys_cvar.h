@@ -27,15 +27,17 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_shared.h"
 #include "sys_cvarfunc.h"
 
-#ifndef YCOMMONS_PURE
-#define DEFAULT_CONFIG_FILE     "platform.xml"
-#endif
+//
+// defines
+//
+#define DEFAULT_CONFIG_FILE "platform.xml"
 
 //
 // class::Sys_Cvar
 //
 class Sys_Cvar : public QObject {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Console variable subsystem" )
 
 private:
     QList<pCvar*> cvars;

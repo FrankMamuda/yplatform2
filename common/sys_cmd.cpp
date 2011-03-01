@@ -51,7 +51,7 @@ addCommand
 ============
 */
 void Sys_Cmd::addCommand( const QString &cmdName, cmdCommand_t function, const QString &description ) {
-    cmdFunction_t *cmdPtr;
+    pCmd *cmdPtr;
 
     // failsafe
     if ( this->find( cmdName ) != NULL ) {
@@ -60,10 +60,7 @@ void Sys_Cmd::addCommand( const QString &cmdName, cmdCommand_t function, const Q
     }
 
     // alloc new command
-    cmdPtr = new cmdFunction_t;
-    cmdPtr->name = cmdName;
-    cmdPtr->function = function;
-    cmdPtr->description = description;
+    cmdPtr = new pCmd( cmdName, function, description );
     cmdList << cmdPtr;
 
     // add to completer
@@ -76,7 +73,7 @@ removeCommand
 ============
 */
 void Sys_Cmd::removeCommand( const QString &cmdName ) {
-    cmdFunction_t *cmdPtr;
+    pCmd *cmdPtr;
 
     cmdPtr = this->find( cmdName );
     if ( cmdPtr != NULL ) {
@@ -102,6 +99,7 @@ void Sys_Cmd::tokenizeString( const QString &command ) {
     if ( !command.length())
         return;
 
+    // separate strings
     foreach ( QChar ch, command ) {
         if ( ch == QChar( '\"' ) && !inQuotes ) {
             inQuotes = true;
@@ -154,7 +152,7 @@ execute
 ============
 */
 bool Sys_Cmd::execute( const QString &command ) {
-    cmdFunction_t *cmdPtr;
+    pCmd *cmdPtr;
 
     // execute the command line
     this->tokenizeString( command );
@@ -207,7 +205,7 @@ void Sys_Cmd::list() {
         match = true;
 
     com.print( this->tr( "^2Sys_Cmd::list: ^5registered ^3%1 ^5commands:\n" ).arg( this->cmdList.count()));
-    foreach ( cmdFunction_t *cmdPtr, this->cmdList ) {
+    foreach ( pCmd *cmdPtr, this->cmdList ) {
         if ( match && !cmdPtr->name.startsWith( this->argv( 1 )))
             continue;
 
@@ -243,9 +241,6 @@ init
 ============
 */
 void Sys_Cmd::init() {
-    // announce - no need
-    //com.print( this->tr( "^2Sys_Cmd: ^5initializing command subsystem\n" ));
-
     // add commands
     this->addCommand( "cmd_exec", execCmd, this->tr( "exec xml configuration file" ));
     this->addCommand( "cmd_list", listCmd, this->tr( "list all available commands" ));
@@ -269,7 +264,7 @@ void Sys_Cmd::shutdown() {
     com.print( this->tr( "^2Sys_Cmd: ^5shutting down command subsystem\n" ));
 
     // remove ALL commands
-    foreach ( cmdFunction_t *cmdFunc, this->cmdList )
+    foreach ( pCmd *cmdFunc, this->cmdList )
         delete cmdFunc;
 
     this->cmdList.clear();
@@ -280,8 +275,8 @@ void Sys_Cmd::shutdown() {
 find
 ============
 */
-cmdFunction_t *Sys_Cmd::find( const QString &name ) {
-    foreach ( cmdFunction_t *cmdPtr, this->cmdList ) {
+pCmd *Sys_Cmd::find( const QString &name ) {
+    foreach ( pCmd *cmdPtr, this->cmdList ) {
         if ( !QString::compare( name, cmdPtr->name ))
             return cmdPtr;
     }

@@ -45,6 +45,7 @@ pCvar::pCvar( const QString &name, const QString &string, int flags, const QStri
     this->latch = QString::null;
     this->description = desc;
 
+    // perform module cvar updates when needed (instead of reloading value on each frame)
     if ( mCvar )
         this->connect( this, SIGNAL( valueChanged( QString, QString )), &mod, SLOT( updateCvar( QString, QString )));
 }
@@ -112,8 +113,12 @@ set
 bool pCvar::set( const QString &string, bool force ) {
     if ( this->flags & CVAR_ROM && !force ) {
         com.print( this->tr( " ^1'%1' is read only\n" ).arg( this->name ));
-    } else if ( this->flags & CVAR_PASSWORD/* && !com.developerMode */) {
+#if 0
+        // disabled for now
+        // to be enabled when Gui_Settings is complete
+    } else if ( this->flags & CVAR_PASSWORD && !com.developerMode ) {
         com.print( this->tr( " ^1'%1' is password protected\n" ).arg( this->name ));
+#endif
     } else if ( this->flags & CVAR_LATCH && !force ) {
         if ( !this->latch.isEmpty()) {
             if ( !QString::compare( this->stringValue, string ))

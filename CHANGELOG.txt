@@ -1,17 +1,5 @@
-26feb (YCommons 2.8.98.25)
-    -gui:
-       icons on buttons
-    -modules (lots!):
-       recaching now works
-       mod_load/unload commands
-       proper createWidget/deleteWidget
-       cleanup
-       modules are now more or less functional
-       fixed module sorting
-     -cmds
-       config files have <cmd> tag
-       TODO: cmd_exec -> exec?
-     -uploaded to google code
+1mar (YCommons 2.8.98.26)
+    -cleanup
 
 TODO:
     -test freeBSD compatibility (or at least on glibc kFreeBSD Debian build)
@@ -32,4 +20,3 @@ TODO:
         platform scripts (or just use xml extended with cmds?)
     -release a rc1 (beta with ALL pre pure-Qt functionality (without precomp of course)
     -release a stable version (a 'polished' rc*)
-

@@ -33,7 +33,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #define CVAR_LATCH      2
 #define CVAR_ROM        4
 #define CVAR_USER       16
-#define CVAR_PASSWORD   64
+//#define CVAR_PASSWORD   64
 #define CVAR_NULL       0xFFFFFFFF
 
 //

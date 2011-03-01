@@ -92,7 +92,7 @@ void App_Main::parseArgs( int argc, char *argv[] ) {
     for ( y = 1; y < argc; y++ )
         argList << argv[y];
 
-    // nothing - then leave
+    // nothing? - leave!
     if ( argList.isEmpty())
         return;
 
@@ -105,7 +105,7 @@ void App_Main::parseArgs( int argc, char *argv[] ) {
     // reset counter
     y = 0;
 
-    // compile commands and args
+    // compile commands and args, execute
     foreach ( QString str, argList ) {
         if (( y != 0 && str.startsWith( "+" ))) {
             cmd.execute( command.remove( "+" ));
@@ -116,7 +116,6 @@ void App_Main::parseArgs( int argc, char *argv[] ) {
     }
     cmd.execute( command.remove( "+" ));
 }
-
 
 /*
 ================
@@ -134,7 +133,7 @@ cmdFatalError
 */
 #ifndef YP2_FINAL_RELEASE
 void App_Main::fatalError() {
-    // for debugging
+    // for debugging (of gui in general)
     com.error( ERR_FATAL, this->tr( "cmdFatalError: we have failed\n" ));
 }
 #endif
@@ -149,7 +148,8 @@ int App_Main::startup( int argc, char *argv[] ) {
     QApplication app( argc, argv );
     Gui_Main gui;
 
-    // damn decimal seperators!
+    // damn decimal separators!
+    // needed for EvaporationDevice calculator module, if it is ever backported
 #ifndef Q_OS_WIN
     setlocale( LC_ALL, "C" );
 #endif

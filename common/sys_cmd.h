@@ -30,11 +30,21 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // defines
 //
 typedef void ( *cmdCommand_t )();
-typedef struct cmdFunction_s {
-    QString         name;
+class pCmd : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "Console command" )
+    Q_DISABLE_COPY( pCmd )
+
+public:
+    pCmd ( const QString &cmdName, cmdCommand_t function, const QString &description ) {
+        this->name = cmdName;
+        this->function = function;
+        this->description = description;
+    }
+    QString name;
+    QString description;
     cmdCommand_t    function;
-    QString         description;
-} cmdFunction_t;
+};
 
 //
 // member function wrapper macro
@@ -48,6 +58,7 @@ typedef struct cmdFunction_s {
 #ifndef MODULE_LIBRARY
 class Sys_Cmd : public QObject {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Command subsystem" )
 
 public:
     void addCommand( const QString &cmdName, cmdCommand_t, const QString &description = QString::null );
@@ -55,8 +66,8 @@ public:
     int argc();
     QString argv( int );
     bool execute( const QString &command );
-    QList<cmdFunction_t*> cmdList;
-    cmdFunction_t *find( const QString &name );
+    QList<pCmd*> cmdList;
+    pCmd *find( const QString &name );
 
 private:
     void tokenizeString( const QString &command );
@@ -70,5 +81,6 @@ public slots:
     void exec();
     void echo();
 };
+
 #endif
 #endif // SYS_CMD_H

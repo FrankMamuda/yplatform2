@@ -42,6 +42,10 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 */
 
 //
+// Quick backport from YP2.8
+//
+
+//
 // includes
 //
 #include "sys_common.h"
