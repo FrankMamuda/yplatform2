@@ -30,20 +30,53 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // defines
 //
 typedef void ( *cmdCommand_t )();
+
+//
+// namespaces
+//
+namespace Cmd {
+    class Sys_Cmd;
+}
+
+//
+// class:pCmd
+//
 class pCmd : public QObject {
     Q_OBJECT
-    Q_CLASSINFO( "description", "Console command" )
+    Q_CLASSINFO( "description", "Platform console command" )
+    Q_PROPERTY( QString name READ name WRITE setName )
+    Q_PROPERTY( QString description READ description WRITE setDescription )
+    Q_PROPERTY( cmdCommand_t function READ function WRITE setFunction )
     Q_DISABLE_COPY( pCmd )
 
 public:
-    pCmd ( const QString &cmdName, cmdCommand_t function, const QString &description ) {
-        this->name = cmdName;
-        this->function = function;
-        this->description = description;
+    // constructor
+    pCmd ( const QString &cmdName, cmdCommand_t &function, const QString &description ) {
+        this->setName( cmdName );
+        this->setFunction( function );
+        this->setDescription( description );
     }
-    QString name;
-    QString description;
-    cmdCommand_t    function;
+
+    // property getters
+    QString name() const { return this->m_name; }
+    QString description() const { return this->m_description; }
+    cmdCommand_t function() const { return this->m_function; }
+
+    // other funcs
+    void exec() { this->m_function(); }
+    bool hasFunction() const { if ( this->m_function ) return true; return false; }
+
+public slots:
+    // property setters
+    void setName( const QString &cmdName ) { this->m_name = cmdName; }
+    void setDescription( const QString &description ) { this->m_description = description; }
+    void setFunction( const cmdCommand_t &function ) { this->m_function = function; }
+
+private:
+    // properties
+    cmdCommand_t m_function;
+    QString m_name;
+    QString m_description;
 };
 
 //
@@ -53,34 +86,44 @@ public:
 #define createCommandPtr( mClass, mFunc ) static void mFunc ## Cmd () { mClass->mFunc(); }
 
 //
-// class::Sys_Cmd
+// class:Sys_Cmd
 //
 #ifndef MODULE_LIBRARY
 class Sys_Cmd : public QObject {
     Q_OBJECT
+    Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
     Q_CLASSINFO( "description", "Command subsystem" )
 
 public:
-    void addCommand( const QString &cmdName, cmdCommand_t, const QString &description = QString::null );
-    void removeCommand( const QString &cmdName );
-    int argc();
-    QString argv( int );
-    bool execute( const QString &command );
+    void add( const QString &cmdName, cmdCommand_t, const QString &description = QString::null );
+    void remove( const QString &cmdName );
+    int argc() const;
+    QString argv( int ) const;
     QList<pCmd*> cmdList;
-    pCmd *find( const QString &name );
+    pCmd *find( const QString &name ) const;
+    bool execute( const QString &command );
+    bool hasInitialized() const { return this->m_initialized; }
 
 private:
-    void tokenizeString( const QString &command );
+    void tokenize( const QString &command );
+    bool m_initialized;
     QStringList argumentList;
-    bool initialized;
 
 public slots:
+    void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
     void init();
     void shutdown();
     void list();
     void exec();
     void echo();
 };
+
+//
+// externals
+//
+#ifndef MODULE_LIBRARY
+extern class Sys_Cmd cmd;
+#endif
 
 #endif
 #endif // SYS_CMD_H

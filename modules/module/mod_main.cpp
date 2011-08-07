@@ -24,7 +24,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "mod_main.h"
 #include "../mod_trap.h"
 
-
 //
 // classes
 //
@@ -44,28 +43,35 @@ Mod_Main::Mod_Main()
 modMain
 ================
 */
-extern "C" MODULESHARED_EXPORT intptr_t modMain( int callNum, int numArgs, intptr_t *args ) {
+extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callNum, int numArgs, intptr_t *args ) {
     Q_UNUSED( numArgs );
     Q_UNUSED( args );
 
     switch ( callNum ) {
-    case MOD_API:
-        return MODULE_API_VERSION;
+    case ModuleAPI::ModAPI:
+        // return api version
+        return ModuleAPI::Version;
 
-    case MOD_INIT:
+    case ModuleAPI::Init:
+        // perform initialization
+        mt.comPrint( "Hello world\n" );
         break;
 
-    case MOD_UPDATE:
+    case ModuleAPI::Update:
+        // perform updates (render something, etc.)
         break;
 
-    case MOD_UPDATE_CVAR:
+    case ModuleAPI::UpdateCvar:
+        // console variable auto updater
         foreach ( mCvar *cvarPtr, mt.cvars ) {
-            if ( !QString::compare( cvarPtr->name, ( const char *)args[0] ))
+            if ( !QString::compare( cvarPtr->name(), ( const char *)args[0] ))
                 cvarPtr->update(( const char *)args[1] );
         }
         break;
 
-    case MOD_SHUTDOWN:
+    case ModuleAPI::Shutdown:
+        // perform shutdown
+        mt.comPrint( "Goodbye cruel world\n" );
         break;
     }
 
@@ -79,4 +85,13 @@ modEntry
 */
 extern "C" MODULESHARED_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
     mt.setPlatformCalls(( platformSyscallDef )syscallPtr );
+}
+
+/*
+================
+modRendererEntry
+================
+*/
+extern "C" MODULESHARED_EXPORT void modRendererEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
+    mt.setRendererCalls(( platformSyscallDef )syscallPtr );
 }

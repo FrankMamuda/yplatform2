@@ -35,10 +35,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // classes
 //
-extern class Sys_Common com;
-extern class Sys_Common com;
-extern class Sys_Filesystem fs;
-extern class Sys_Cmd cmd;
 Sys_Cvar cv;
 
 //
@@ -59,7 +55,7 @@ createCommand( cv, create )
 validate
 ============
 */
-bool Sys_Cvar::validate( const QString &s ) {
+bool Sys_Cvar::validate( const QString &s ) const {
     // check for illegal chars
     if ( s.isNull())
         return false;
@@ -81,14 +77,14 @@ bool Sys_Cvar::validate( const QString &s ) {
 find
 ============
 */
-pCvar *Sys_Cvar::find( const QString &name ) {
+pCvar *Sys_Cvar::find( const QString &name ) const {
     if ( !this->validate( name )) {
-        com.error( ERR_SOFT, this->tr( "Sys_Cvar::find: invalid name\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::find: invalid name\n" ));
         return NULL;
     }
 
     foreach ( pCvar *cvarPtr, this->cvars ) {
-        if ( !QString::compare( name, cvarPtr->name ))
+        if ( !QString::compare( name, cvarPtr->name(), Qt::CaseInsensitive ))
             return cvarPtr;
     }
     return NULL;
@@ -111,17 +107,17 @@ shutdown
 */
 void Sys_Cvar::shutdown() {
     // failsafe
-    if ( !this->initialized )
+    if ( !this->hasInitialized())
         return;
 
     // announce
     com.print( this->tr( "^2Sys_Cvar: ^5shutting down cvar subsystem\n" ));
 
     // remove commands
-    cmd.removeCommand( "cv_set" );
-    cmd.removeCommand( "cv_reset" );
-    cmd.removeCommand( "cv_list" );
-    cmd.removeCommand( "cv_create" );
+    cmd.remove( "cv_set" );
+    cmd.remove( "cv_reset" );
+    cmd.remove( "cv_list" );
+    cmd.remove( "cv_create" );
 
     // cleanup
     this->clear();
@@ -145,9 +141,9 @@ void Sys_Cvar::reset() {
     cvarPtr = this->find( cmd.argv(1));
 
     if ( cvarPtr != NULL ) {
-        cvarPtr->set( cvarPtr->reset, false );
+        cvarPtr->set( cvarPtr->resetString(), false );
     } else
-        com.error( ERR_SOFT, this->tr( "Sys_Cvar::reset: could not find cvar \"%1\"\n" ).arg( cmd.argv( 1 )));
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::reset: could not find cvar \"%1\"\n" ).arg( cmd.argv( 1 )));
 }
 
 /*
@@ -161,16 +157,14 @@ void Sys_Cvar::set() {
     QString name;
     int     y;
     pCvar   *cvarPtr;
-    int flags = 0;
+    pCvar::Flags flags = pCvar::NoFlags;
 
     numArgs = cmd.argc();
-    qDebug() << cmd.argv(0) << cmd.argv(1) << cmd.argv(2);
     if ( numArgs < 3 ) {
         com.print( this->tr( "^3usage: cv_set [variable] [value] (flags)\n" ));
         return;
     }
     name = cmd.argv(1);
-    qDebug() << cmd.argv(1) << cmd.argv(2);
     cvarPtr = this->find( name );
 
     for ( y = 2; y < numArgs; y++ ) {
@@ -181,13 +175,13 @@ void Sys_Cvar::set() {
     }
 
     if ( numArgs == 4 )
-        flags = cmd.argv(3).toInt();
+        flags = ( pCvar::Flags )cmd.argv(3).toInt();
 
     if ( cvarPtr != NULL ) {
         cvarPtr->set( string );
         cvarPtr->flags |= flags;
     } else
-        com.error( ERR_SOFT, this->tr( "Sys_Cvar::set: cvar \"%1\" does not exist, try creating one\n" ).arg( name ));
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::set: cvar \"%1\" does not exist, try creating one\n" ).arg( name ));
 }
 
 /*
@@ -196,9 +190,9 @@ create
 ============
 */
 void Sys_Cvar::create() {
-    int     numArgs;
-    int     flags = 0;
-    pCvar   *cvar;
+    int         numArgs;
+    pCvar::Flags flags = pCvar::NoFlags;
+    pCvar       *cvar;
 
     numArgs = cmd.argc();
 
@@ -208,10 +202,10 @@ void Sys_Cvar::create() {
     }
     cvar = this->find( cmd.argv(1));
     if ( numArgs == 4 ) {
-        flags = cmd.argv(3).toInt();
+        flags = ( pCvar::Flags )cmd.argv(3).toInt();
 
-        if ( flags < 0 /*|| flags > CVAR_PASSWORD*/ ) {
-            com.error( ERR_SOFT, this->tr( "Sys_Cvar::create: invalid flags\n" ));
+        if ( flags < pCvar::NoFlags /*|| flags > Password*/ ) {
+            com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::create: invalid flags\n" ));
             return;
         }
     }
@@ -227,13 +221,13 @@ init
 */
 void Sys_Cvar::init() {
     // add commands
-    cmd.addCommand( "cv_set", setCmd, this->tr( "set console variable value" ));
-    cmd.addCommand( "cv_reset", resetCmd, this->tr( "reset console variable value to default" ));
-    cmd.addCommand( "cv_list", listCmd, this->tr( "list all registered console variables" ));
-    cmd.addCommand( "cv_create", createCmd, this->tr( "create a new console variable" ));
+    cmd.add( "cv_set", setCmd, this->tr( "set console variable value" ));
+    cmd.add( "cv_reset", resetCmd, this->tr( "reset console variable value to default" ));
+    cmd.add( "cv_list", listCmd, this->tr( "list all registered console variables" ));
+    cmd.add( "cv_create", createCmd, this->tr( "create a new console variable" ));
 
     // we are up and running
-    this->initialized = true;
+    this->setInitialized();
 }
 
 /*
@@ -241,9 +235,9 @@ void Sys_Cvar::init() {
 create
 ============
 */
-pCvar *Sys_Cvar::create( const QString &name, const QString &string, int flags, const QString &description, bool mCvar ) {
+pCvar *Sys_Cvar::create( const QString &name, const QString &string, pCvar::Flags flags, const QString &description, bool mCvar ) {
     if ( !this->validate( name )) {
-        com.error( ERR_SOFT, this->tr( "Sys_Cvar::create: invalid name\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::create: invalid name\n" ));
         return NULL;
     }
 
@@ -255,7 +249,7 @@ pCvar *Sys_Cvar::create( const QString &name, const QString &string, int flags, 
         // allocate & add to list
         cvarPtr = new pCvar( name, string, flags, description, mCvar );
         this->cvars << cvarPtr;
-        com.gui->addToCompleter( cvarPtr->name );
+        com.gui()->addToCompleter( cvarPtr->name());
     }
     return cvarPtr;
 }
@@ -274,22 +268,22 @@ void Sys_Cvar::list() {
     // announce
     com.print( this->tr( "^2Sys_Cvar::list: ^5registered ^3%1 ^5cvars:\n" ).arg( this->cvars.count()));
     foreach ( pCvar *cvarPtr, this->cvars ) {
-        if ( match && !cvarPtr->name.startsWith( cmd.argv( 1 )))
+        if ( match && !cvarPtr->name().startsWith( cmd.argv( 1 )))
             continue;
 
-        com.print( QString( "  ^5'%1': ^2'%2' " ).arg( cvarPtr->name, cvarPtr->stringValue ));
+        com.print( QString( "  ^5'%1': ^2'%2' " ).arg( cvarPtr->name(), cvarPtr->string()));
 
         // append flags
-        if ( cvarPtr->flags & CVAR_ROM )
+        if ( cvarPtr->flags.testFlag( pCvar::ReadOnly ))
             com.print( "^3R" );
 
-        if ( cvarPtr->flags & CVAR_ARCHIVE )
+        if ( cvarPtr->flags.testFlag( pCvar::Archive ))
             com.print( "^3A" );
 
-        if ( cvarPtr->flags & CVAR_LATCH )
+        if ( cvarPtr->flags.testFlag( pCvar::Latched ))
             com.print( "^3L" );
 #if 0
-        if ( cvarPtr->flags & CVAR_PASSWORD )
+        if ( cvarPtr->flags.testFlag( pCvar::Password ))
             com.print( "^3P" );
 #endif
         com.print( "\n" );
@@ -313,12 +307,12 @@ bool Sys_Cvar::command() {
     // perform a variable print or set
     if ( cmd.argc() == 1 ) {
         com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5, default: ^3\"%3\"\n" ).arg(
-                      cvarPtr->name,
-                      cvarPtr->stringValue,
-                      cvarPtr->reset ));
+                      cvarPtr->name(),
+                      cvarPtr->string(),
+                      cvarPtr->resetString()));
 
-        if ( !cvarPtr->latch.isEmpty())
-            com.print( this->tr( " ^3latched: \"%1\"\n" ).arg( cvarPtr->latch ));
+        if ( !cvarPtr->latchString().isEmpty())
+            com.print( this->tr( " ^3latched: \"%1\"\n" ).arg( cvarPtr->latchString()));
 
         return true;
     }
@@ -338,17 +332,17 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
 
     // read buffer
     byte *buffer;
-    int len = fs.readFile( filename, &buffer, FS_FLAGS_SILENT );
+    long len = fs.readFile( filename, &buffer, Sys_Filesystem::Silent );
 
     // failsafe
     if ( len == -1 ) {
-        if ( !QString::compare( filename, DEFAULT_CONFIG_FILE )) {
+        if ( !QString::compare( filename, Cvar::DefaultConfigFile )) {
             com.print( this->tr( "^2Sys_Cvar::parseConfig: ^3configuration file does not exist, creating \"%1\"\n" ).arg( filename ));
-            fs.touch( filename, FS_FLAGS_SILENT );
+            fs.touch( filename, Sys_Filesystem::Silent );
         }
 
         if ( verbose )
-            com.error( ERR_SOFT, this->tr( "Sys_Cvar::parseConfig: configuration file \"%1\" does not exist\n" ).arg( filename ));
+            com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::parseConfig: configuration file \"%1\" does not exist\n" ).arg( filename ));
 
         return;
     }
@@ -356,7 +350,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
     // failsafe
     if ( len == 0 ) {
         if ( verbose )
-            com.error( ERR_SOFT, this->tr( "Sys_Cvar::parseConfig: configuration file \"%1\" is empty\n" ).arg( filename ));
+            com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::parseConfig: configuration file \"%1\" is empty\n" ).arg( filename ));
 
         return;
     }
@@ -372,7 +366,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
 
             // check element name
             if ( QString::compare( configElement.tagName(), "config" )) {
-                com.error( ERR_SOFT, this->tr( "Sys_Cvar::parseConfig: expected <config> in \"%1\"\n" ).arg( filename ));
+                com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::parseConfig: expected <config> in \"%1\"\n" ).arg( filename ));
                 return;
             }
 
@@ -385,7 +379,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
                     if ( !QString::compare( cvarElement.tagName(), "cvar" )) {
                         // check cvar name
                         if ( !cvarElement.hasAttribute( "name" )) {
-                            com.error( ERR_SOFT, this->tr( "Sys_Cvar::parseConfig: nameless <cvar> in \"%1\"\n" ).arg( filename ));
+                            com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::parseConfig: nameless <cvar> in \"%1\"\n" ).arg( filename ));
                             return;
                         }
 
@@ -401,7 +395,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
                                 com.print( this->tr( "^2Sys_Cvar::parseConfig: ^3setting cvar \"%1\" value \"%2\"\n" ).arg( cvarName, cvarElement.text()));
 
                         } else {
-                            this->create( cvarName, cvarElement.text(), cvarElement.attribute( "flags" ).toInt());
+                            this->create( cvarName, cvarElement.text(), ( pCvar::Flags )cvarElement.attribute( "flags" ).toInt());
 
                             if ( verbose )
                                 com.print( this->tr( "^2Sys_Cvar::parseConfig: ^3creating cvar \"%1\" with value \"%2\"\n" ).arg( cvarName, cvarElement.text()));
@@ -409,20 +403,20 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
                     } else if ( !QString::compare( cvarElement.tagName(), "cmd" )) {
                         // check cvar name
                         if ( !cvarElement.hasAttribute( "name" )) {
-                            com.error( ERR_SOFT, this->tr( "Sys_Cvar::parseConfig: nameless <cmd> in \"%1\"\n" ).arg( filename ));
+                            com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::parseConfig: nameless <cmd> in \"%1\"\n" ).arg( filename ));
                             return;
                         }
 
                         // now find the cvar
                         QString cmdName = cvarElement.attribute( "name" );
                         foreach ( pCmd *cmdPtr, cmd.cmdList ) {
-                            if ( !QString::compare( cmdName, cmdPtr->name )) {
+                            if ( !QString::compare( cmdName, cmdPtr->name())) {
                                 cmd.execute( cmdName + " " + cvarElement.text());
                                 break;
                             }
                         }
                     } else {
-                        com.error( ERR_SOFT, this->tr( "Sys_Cvar::parseConfig: expected <cvar> or <cmd> in \"%1\"\n" ).arg( filename ));
+                        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::parseConfig: expected <cvar> or <cmd> in \"%1\"\n" ).arg( filename ));
                         return;
                     }
                 }
@@ -454,24 +448,24 @@ void Sys_Cvar::saveConfig( const QString &filename ) {
 
     // generate cvars config strings
     foreach ( pCvar *cvarPtr, this->cvars ) {
-        if ( cvarPtr->flags & CVAR_ARCHIVE ) {
+        if ( cvarPtr->flags.testFlag( pCvar::Archive )) {
             if ( fs_debug->integer())
-                com.print( this->tr( "^6Sys_Cvar::saveConfig: setting \"%1\" value \"%2\"\n" ).arg( cvarPtr->name, cvarPtr->stringValue ));
+                com.print( this->tr( "^6Sys_Cvar::saveConfig: setting \"%1\" value \"%2\"\n" ).arg( cvarPtr->name(), cvarPtr->string()));
 
             QDomElement cvarElement = configFile.createElement( "cvar" );
-            cvarElement.setAttribute( "name", cvarPtr->name );
+            cvarElement.setAttribute( "name", cvarPtr->name());
             cvarElement.setAttribute( "flags", cvarPtr->flags );
             configElement.appendChild( cvarElement );
 
-            QDomText cvarText = configFile.createTextNode( cvarPtr->stringValue );
+            QDomText cvarText = configFile.createTextNode( cvarPtr->string());
             cvarElement.appendChild( cvarText );
         }
     }
 
     // write out
     fileHandle_t fileOut;
-    if ( fs.fOpenFile( FS_MODE_WRITE, filename, fileOut, FS_FLAGS_SILENT ) != -1 ) {
-        fs.fPrint( fileOut, configFile.toString());
-        fs.fCloseFile( fileOut );
+    if ( fs.open( pFile::Write, filename, fileOut, Sys_Filesystem::Silent ) != -1 ) {
+        fs.print( fileOut, configFile.toString());
+        fs.close( fileOut );
     }
 }

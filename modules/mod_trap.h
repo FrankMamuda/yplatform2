@@ -24,13 +24,22 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // includes
 //
+#ifdef R_BUILD
+#include "renderer_global.h"
+#include "../common/sys_shared.h"
+#include "../modules/mod_public.h"
+#else
 #include "module_global.h"
-#include <QObject>
 #include "../../common/sys_shared.h"
+#include "../mod_public.h"
+#include "../renderer/r_shared.h"
+#include "../renderer/r_font.h"
+#include "../renderer/r_public.h"
+#endif
+#include <QObject>
 #if !defined( intptr_t )
 #include <stdint.h>
 #endif
-#include "../mod_public.h"
 #include "../common/sys_filesystem.h"
 #include "../common/sys_cmd.h"
 #include "mod_cvarfunc.h"
@@ -38,6 +47,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // defines
 //
+#define STRING_BUFFER_SIZE 4096
 typedef intptr_t( *platformSyscallDef )( int, int, intptr_t * );
 
 //
@@ -48,6 +58,7 @@ class Mod_Trap : public QObject {
 
 public:
     void setPlatformCalls( platformSyscallDef pSysCall );
+    void setRendererCalls( platformSyscallDef pSysCall );
 
     //
     // platform calls
@@ -57,27 +68,28 @@ public:
     void comError( int type, const QString &msg );
     int comMilliseconds();
     // filesystem
-    int fsfOpenFile( int mode, const QString &path, fileHandle_t *fHandle, int flags = 0 );
-    void fsfCloseFile( const fileHandle_t fHandle, int flags = 0 );
-    void fsfCloseFile( const QString &filename, int flags = 0 );
-    bool fsFileExists( const QString &path, int flags = 0 );
-    int fsRead( byte **buffer, int len, const fileHandle_t fHandle, int flags = 0 );
-    int fsWrite( const byte *buffer, int len, const fileHandle_t fHandle, int flags = 0 );
-    bool fsSeek( const fileHandle_t fHandle, int offset, int flags = 0 );
-    void fsTouch( const QString &filename, int flags = 0 );
-    int fsReadFile( const QString &filename, byte **buffer, int flags = 0 );
-    void fsfPrint( const fileHandle_t fHandle, const QString &msg, int flags = 0 );
+    int fsOpen( int mode, const QString &path, fileHandle_t *fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    void fsClose( const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    void fsClose( const QString &filename, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    bool fsExists( const QString &path, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    int fsRead( byte **buffer, int len, const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    int fsWrite( const byte *buffer, int len, const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    bool fsSeek( const fileHandle_t fHandle, int offset, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    void fsTouch( const QString &filename, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    int fsReadFile( const QString &filename, byte **buffer, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
+    void fsPrint( const fileHandle_t fHandle, const QString &msg, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
     void fsFreeFile( const QString &filename );
-    bool fsExtractFromPackage( const QString &filename );
-    QStringList fsListFiles( const QString &directory, QRegExp *filter = NULL, int mode = FS_LIST_ALL );
+    bool fsExtract( const QString &filename );
+    QStringList fsListFiles( const QString &directory, QRegExp *filter = NULL, Sys_Filesystem::ListModes mode = Sys_Filesystem::ListAll );
     // cmd subsystem
-    void cmdAddCommand( const QString &filename, cmdCommand_t cmd, const QString &description );
-    void cmdRemoveCommand( const QString &filename );
+    void cmdAdd( const QString &filename, cmdCommand_t cmd, const QString &description );
+    void cmdRemove( const QString &filename );
     int cmdArgc();
     QString cmdArgv( int arg );
     void cmdExecute( QString cmd );
-    mCvar *cvarCreate( const QString &name, const QString &string, int flags = 0, const QString &desc = QString::null );
+    mCvar *cvarCreate( const QString &name, const QString &string, pCvar::Flags = pCvar::NoFlags, const QString &desc = QString::null );
     bool cvarSet( const QString &name, const QString &string, bool force = false );
+    QString cvarGet( const QString &name );
     void cvarReset( const QString &name );
     // app
     void appShutdown();
@@ -92,20 +104,39 @@ public:
     void guiRemoveTab( const QString &name );
     void guiSetActiveTab( const QString &name );
     void guiSetConsoleState( int state );
+    void guiAddSettingsTab( QWidget *widget, const QString &name, const QString &icon );
+    void guiRemoveSettingsTab( const QString &name );
+    // renderer
+#ifndef R_BUILD
+    imgHandle_t rLoadImage( const QString &filename );
+    void rDrawImage( float x, float y, float w, float h, float s1, float t1, float s2, float t2, imgHandle_t handle );
+    void rDrawImage( float x, float y, float w, float h, imgHandle_t handle );
+    mtrHandle_t rLoadMaterial( const QString &filename );
+    void rDrawMaterial( float x, float y, float w, float h, mtrHandle_t handle );
+    void rSetColour( float r, float g, float b, float a = 1.0f );
+    void rLoadFont( const QString &filename, int pointSize, fontInfo_t *fontPtr );
+#endif
 
     // cvars
     QList <mCvar*>cvars;
 
 private:
     platformSyscallDef platformSyscall;
-    intptr_t call( int callNum );
-    intptr_t call( int callNum, intptr_t arg0 );
-    intptr_t call( int callNum, intptr_t arg0, intptr_t arg1 );
-    intptr_t call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2 );
-    intptr_t call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3 );
-    intptr_t call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4 );
-    intptr_t call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5 );
-    intptr_t call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 );
+#ifndef R_BUILD
+    platformSyscallDef rendererSyscall;
+#endif
+    intptr_t callExt( ModuleAPI::Destination destination, int callNum, int numArgs, intptr_t *args );
+    intptr_t call( ModuleAPI::Destination destination, int callNum );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg9 );
+    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9 );
 
 signals:
 
@@ -116,14 +147,16 @@ public slots:
 //
 // inlines for Mod_Trap::call
 //
-inline intptr_t Mod_Trap::call( int callNum ) { return this->platformSyscall( callNum, 0, NULL ); }
-inline intptr_t Mod_Trap::call( int callNum, intptr_t arg0 ) { intptr_t args[1] = { arg0 }; return this->platformSyscall( callNum, 1, args ); }
-inline intptr_t Mod_Trap::call( int callNum, intptr_t arg0, intptr_t arg1 ) { intptr_t args[2] = { arg0, arg1 }; return this->platformSyscall( callNum, 2, args ); }
-inline intptr_t Mod_Trap::call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2 ) { intptr_t args[3] = { arg0, arg1, arg2 }; return this->platformSyscall( callNum, 3, args ); }
-inline intptr_t Mod_Trap::call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3 ) { intptr_t args[4] = { arg0, arg1, arg2, arg3 }; return this->platformSyscall( callNum, 4, args ); }
-inline intptr_t Mod_Trap::call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4 ) { intptr_t args[5] = { arg0, arg1, arg2, arg3, arg4 }; return this->platformSyscall( callNum, 5, args ); }
-inline intptr_t Mod_Trap::call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5 ) { intptr_t args[6] = { arg0, arg1, arg2, arg3, arg4, arg5 }; return this->platformSyscall( callNum, 6, args ); }
-inline intptr_t Mod_Trap::call( int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 ) { intptr_t args[7] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6 }; return this->platformSyscall( callNum, 7, args ); }
-
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum ) { return this->callExt( destination, callNum, 0, NULL ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0 ) { intptr_t args[1] = { arg0 }; return this->callExt( destination, callNum, 1, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1 ) { intptr_t args[2] = { arg0, arg1 }; return this->callExt( destination, callNum, 2, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2 ) { intptr_t args[3] = { arg0, arg1, arg2 }; return this->callExt( destination, callNum, 3, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3 ) { intptr_t args[4] = { arg0, arg1, arg2, arg3 }; return this->callExt( destination, callNum, 4, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4 ) { intptr_t args[5] = { arg0, arg1, arg2, arg3, arg4 }; return this->callExt( destination, callNum, 5, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5 ) { intptr_t args[6] = { arg0, arg1, arg2, arg3, arg4, arg5 }; return this->callExt( destination, callNum, 6, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 ) { intptr_t args[7] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6 }; return this->callExt( destination, callNum, 7, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7 ) { intptr_t args[8] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 }; return this->callExt( destination, callNum, 8, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8 ) { intptr_t args[9] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 }; return this->callExt( destination, callNum, 9, args ); }
+inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9 ) { intptr_t args[10] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 }; return this->callExt( destination, callNum, 10, args ); }
 
 #endif // MOD_TRAP_H

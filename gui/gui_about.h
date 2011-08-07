@@ -27,17 +27,19 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include <QtGui/QDialog>
 
 //
-// defines
+// namespaces
 //
 namespace Ui {
     class Gui_About;
 }
 
 //
-// classes
+// class:Gui_About
 //
 class Gui_About : public QDialog {
     Q_OBJECT
+    Q_CLASSINFO( "description", "About dialog" )
+
 public:
     Gui_About( QWidget *parent = 0 );
     ~Gui_About();

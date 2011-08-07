@@ -26,11 +26,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../common/sys_shared.h"
 #include "../common/sys_common.h"
 
-//
-// defines
-//
-extern class Sys_Common com;
-
 /*
 ================
 construct
@@ -40,8 +35,8 @@ Gui_About::Gui_About( QWidget *parent ) :
     QDialog( parent ), m_ui( new Ui::Gui_About ) {
     m_ui->setupUi( this );
 
-    m_ui->versionCommons->setText( QString( "%1" ).arg( SYSVERSION ));
-    m_ui->versionGUI->setText( QString( "Qt %1" ).arg( GUIVERSION ));
+    m_ui->versionCommons->setText( QString( "%1" ).arg( Sys::Version ));
+    m_ui->versionGUI->setText( QString( "Qt %1" ).arg( Sys::GUIVersion ));
 
     // this is a fixed frame
     this->setSizeGripEnabled( false );

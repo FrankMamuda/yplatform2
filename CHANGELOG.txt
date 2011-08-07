@@ -1,22 +1,2 @@
-1mar (YCommons 2.8.98.26)
-    -cleanup
-
-TODO:
-    -test freeBSD compatibility (or at least on glibc kFreeBSD Debian build)
-    -better command completion (if completing whole command append space afterwards)
-    -fs read files from qrc
-    -release a beta1 (mod API1 - YP2 functionality minus precomp, renderer, soundsys):
-        mod completion - done (API1 complete, using dynamic cvars (different code from YP2.8))
-        init args - done (at least for current functionality)
-        visuals (gui) - done (proper scaling and so on)
-        i18n - partly done (modules and platformSyscall left)
-        bugfixes, allocs, etc. - working on it!
-    -release a beta2 (mod API2):
-        module load dialogue
-        settings dialogue
-        bugfixes, allocs, etc.
-    -release a beta3 (mod API3 - implement new functions when renderer/soundsystem is ready)
-        renderer & soundsystem loading (not actual modules)
-        platform scripts (or just use xml extended with cmds?)
-    -release a rc1 (beta with ALL pre pure-Qt functionality (without precomp of course)
-    -release a stable version (a 'polished' rc*)
+7th of August (YCommons 2.8.99.0 rc1)
+    -a lot of changes since r3

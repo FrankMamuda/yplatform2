@@ -33,21 +33,43 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 class mCvar {
     Q_CLASSINFO( "description", "Module console variable" )
     Q_DISABLE_COPY( mCvar )
+    Q_PROPERTY( QString name READ name WRITE setName )
+    Q_PROPERTY( QString description READ description WRITE setDescription )
+    Q_PROPERTY( QString string READ string WRITE setString )
+    Q_FLAGS( Flags Flag )
 
 public:
-    mCvar( const QString &name, const QString &string, int flags = 0, const QString &desc = QString::null );
+    // constructors/destructors
+    mCvar( const QString &name, const QString &string, pCvar::Flags flags = pCvar::NoFlags, const QString &desc = QString::null );
     ~mCvar();
-    QString name;
-    QString stringValue;
-    QString string();
-    QString description;
-    int     flags;
-    int     integer();
+
+    // property getters
+    QString name() const { return this->m_name; }
+    QString description() const { return this->m_description; }
+    QString string() const { return this->m_string; }
+
+    // flags & other funcs
+    pCvar::Flags flags;
+
+    // other funcs
+    int     integer() const;
+    float   value() const;
     bool    set( const QString &string, bool force = false );
-    float   value();
-    bool    setInteger( int );
-    bool    setValue( float );
+    bool    set( int, bool force = false );
+    bool    set( float, bool force = false );
     void    update( const QString &string );
+
+public slots:
+    // property setters
+    void setName( const QString &cvarName ) { this->m_name = cvarName; }
+    void setDescription( const QString &description ) { this->m_description = description; }
+    void setString( const QString &string ) { this->m_string = string; }
+
+private:
+    // properties
+    QString m_string;
+    QString m_name;
+    QString m_description;
 };
 
 #endif // MOD_CVARFUNC_H

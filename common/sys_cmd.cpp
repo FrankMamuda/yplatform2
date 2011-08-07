@@ -31,11 +31,8 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_filesystem.h"
 
 //
-// defines
+// classes
 //
-extern class Sys_Common com;
-extern class Sys_Cvar cv;
-extern class Sys_Filesystem fs;
 class Sys_Cmd cmd;
 
 //
@@ -50,12 +47,12 @@ createCommand( cmd, echo )
 addCommand
 ============
 */
-void Sys_Cmd::addCommand( const QString &cmdName, cmdCommand_t function, const QString &description ) {
+void Sys_Cmd::add( const QString &cmdName, cmdCommand_t function, const QString &description ) {
     pCmd *cmdPtr;
 
     // failsafe
     if ( this->find( cmdName ) != NULL ) {
-        com.print( this->tr( "^2Sys_Cmd::addCommand: ^3\"%1\" already defined\n" ).arg( cmdName ));
+        com.print( this->tr( "^2Sys_Cmd::add: ^3\"%1\" already defined\n" ).arg( cmdName ));
         return;
     }
 
@@ -64,7 +61,7 @@ void Sys_Cmd::addCommand( const QString &cmdName, cmdCommand_t function, const Q
     cmdList << cmdPtr;
 
     // add to completer
-    com.gui->addToCompleter( cmdPtr->name );
+    com.gui()->addToCompleter( cmdPtr->name() );
 }
 
 /*
@@ -72,13 +69,13 @@ void Sys_Cmd::addCommand( const QString &cmdName, cmdCommand_t function, const Q
 removeCommand
 ============
 */
-void Sys_Cmd::removeCommand( const QString &cmdName ) {
+void Sys_Cmd::remove( const QString &cmdName ) {
     pCmd *cmdPtr;
 
     cmdPtr = this->find( cmdName );
     if ( cmdPtr != NULL ) {
-        // dd, remove from completer
-        com.gui->removeFromCompleter( cmdPtr->name );
+        // remove from completer
+        com.gui()->removeFromCompleter( cmdPtr->name());
         cmdList.removeOne( cmdPtr );
         delete cmdPtr;
     }
@@ -86,10 +83,10 @@ void Sys_Cmd::removeCommand( const QString &cmdName ) {
 
 /*
 ============
-tokenizeString
+tokenize
 ============
 */
-void Sys_Cmd::tokenizeString( const QString &command ) {
+void Sys_Cmd::tokenize( const QString &command ) {
     QString token;
     bool inQuotes = false;
 
@@ -130,7 +127,7 @@ void Sys_Cmd::tokenizeString( const QString &command ) {
 argc
 ============
 */
-int Sys_Cmd::argc() {
+int Sys_Cmd::argc() const {
     return this->argumentList.count();
 }
 
@@ -139,7 +136,7 @@ int Sys_Cmd::argc() {
 argv
 ============
 */
-QString Sys_Cmd::argv( int arg ) {
+QString Sys_Cmd::argv( int arg ) const {
     if ( arg >= this->argumentList.count())
         return QString( "" );
 
@@ -155,7 +152,7 @@ bool Sys_Cmd::execute( const QString &command ) {
     pCmd *cmdPtr;
 
     // execute the command line
-    this->tokenizeString( command );
+    this->tokenize( command );
 
     if ( !this->argc())
         return false;
@@ -164,8 +161,8 @@ bool Sys_Cmd::execute( const QString &command ) {
     cmdPtr = this->find( this->argumentList.first());
     if ( cmdPtr != NULL ) {
         // execute the function
-        if ( cmdPtr->function )
-            cmdPtr->function();
+        if ( cmdPtr->hasFunction() )
+            cmdPtr->exec();
 
         return true;
     }
@@ -206,13 +203,13 @@ void Sys_Cmd::list() {
 
     com.print( this->tr( "^2Sys_Cmd::list: ^5registered ^3%1 ^5commands:\n" ).arg( this->cmdList.count()));
     foreach ( pCmd *cmdPtr, this->cmdList ) {
-        if ( match && !cmdPtr->name.startsWith( this->argv( 1 )))
+        if ( match && !cmdPtr->name().startsWith( this->argv( 1 )))
             continue;
 
-        if ( !cmdPtr->description.isEmpty() )
-            com.print( QString( " ^3%1^5 - ^3%2\n" ).arg( cmdPtr->name, cmdPtr->description ));
+        if ( !cmdPtr->description().isEmpty() )
+            com.print( QString( " ^3%1^5 - ^3%2\n" ).arg( cmdPtr->name(), cmdPtr->description()));
         else
-            com.print( QString( " ^3%1\n" ).arg( cmdPtr->name ));
+            com.print( QString( " ^3%1\n" ).arg( cmdPtr->name()));
     }
 }
 
@@ -242,12 +239,12 @@ init
 */
 void Sys_Cmd::init() {
     // add commands
-    this->addCommand( "cmd_exec", execCmd, this->tr( "exec xml configuration file" ));
-    this->addCommand( "cmd_list", listCmd, this->tr( "list all available commands" ));
-    this->addCommand( "echo", echoCmd, this->tr( "echo text to console" ));
+    this->add( "cmd_exec", execCmd, this->tr( "exec xml configuration file" ));
+    this->add( "cmd_list", listCmd, this->tr( "list all available commands" ));
+    this->add( "echo", echoCmd, this->tr( "echo text to console" ));
 
     // we are initialized
-    this->initialized = true;
+    this->setInitialized();;
 }
 
 /*
@@ -257,7 +254,7 @@ shutdown
 */
 void Sys_Cmd::shutdown() {
     // failsafe
-    if ( !this->initialized )
+    if ( !this->hasInitialized())
         return;
 
     // announce
@@ -275,9 +272,9 @@ void Sys_Cmd::shutdown() {
 find
 ============
 */
-pCmd *Sys_Cmd::find( const QString &name ) {
+pCmd *Sys_Cmd::find( const QString &name ) const {
     foreach ( pCmd *cmdPtr, this->cmdList ) {
-        if ( !QString::compare( name, cmdPtr->name ))
+        if ( !QString::compare( name, cmdPtr->name(), Qt::CaseInsensitive ))
             return cmdPtr;
     }
     return NULL;

@@ -8,9 +8,11 @@
         <file alias="restore">icons/restore_128.png</file>
         <file alias="console">icons/console_48.png</file>
         <file alias="panic">icons/panic_48.png</file>
-        <file alias="module">icons/module_128.png</file>
+        <file alias="module_128">icons/module_128.png</file>
         <file alias="close">icons/close_48.png</file>
         <file alias="exec">icons/exec_48.png</file>
         <file alias="refresh">icons/refresh_48.png</file>
+        <file alias="accept">icons/accept_48.png</file>
+        <file alias="module">icons/module_48.png</file>
     </qresource>
 </RCC>

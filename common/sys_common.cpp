@@ -28,7 +28,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // classes
 //
-extern class App_Main m;
 class Sys_Common com;
 
 /*
@@ -39,8 +38,8 @@ print
 void Sys_Common::print( const QString &msg, int fontSize ) {
     // print out
     fputs( msg.toLatin1().constData(), stdout );
-    if ( this->gui->initialized )
-        this->gui->print( msg, fontSize );
+    if ( this->gui()->hasInitialized())
+        this->gui()->print( msg, fontSize );
 
     // for debugging
     qDebug() << msg.left( msg.length()-1 );
@@ -51,20 +50,20 @@ void Sys_Common::print( const QString &msg, int fontSize ) {
 error
 ============
 */
-void Sys_Common::error( int type, const QString &msg ) {
-    if ( this->gui->initialized ) {
-        com.gui->printImage( ":/icons/panic", 16, 16 );
-        com.gui->print( " " );
+void Sys_Common::error( ErrorTypes type, const QString &msg ) {
+    if ( this->gui()->hasInitialized()) {
+        com.gui()->printImage( ":/icons/panic", 16, 16 );
+        com.gui()->print( " " );
     }
 
-    if ( type == ERR_FATAL )
+    if ( type == FatalError )
         this->print( this->tr( "^1FATAL ERROR: %1" ).arg( msg ));
     else
         this->print( this->tr( "^3ERROR: %1" ).arg( msg ));
 
-    if ( type == ERR_FATAL ) {
-        this->caughtFatalError = true;
-        com.gui->freeze();
+    if ( type == FatalError ) {
+        this->catchError();
+        com.gui()->freeze();
     }
 }
 

@@ -27,12 +27,15 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../common/sys_shared.h"
 
 //
-// defines
+// namespaces
 //
-#define PLATFORM_UPDATE_FREQUENCY 50
+namespace Main {
+    class App_Main;
+    static const unsigned int PlatformUpdateFrequency = 50;
+}
 
 //
-// classes
+// class:App_Main
 //
 class App_Main : public QObject {
     Q_OBJECT
@@ -52,5 +55,12 @@ private:
     void parseArgs( int, char*[] );
     QTimer *timer;
 };
+
+//
+// externals
+//
+#ifndef MODULE_LIBRARY
+extern class App_Main m;
+#endif
 
 #endif

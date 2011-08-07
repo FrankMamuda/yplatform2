@@ -1,7 +1,5 @@
 /*
 ===========================================================================
- YPlatform2 license:
-===========================================================================
 Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
@@ -18,29 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see http://www.gnu.org/licenses/.
 
 ===========================================================================
- idTech3 license:
-===========================================================================
-Copyright (C) 1999-2005 Id Software, Inc.
-
-idTech3 source code is free software; you can redistribute it
-and/or modify it under the terms of the GNU General Public License as
-published by the Free Software Foundation; either version 2 of the License,
-or (at your option) any later version.
-
-idTech3 source code is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with idTech3 source code; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-===========================================================================
 */
 
 //
-// Yuna Platform 2 Shared Header
+// YPlatform 2 Shared Header
 //
 
 #ifndef SYSSHARED_H
@@ -55,25 +34,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //
 // defines
 //
-#define SYSTITLE            "YPlatform 2 PureQt"
-#define SYSCOPYRIGHT        QT_TR_NOOP( "Copyright (c) 2009-2011, Edd 'Double Dee' Psycho." )
-#define SYSVERSION          "Yuna Commons: v2.8.98.26"
-#define GUIVERSION          "GUI: v0.13.0b"
+namespace Sys {
+    static const QString Title       ( QObject::trUtf8( "YPlatform2" ));
+    static const QString Copyright   ( QObject::trUtf8( "Copyright (c) 2009-2011, Edd 'Double Dee' Psycho." ));
+    static const QString Version     ( QObject::trUtf8( "Yuna Commons: v2.8.99.0 (rc1)" ));
+    static const QString GUIVersion  ( QObject::trUtf8( "GUI: v1.0.0" ));
 
-// colours
-#define SYS_COLOUR_ESCAPE     '^'
-#define SYS_COLOUR_BLACK      '0'
-#define SYS_COLOUR_RED        '1'
-#define SYS_COLOUR_GREEN      '2'
-#define SYS_COLOUR_YELLOW     '3'
-#define SYS_COLOUR_BLUE       '4'
-#define SYS_COLOUR_CYAN       '5'
-#define SYS_COLOUR_MAGENTA    '6'
-#define SYS_COLOUR_WHITE      '7'
-#define SYS_COLOUR_NULL       '*'
+    // colours
+    static const QChar ColourEscape  ( '^' );
+    static const QChar ColourBlack   ( '0' );
+    static const QChar ColourRed     ( '1' );
+    static const QChar ColourGreen   ( '2' );
+    static const QChar ColourYellow  ( '3' );
+    static const QChar ColourBlue    ( '4' );
+    static const QChar ColourCyan    ( '5' );
+    static const QChar ColourMagenta ( '6' );
+    static const QChar ColourWhite   ( '7' );
+    static const QChar ColourNull    ( '*' );
+}
 
 // byte
 typedef unsigned char byte;
+
+// fs file
+typedef int fileHandle_t;
 
 //
 // platform-specific

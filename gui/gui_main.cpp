@@ -33,17 +33,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../common/sys_module.h"
 
 //
-// classes
-//
-extern class App_Main m;
-extern class Sys_Common com;
-extern class Sys_Cvar cv;
-extern class Sys_Cmd cmd;
-extern class Sys_Filesystem fs;
-extern class Sys_Module mod;
-
-
-//
 // cvars
 //
 pCvar *gui_toolBarIconSize;
@@ -51,10 +40,11 @@ pCvar *gui_toolBarIconSize;
 //
 // commands
 //
-createCommandPtr( com.gui, createSystemTray )
-createCommandPtr( com.gui, removeSystemTray )
-createCommandPtr( com.gui, hideOrMinimize )
-createCommandPtr( com.gui, show )
+createCommandPtr( com.gui(), createSystemTray )
+createCommandPtr( com.gui(), removeSystemTray )
+createCommandPtr( com.gui(), hideOrMinimize )
+createCommandPtr( com.gui(), setWindowFocus )
+createCommandPtr( com.gui(), show )
 
 /*
 ================
@@ -63,12 +53,21 @@ construct
 */
 Gui_Main::Gui_Main( QWidget *parent ) : QMainWindow( parent ), ui( new Ui::Gui_Main ) {
     // setup ui
-    ui->setupUi( this );
+    this->ui->setupUi( this );
     this->ui->consoleScreen->ensureCursorVisible();
     this->ui->consoleInput->installEventFilter( this );
     this->setFocus();
-    this->initialized = true;
-    this->trayInitialized = false;
+    this->setInitialized();
+    this->setTrayInitialized( false );
+}
+
+/*
+================
+focus
+================
+*/
+void Gui_Main::setWindowFocus() {
+    this->activateWindow();
 }
 
 /*
@@ -77,7 +76,7 @@ hideOrMinimize
 ================
 */
 void Gui_Main::hideOrMinimize() {
-    if ( this->trayInitialized )
+    if ( this->hasTray())
         this->hide();
     else
         this->showMinimized();
@@ -90,24 +89,28 @@ init
 */
 void Gui_Main::init() {
     // history stuff
-    this->historyOffset = 0;
-    this->loadHistory( DEFAULT_HISTORY_FILE );
+    this->resetHistoryOffset();
+    this->loadHistory( Ui::DefaultHistoryFile );
 
     // visuals
-    gui_toolBarIconSize = cv.create( "gui_toolBarIconSize", QString( DEFAULT_TOOBAR_ICON_SIZE ), CVAR_ARCHIVE );
+    gui_toolBarIconSize = cv.create( "gui_toolBarIconSize", QString( "%1" ).arg( Ui::DefaultToolbarIconSize ), pCvar::Archive );
     this->toolBarIconSizeModified();
 
     // dynamic check on toolBar icon size
     this->connect( gui_toolBarIconSize, SIGNAL( valueChanged( QString, QString )), this, SLOT( toolBarIconSizeModified()));
 
     // add systray cmd
-    cmd.addCommand( "gui_createSysTray", createSystemTrayCmd, this->tr( "create system tray icon" ));
-    cmd.addCommand( "gui_removeSysTray", removeSystemTrayCmd, this->tr( "remove system tray icon" ));
-    cmd.addCommand( "gui_raise", showCmd, this->tr( "raise main window" ));
-    cmd.addCommand( "gui_hide", hideOrMinimizeCmd, this->tr( "hide main window" ));
+    cmd.add( "gui_createSysTray", createSystemTrayCmd, this->tr( "create system tray icon" ));
+    cmd.add( "gui_removeSysTray", removeSystemTrayCmd, this->tr( "remove system tray icon" ));
+    cmd.add( "gui_raise", showCmd, this->tr( "raise main window" ));
+    cmd.add( "gui_hide", hideOrMinimizeCmd, this->tr( "hide main window" ));
+    cmd.add( "gui_setFocus", setWindowFocusCmd, this->tr( "set focus on main window" ));
 
     // add console icon
     this->ui->tabWidget->setTabIcon( 0, QIcon( ":/icons/console" ));
+
+    // init settings
+    this->settings = new Gui_Settings( this );
 
     // create actions
     this->createActions();
@@ -120,10 +123,10 @@ toolBarIconSizeModified
 */
 void Gui_Main::toolBarIconSizeModified() {
     // accept only valid sizes
-    if ( gui_toolBarIconSize->integer() >= 16 && gui_toolBarIconSize->integer() <= 128 )
+    if ( gui_toolBarIconSize->integer() >= 8 && gui_toolBarIconSize->integer() <= 128 )
         this->ui->toolBar->setIconSize( QSize( gui_toolBarIconSize->integer(), gui_toolBarIconSize->integer()));
     else
-        gui_toolBarIconSize->set( QString( DEFAULT_TOOBAR_ICON_SIZE ));
+        gui_toolBarIconSize->set( QString( "%1" ).arg( Ui::DefaultToolbarIconSize ));
 
 }
 
@@ -134,13 +137,14 @@ shutdown
 */
 void Gui_Main::shutdown() {
     // save history
-    com.gui->saveHistory( DEFAULT_HISTORY_FILE );
+    this->saveHistory( Ui::DefaultHistoryFile );
 
     // remove cmds
-    cmd.removeCommand( "gui_createSysTray" );
-    cmd.removeCommand( "gui_removeSysTray" );
-    cmd.removeCommand( "gui_raise" );
-    cmd.removeCommand( "gui_hide" );
+    cmd.remove( "gui_createSysTray" );
+    cmd.remove( "gui_removeSysTray" );
+    cmd.remove( "gui_raise" );
+    cmd.remove( "gui_hide" );
+    cmd.remove( "gui_setFocus" );
 
     // remove actions
     foreach ( customActionDef_t *actionPtr, this->toolBarActions ) {
@@ -152,7 +156,8 @@ void Gui_Main::shutdown() {
     this->toolBarActions.clear();
 
     // remove tabs
-    this->tabWidgetTabs.clear();
+    this->tabWidgetTabs[Gui_Main::MainWindow].clear();
+    this->tabWidgetTabs[Gui_Main::Settings].clear();
 
     // remove image resources
     foreach ( imageResourceDef_t *imagePtr, this->imageResources ) {
@@ -164,8 +169,11 @@ void Gui_Main::shutdown() {
     // remove tray if any
     this->removeSystemTray();
 
+    // delete settings
+    delete this->settings;
+
     // gui is down
-    com.gui->initialized = false;
+    this->setInitialized( false );
 }
 
 /*
@@ -186,8 +194,8 @@ createActions
 void Gui_Main::createActions() {
     // settings
     this->settigsAction = new QAction( QIcon( ":/icons/settings" ), this->tr( "Settings" ), this );
-    // for now this is disabled
-    this->settigsAction->setEnabled( false );
+    this->connect( this->settigsAction, SIGNAL( triggered()), this->settings, SLOT( intializeCvars()));
+    this->connect( this->settigsAction, SIGNAL( triggered()), this->settings, SLOT( exec()));
     this->ui->toolBar->addAction( this->settigsAction );
     this->toolBarActions << new customActionDef_t;
     this->toolBarActions.last()->action = this->settigsAction;
@@ -236,12 +244,12 @@ createSystemTray
 */
 void Gui_Main::createSystemTray() {
     // failsafe
-    if ( this->trayInitialized )
+    if ( this->hasTray())
         return;
 
     // check for sysTray
     if ( !QSystemTrayIcon::isSystemTrayAvailable()) {
-        com.error( ERR_SOFT, this->tr( "Gui_Main::createSystemTray: could not detect system tray\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "Gui_Main::createSystemTray: could not detect system tray\n" ));
         return;
     }
 
@@ -260,11 +268,11 @@ void Gui_Main::createSystemTray() {
 
     // connect
     this->connect( this->trayIcon, SIGNAL( activated( QSystemTrayIcon::ActivationReason )),
-                  this, SLOT( iconActivated( QSystemTrayIcon::ActivationReason )));
+                   this, SLOT( iconActivated( QSystemTrayIcon::ActivationReason )));
 
     // display tray icon
     this->trayIcon->show();
-    this->trayInitialized = true;
+    this->setTrayInitialized();
 }
 
 /*
@@ -277,12 +285,12 @@ void Gui_Main::iconActivated( QSystemTrayIcon::ActivationReason reason ) {
     case QSystemTrayIcon::Trigger:
     case QSystemTrayIcon::DoubleClick:
 
-        if ( !visible ) {
-            visible = true;
-            show();
+        if ( !this->isVisible()) {
+            this->setVisibility();
+            this->show();
         } else {
-            visible = false;
-            hide();
+            this->setVisibility( false );
+            this->hide();
         }
         break;
 
@@ -298,12 +306,12 @@ removeSystemTray
 */
 void Gui_Main::removeSystemTray() {
     // delete tray
-    if ( this->trayInitialized ) {
+    if ( this->hasTray()) {
         delete this->minimizeAction;
         delete this->restoreAction;
         delete this->trayIconMenu;
         delete this->trayIcon;
-        this->trayInitialized = false;
+        this->setTrayInitialized( false );
     }
 }
 
@@ -340,10 +348,10 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                 // history list -> up
                 if ( keyEvent->key() == Qt::Key_Up ) {
                     if ( !this->history.isEmpty()) {
-                        if ( this->historyOffset < this->history.count() )
-                            this->historyOffset++;
+                        if ( this->historyOffset() < this->history.count() )
+                            this->pushHistoryOffset();
 
-                        int offset = this->history.count() - this->historyOffset;
+                        int offset = this->history.count() - this->historyOffset();
 
                         if ( offset > 0 )
                             this->ui->consoleInput->setText( this->history.at( offset ));
@@ -355,15 +363,17 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                     // history list -> down
                 } else if ( keyEvent->key() == Qt::Key_Down ) {
                     if ( !this->history.isEmpty()) {
-                        if ( this->historyOffset > 0 )
-                            this->historyOffset--;
+                        int offset;
 
-                        if ( this->historyOffset == 0 ) {
+                        if ( this->historyOffset() > 0 )
+                            this->popHistoryOffset();
+
+                        if ( this->historyOffset() == 0 ) {
                             this->ui->consoleInput->clear();
                             return true;
                         }
 
-                        int offset = this->history.count() - this->historyOffset;
+                        offset = this->history.count() - this->historyOffset();
 
                         if ( offset < this->history.count())
                             this->ui->consoleInput->setText( this->history.at( offset ));
@@ -380,20 +390,18 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                     if ( this->ui->consoleInput->text().isEmpty())
                         return true;
 
-                    foreach( QString str, com.gui->cmdList ) {
+                    foreach( QString str, this->cmdList ) {
                         if ( str.startsWith( this->ui->consoleInput->text(), Qt::CaseInsensitive ))
                             match << str;
                     }
 
                     // make sure we don't print same stuff all the time
-                    if ( !com.gui->newConsoleText ) {
+                    if ( !this->hasNewText()) {
                         if ( match == this->lastMatch )
                             return true;
                     }
 
-                    //
                     // complete to shortest string
-                    //
                     if ( match.count() == 1 ) {
                         this->ui->consoleInput->setText( match.first() );
                     } else if ( match.count() > 1 ) {
@@ -411,15 +419,15 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                         return true;
                     }
 
-                    com.gui->printImage( ":/icons/about", 16, 16 );
+                    this->printImage( ":/icons/about", 16, 16 );
                     com.print( this->tr( " ^5Available commands and cvars:\n" ));
                     foreach ( QString str, match ) {
                         // check commands
                         pCmd *cmdPtr;
                         cmdPtr = cmd.find( str );
                         if ( cmdPtr != NULL ) {
-                            if ( !cmdPtr->description.isEmpty()) {
-                                com.print( QString( " ^3\"%1\"^5 - ^3%2\n" ).arg( str, cmdPtr->description ));
+                            if ( !cmdPtr->description().isEmpty()) {
+                                com.print( QString( " ^3\"%1\"^5 - ^3%2\n" ).arg( str, cmdPtr->description()));
                             } else {
                                 com.print( QString( " ^3\"%1\n" ).arg( str ));
                             }
@@ -430,23 +438,23 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
 
                         // perform a variable print or set
                         if ( cvarPtr != NULL ) {
-                            if ( !cvarPtr->description.isEmpty()) {
+                            if ( !cvarPtr->description().isEmpty()) {
                                 com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5 - ^3%3\n" ).arg(
-                                              cvarPtr->name,
-                                              cvarPtr->stringValue,
-                                              cvarPtr->description
-                                              ));
+                                               cvarPtr->name(),
+                                               cvarPtr->string(),
+                                               cvarPtr->description()
+                                               ));
                             } else {
                                 com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"\n" ).arg(
-                                              cvarPtr->name,
-                                              cvarPtr->stringValue ));
+                                               cvarPtr->name(),
+                                               cvarPtr->string()));
                             }
                         }
                     }
 
                     com.print( "\n" );
                     this->lastMatch = match;
-                    com.gui->newConsoleText = false;
+                    this->setNewText( false );
                     return true;
                 }
             }
@@ -479,44 +487,44 @@ void Gui_Main::print( const QString &message, int fontSize ) {
 
     // replace colours
     for ( i = 0; i < msg.length(); i++ ) {
-        if ( msg.at( i ) == QChar( SYS_COLOUR_ESCAPE )) {
+        if ( msg.at( i ) == QChar( Sys::ColourEscape )) {
             // COLOUR_WHITE
-            if ( msg.at( i + 1 ) == QChar( SYS_COLOUR_BLACK )) {
+            if ( msg.at( i + 1 ) == Sys::ColourBlack ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#FFFFFF; font-size:%1pt;\">" ).arg( fontSize ));
             }
             // COLOUR_RED
-            else if ( msg.at( i + 1 ) == QChar( SYS_COLOUR_RED )) {
+            else if ( msg.at( i + 1 ) == Sys::ColourRed ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#FF0000; font-size:%1pt;\">" ).arg( fontSize ));
             }
             // COLOUR_GREEN
-            else if ( msg.at( i + 1 ) == QChar( SYS_COLOUR_GREEN )) {
+            else if ( msg.at( i + 1 ) == Sys::ColourGreen ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#00FF00; font-size:%1pt;\">" ).arg( fontSize ));
             }
             // COLOUR_YELLOW
-            else if ( msg.at( i + 1 ) == QChar( SYS_COLOUR_YELLOW )) {
+            else if ( msg.at( i + 1 ) == Sys::ColourYellow ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#FFFF00; font-size:%1pt;\">" ).arg( fontSize ));
             }
             // COLOUR_BLUE
-            else if ( msg.at( i + 1 ) == QChar( SYS_COLOUR_BLUE )) {
+            else if ( msg.at( i + 1 ) == Sys::ColourBlue ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#0000FF; font-size:%1pt;\">" ).arg( fontSize ));
             }
             // COLOUR_CYAN
-            else if ( msg.at( i + 1 ) == QChar( SYS_COLOUR_CYAN )) {
+            else if ( msg.at( i + 1 ) == Sys::ColourCyan ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#00FFFF; font-size:%1pt;\">" ).arg( fontSize ));
             }
             // COLOUR_MAGENTA
-            else if ( msg.at( i + 1 ) == QChar( SYS_COLOUR_MAGENTA  )) {
+            else if ( msg.at( i + 1 ) == Sys::ColourMagenta ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#FF00FF; font-size:%1pt;\">" ).arg( fontSize ));
             }
             // COLOUR_BLACK
-            else if ( msg.at( i + 1 ) == QChar( SYS_COLOUR_WHITE )) {
+            else if ( msg.at( i + 1 ) == Sys::ColourWhite ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#000000; font-size:%1pt;\">" ).arg( fontSize ));
             }
@@ -532,18 +540,25 @@ printHtml
 ================
 */
 void Gui_Main::printHtml( const QString &html ) {
-    // advance to end before printout...
-    QTextCursor cPos = this->ui->consoleScreen->textCursor();
-    cPos.movePosition( QTextCursor::End );
-    this->ui->consoleScreen->setTextCursor( cPos );
+    // needs to be done before and after
+    this->autoScroll();
 
     // print msg
     this->ui->consoleScreen->insertHtml( html );
-    this->newConsoleText = true;
+    this->setNewText();
+    this->autoScroll();
+}
 
-    // ...and after to make sure we autoscroll and append text to end
+/*
+================
+autoScroll
+================
+*/
+void Gui_Main::autoScroll() {
+    QTextCursor cPos = this->ui->consoleScreen->textCursor();
     cPos.movePosition( QTextCursor::End );
     this->ui->consoleScreen->setTextCursor( cPos );
+    this->ui->consoleScreen->ensureCursorVisible();
 }
 
 /*
@@ -555,39 +570,29 @@ QImage *Gui_Main::addImageResource( const QString &filename, int width, int heig
     // failsafe
     foreach ( imageResourceDef_t *imgPtr, this->imageResources ) {
         if ( !QString::compare( filename, imgPtr->name )) {
-            com.error( ERR_SOFT, this->tr( "Gui_Main::addImageResource: image \"%1\" has already been added\n" ).arg( filename ));
+            com.error( Sys_Common::SoftError, this->tr( "Gui_Main::addImageResource: image \"%1\" has already been added\n" ).arg( filename ));
             return NULL;
         }
     }
 
-    if ( filename.startsWith( ":" )) {
+    // generate icon
+    byte *buffer;
+    long len = fs.readFile( filename, &buffer, Sys_Filesystem::Silent );
+
+    // any icon?
+    if ( len > 0 ) {
         this->imageResources << new imageResourceDef_t;
-        if ( width > 0 && height > 0 ) {
-            this->imageResources.last()->image = QImage( filename ).scaled( QSize( width, height ));
-        } else
-            this->imageResources.last()->image = QImage( filename );
+        if ( width > 0 && height > 0 )
+            this->imageResources.last()->image = QImage::fromData( QByteArray (( const char* )buffer, len )).scaled( QSize( width, height ));
+        else
+            this->imageResources.last()->image = QImage::fromData( QByteArray (( const char* )buffer, len ));
+
         this->imageResources.last()->name = filename;
         this->ui->consoleScreen->document()->addResource( QTextDocument::ImageResource, QUrl( filename ), this->imageResources.last()->image );
         return &this->imageResources.last()->image;
-    } else {
-        // generate icon
-        byte *buffer;
-        int len = fs.readFile( filename, &buffer, FS_FLAGS_SILENT );
+    } else
+        com.error( Sys_Common::SoftError, this->tr( "Gui_Main::addImageResource: could not add image \"%1\"\n" ).arg( filename ));
 
-        // any icon?
-        if ( len > 0 ) {
-            this->imageResources << new imageResourceDef_t;
-            if ( width > 0 && height > 0 )
-                this->imageResources.last()->image = QImage::fromData( QByteArray (( const char* )buffer, len )).scaled( QSize( width, height ));
-            else
-                this->imageResources.last()->image = QImage::fromData( QByteArray (( const char* )buffer, len ));
-
-            this->imageResources.last()->name = filename;
-            this->ui->consoleScreen->document()->addResource( QTextDocument::ImageResource, QUrl( filename ), this->imageResources.last()->image );
-            return &this->imageResources.last()->image;
-        } else
-            com.error( ERR_SOFT, this->tr( "Gui_Main::addImageResource: could not add image \"%1\"\n" ).arg( filename ));
-    }
     return NULL;
 }
 
@@ -615,11 +620,10 @@ void Gui_Main::printImage( const QString &filename, int width, int height ) {
     }
 
     // insert image
+    this->autoScroll();
     QTextCursor cPos = this->ui->consoleScreen->textCursor();
-    cPos.movePosition( QTextCursor::End );
     cPos.insertImage( *imagePtr );
-    cPos.movePosition( QTextCursor::End );
-    this->ui->consoleScreen->setTextCursor( cPos );
+    this->autoScroll();
 }
 
 /*
@@ -634,12 +638,11 @@ void Gui_Main::addToHistory( const QString &text) {
             return;
     }
 
-    if ( this->history.count() >= MAX_CONSOLE_HISTORY ) {
+    if ( this->history.count() >= Ui::MaxConsoleHistory )
         this->history.removeFirst();
-    }
 
     this->history << text;
-    this->historyChanged = true;
+    this->setNewHistory();
 }
 
 /*
@@ -655,7 +658,7 @@ void Gui_Main::on_consoleInput_returnPressed() {
             this->addToHistory( this->ui->consoleInput->text());
 
         this->ui->consoleInput->clear();
-        this->historyOffset = 0;
+        this->resetHistoryOffset();
     }
 }
 
@@ -719,7 +722,7 @@ void Gui_Main::saveHistory( const QString &filename ) {
     // create document
     QDomDocument histFile;
 
-    if ( !this->historyChanged )
+    if ( !this->hasNewHistory())
         return;
 
     // create history tag
@@ -739,9 +742,9 @@ void Gui_Main::saveHistory( const QString &filename ) {
 
     // write out
     fileHandle_t fileOut;
-    if ( fs.fOpenFile( FS_MODE_WRITE, filename, fileOut, FS_FLAGS_SILENT ) != -1 ) {
-        fs.fPrint( fileOut, histFile.toString());
-        fs.fCloseFile( fileOut );
+    if ( fs.open( pFile::Write, filename, fileOut, Sys_Filesystem::Silent ) != -1 ) {
+        fs.print( fileOut, histFile.toString());
+        fs.close( fileOut );
     }
 }
 
@@ -755,7 +758,7 @@ void Gui_Main::loadHistory( const QString &filename ) {
 
     // read buffer
     byte *buffer;
-    int len = fs.readFile( filename, &buffer, FS_FLAGS_SILENT );
+    long len = fs.readFile( filename, &buffer, Sys_Filesystem::Silent );
 
     // failsafe
     if ( len == -1 )
@@ -772,7 +775,7 @@ void Gui_Main::loadHistory( const QString &filename ) {
 
             // check element name
             if ( QString::compare( histElement.tagName(), "history" )) {
-                com.error( ERR_SOFT, this->tr( "Sys_Cvar::loadHistory: expected <history> in \"%1\"\n" ).arg( filename ));
+                com.error( Sys_Common::SoftError, this->tr( "Gui_Main::loadHistory: expected <history> in \"%1\"\n" ).arg( filename ));
                 return;
             }
 
@@ -783,7 +786,7 @@ void Gui_Main::loadHistory( const QString &filename ) {
 
                     // check element name
                     if ( QString::compare( cmdElement.tagName(), "cmd" )) {
-                        com.error( ERR_SOFT, this->tr( "Sys_Cvar::loadHistory: expected <cmd> in \"%1\"\n" ).arg( filename ));
+                        com.error( Sys_Common::SoftError, this->tr( "Gui_Main::loadHistory: expected <cmd> in \"%1\"\n" ).arg( filename ));
                         return;
                     }
 
@@ -821,7 +824,7 @@ void Gui_Main::addToolBarAction( const QString &name, const QString &icon, cmdCo
     // failsafe
     foreach ( customActionDef_t *actionPtr, this->toolBarActions ) {
         if ( !QString::compare( name, actionPtr->action->objectName())) {
-            com.error( ERR_SOFT, this->tr( "Gui_Main::addAction: action \"%1\" already exists\n" ).arg( name ));
+            com.error( Sys_Common::SoftError, this->tr( "Gui_Main::addAction: action \"%1\" already exists\n" ).arg( name ));
             return;
         }
     }
@@ -837,7 +840,7 @@ void Gui_Main::addToolBarAction( const QString &name, const QString &icon, cmdCo
         this->toolBarActions.last()->action->setIcon( QIcon( name ));
     } else {
         byte *buffer;
-        int len = fs.readFile( icon, &buffer, FS_FLAGS_SILENT );
+        long len = fs.readFile( icon, &buffer, Sys_Filesystem::Silent );
 
         // any icon?
         if ( len > 0 ) {
@@ -890,62 +893,77 @@ void Gui_Main::customActionSlot() {
 setConsoleState
 ===============
 */
-void Gui_Main::setConsoleState( int state ) {
-    if ( state == CONSOLE_STATE_LOCKED )
+void Gui_Main::setConsoleState( ModuleAPI::ConsoleState state ) {
+    if ( state == ModuleAPI::ConsoleLocked )
         this->ui->tabConsole->setDisabled( true );
-    else if ( state == CONSOLE_STATE_UNLOCKED )
+    else if ( ModuleAPI::ConsoleUnlocked )
         this->ui->tabConsole->setEnabled( true );
 }
 
 /*
 ===============
-addTab
+addTabExt
 ===============
 */
-void Gui_Main::addTab( QWidget *widget, const QString &name, const QString &icon ) {
+void Gui_Main::addTabExt( TabDestinations dest, QWidget *widget, const QString &name, const QString &icon ) {
+    QTabWidget *destWidget;
+
+    // check destination
+    if ( dest == Gui_Main::MainWindow )
+        destWidget = this->ui->tabWidget;
+    else
+        destWidget = this->settings->settingsTabWidget;
+
     // failsafe
-    foreach ( customTabDef_t *customTabPtr, this->tabWidgetTabs ) {
+    foreach ( customTabDef_t *customTabPtr, this->tabWidgetTabs[dest] ) {
         if ( !QString::compare( name, customTabPtr->name )) {
-            com.error( ERR_SOFT, this->tr( "Gui_Main::addTab: tab already exists\n" ));
+            com.error( Sys_Common::SoftError, this->tr( "Gui_Main::addTabExt: tab already exists\n" ));
             return;
         }
     }
 
     // generate icon
     if ( name.startsWith( ":" )) {
-        this->ui->tabWidget->addTab( widget, QIcon( name ), name );
+        destWidget->addTab( widget, QIcon( name ), name );
     } else {
         byte *buffer;
-        int len = fs.readFile( icon, &buffer, FS_FLAGS_SILENT );
+        long len = fs.readFile( icon, &buffer, Sys_Filesystem::Silent );
 
         // any icon?
         if ( len > 0 ) {
             QPixmap pixMap;
             pixMap.loadFromData( QByteArray (( const char* )buffer, len ));
-            this->ui->tabWidget->addTab( widget, QIcon( pixMap ), name );
+            destWidget->addTab( widget, QIcon( pixMap ), name );
         } else
-            this->ui->tabWidget->addTab( widget, name );
+            destWidget->addTab( widget, name );
     }
 
     // dd, store index
-    this->tabWidgetTabs << new customTabDef_t;
-    this->tabWidgetTabs.last()->name = name;
-    this->tabWidgetTabs.last()->index = this->ui->tabWidget->count() - 1;
+    this->tabWidgetTabs[dest] << new customTabDef_t;
+    this->tabWidgetTabs[dest].last()->name = name;
+    this->tabWidgetTabs[dest].last()->index = destWidget->count() - 1;
 }
 
 /*
 ===============
-removeTab
+removeTabExt
 ===============
 */
-void Gui_Main::removeTab( const QString &name ) {
+void Gui_Main::removeTabExt( TabDestinations dest, const QString &name ) {
+    QTabWidget *destWidget;
     bool reIndex;
-
     reIndex = false;
-    foreach ( customTabDef_t *customTabPtr, this->tabWidgetTabs ) {
+
+    // check destination
+    if ( dest == Gui_Main::MainWindow )
+        destWidget = this->ui->tabWidget;
+    else
+        destWidget = this->settings->settingsTabWidget;
+
+    foreach ( customTabDef_t *customTabPtr, this->tabWidgetTabs[dest] ) {
         if ( !QString::compare( name, customTabPtr->name )) {
             reIndex = true;
-            this->ui->tabWidget->removeTab( customTabPtr->index );
+            destWidget->removeTab( customTabPtr->index );
         }
 
         if ( reIndex )
@@ -959,7 +977,7 @@ setActiveTab
 ===============
 */
 void Gui_Main::setActiveTab( const QString &name ) {
-    foreach ( customTabDef_t *customTabPtr, this->tabWidgetTabs ) {
+    foreach ( customTabDef_t *customTabPtr, this->tabWidgetTabs[Gui_Main::MainWindow] ) {
         if ( !QString::compare( name, customTabPtr->name )) {
             this->ui->tabWidget->setCurrentIndex( customTabPtr->index );
         }
