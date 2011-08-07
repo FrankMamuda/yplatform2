@@ -18,30 +18,36 @@
 HEADERS += \
     applet/app_main.h \
     common/sys_shared.h \
-    gui/gui_main.h \
     common/sys_common.h \
     common/sys_cmd.h \
     common/sys_cvar.h \
     common/sys_filesystem.h \
-    common/sys_package.h \
-    gui/gui_about.h \
     common/sys_module.h \
-    modules/mod_public.h \
     common/sys_cvarfunc.h \
-    common/sys_modulefunc.h
+    common/sys_modulefunc.h \
+    gui/gui_main.h \
+    gui/gui_about.h \
+    modules/mod_public.h \
+    common/sys_package.h \
+    common/sys_packagefunc.h \
+    gui/gui_settings.h
+
+win32:HEADERS += common/sys_link.h
 
 SOURCES += \
     applet/app_main.cpp \
-    gui/gui_main.cpp \
     common/sys_common.cpp \
     common/sys_cmd.cpp \
     common/sys_cvar.cpp \
     common/sys_filesystem.cpp \
-    common/sys_package.cpp \
-    gui/gui_about.cpp \
     common/sys_module.cpp \
     common/sys_cvarfunc.cpp \
-    common/sys_modulefunc.cpp
+    common/sys_modulefunc.cpp \
+    gui/gui_main.cpp \
+    gui/gui_about.cpp \
+    common/sys_package.cpp \
+    common/sys_packagefunc.cpp \
+    gui/gui_settings.cpp
 
 win32:INCLUDEPATH += includes
 
@@ -49,7 +55,8 @@ QT += xml
 
 FORMS += \
     gui/gui_main.ui \
-    gui/gui_about.ui
+    gui/gui_about.ui \
+    gui/gui_settings.ui
 
 OTHER_FILES += \
     CHANGELOG.txt

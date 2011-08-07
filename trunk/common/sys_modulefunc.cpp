@@ -18,7 +18,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 ===========================================================================
 */
 
-
 //
 // includes
 //
@@ -27,13 +26,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_filesystem.h"
 #include "sys_cvar.h"
 #include "sys_module.h"
-
-//
-// classes
-//
-extern class Sys_Common com;
-extern class Sys_Filesystem fs;
-extern class Sys_Module mod;
 
 //
 // cvars
@@ -46,8 +38,9 @@ construct
 ================
 */
 pModule::pModule( const QString &moduleName ) {
-    this->loaded = false;
-    this->name = moduleName;
+    this->setLoaded( false );
+    this->setName( moduleName );
+    this->setType( Module );
 }
 
 /*
@@ -55,8 +48,17 @@ pModule::pModule( const QString &moduleName ) {
 platformSyscalls
 =================
 */
-intptr_t platformSyscalls( int callNum, int numArgs, intptr_t *args ) {
+intptr_t platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int numArgs, intptr_t *args ) {
     return mod.platformSyscalls( callNum, numArgs, args );
+}
+
+/*
+=================
+rendererSyscalls
+=================
+*/
+intptr_t rendererSyscalls( RendererAPI::RendererAPICalls callNum, int numArgs, intptr_t *args ) {
+    return mod.rendererSyscalls( callNum, numArgs, args );
 }
 
 /*
@@ -66,8 +68,13 @@ unload
 */
 void pModule::unload() {
     if ( this->handle != NULL ) {
-        this->call( MOD_SHUTDOWN );
-        this->handle->unload();
+        if ( this->type() == Renderer )
+            this->re.shutdown();
+        else
+            this->call( ModuleAPI::Shutdown );
+
+        // dd, it seems like we cannot perform unload, it crashes for some reason
+        //this->handle->unload();
         delete this->handle;
     }
 }
@@ -78,7 +85,8 @@ update
 ================
 */
 void pModule::update() {
-    this->call( MOD_UPDATE );
+    if ( this->type() != Renderer )
+        this->call( ModuleAPI::Update );
 }
 
 /*
@@ -89,37 +97,74 @@ loadHandle
 void pModule::loadHandle() {
     // attempt loading
     if ( this->handle->load()) {
-        this->modMain = ( modMainDef )this->handle->resolve( "modMain" );
+        // resolve main entry (renderer uses different structure)
+        if ( this->type() == Module ) {
+            this->modMain = ( modMainExtDef )this->handle->resolve( "modMain" );
+            this->renderer = ( rendererEntryDef )this->handle->resolve( "modRendererEntry" );
+        } else if ( this->type() == Renderer )
+            this->modMain = ( modMainExtDef )this->handle->resolve( "rendererMain" );
+
+        // resolve syscall entry
         this->entry = ( modEntryDef )this->handle->resolve( "modEntry" );
 
         // see if we have properly resolved entry/main functions
         if ( !this->modMain || !this->entry ) {
-            this->errorMessage = this->tr( "could not load module: errorString: %1" ).arg( this->handle->errorString());
+            this->setErrorMessage( this->tr( "could not load module: errorString: %1" ).arg( this->handle->errorString()));
             this->handle->unload();
             delete this->handle;
         } else {
             // pass platform syscalls
             this->entry( platformSyscalls );
 
-            // produce call to the module
-            int version = this->call( MOD_API );
-            if ( version > MODULE_API_VERSION )
-                this->errorMessage = this->tr( "API version mismatch - %1, expected less or equal to %2" ).arg( version ).arg( MODULE_API_VERSION );
-            else {
-                com.print( this->tr( "^2Sys_Module::loadHandle: successfully loaded module \"%1\" with API - %2\n" ).arg( this->name ).arg( version ));
+            // pass renderer calls if needed
+            if ( this->type() == Module && this->renderer )
+                this->renderer( rendererSyscalls );
 
-                // perform initialization
-                if ( this->call( MOD_INIT )) {
-                    // success
-                    return;
-                } else {
-                    this->errorMessage = this->tr( "Module could be initialized" );
+            // produce call to the module
+            unsigned int version = 0;
+            if ( this->type() == Renderer )
+                version = (( rendererMainDef )this->modMain )( &this->re );
+            else
+                version = this->call( ModuleAPI::ModAPI );
+
+            if ( this->type() == Module ) {
+                if ( version > ModuleAPI::Version ) {
+                    this->setErrorMessage( this->tr( "Module API version mismatch - %1, expected less or equal to %2" ).arg( version ).arg( ModuleAPI::Version ));
                     delete this->handle;
-                }
+                    return;
+                } else
+                    com.print( this->tr( "^2pModule::loadHandle: successfully loaded module \"%1\" with API - %2\n" ).arg( this->name()).arg( version ));
+            } else if ( this->type() == Renderer ) {
+                if ( version > RendererAPI::Version ) {
+                    this->setErrorMessage( this->tr( "Renderer API version mismatch - %1, expected less or equal to %2" ).arg( version ).arg( RendererAPI::Version ));
+                    delete this->handle;
+                    return;
+                } else
+                    com.print( this->tr( "^2pModule::loadHandle: successfully loaded renderer with API - %1\n" ).arg( version ));
+            }
+
+            // perform initialization
+            bool mInit;
+            if ( this->type() == Renderer ) {
+                this->re.init();
+                mInit = this->re.initialized;
+            } else
+                mInit = this->call( ModuleAPI::Init );
+
+            if ( mInit ) {
+                // success
+                return;
+            } else {
+                if ( this->type() == Renderer )
+                    this->setErrorMessage( this->tr( "Module could be initialized" ));
+                else if ( this->type() == Renderer )
+                    this->setErrorMessage( this->tr( "Renderer could be initialized" ));
+
+                delete this->handle;
             }
         }
     } else {
-        this->errorMessage = this->tr( "%1" ).arg( this->handle->errorString());
+        this->setErrorMessage( this->tr( "%1" ).arg( this->handle->errorString()));
         delete this->handle;
     }
 }
@@ -134,10 +179,10 @@ void pModule::load() {
     QString modName;
 
     // generate filename
-    if ( this->filename.isEmpty())
-        modName = this->name;
+    if ( this->filename().isEmpty())
+        modName = this->name();
     else
-        modName = this->filename;
+        modName = this->filename();
 
     QString filename = QString( "modules/%1%2_%3_%4.%5" )
             .arg( LIBRARY_PREFIX )
@@ -148,28 +193,28 @@ void pModule::load() {
 
     // check if it exists in package and copy it (if we allow it)
     if ( mod_extract->integer()) {
-        int flags = FS_FLAGS_SILENT;
+        Sys_Filesystem::OpenFlags flags = Sys_Filesystem::Silent;
         QString mName = filename;
-        if ( fs.fileExists( mName, flags, searchPathIndex )) {
-            if (!( flags & FS_FLAGS_LINKED )) {
-                searchPath_t *sp = fs.searchPaths.at( searchPathIndex );
-                if ( sp->type == SEARCHPATH_PACKAGE )
-                    fs.extractFromPackage( filename );
+        if ( fs.exists( mName, flags, searchPathIndex )) {
+            if (!( flags.testFlag( Sys_Filesystem::Linked ))) {
+                pSearchPath *sp = fs.searchPaths.at( searchPathIndex );
+                if ( sp->type() == pFile::Package )
+                    fs.extract( filename );
             }
         } else {
-            this->errorMessage = this->tr( "Could not find module" );
+            this->setErrorMessage( this->tr( "Could not find module \"%1\"\n" ).arg( modName ));
             return;
         }
     }
 
     // check if it exists (need to double check since it could be extracted)
-    int flags = 0;
-    if ( fs.fileExists( filename, flags, searchPathIndex )) {
-        if ( !( flags & FS_FLAGS_LINKED )) {
-            searchPath_t *sp = fs.searchPaths.at( searchPathIndex );
-            if ( sp->type == SEARCHPATH_DIRECTORY ) {
+    Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags;
+    if ( fs.exists( filename, flags, searchPathIndex )) {
+        if ( !( flags.testFlag( Sys_Filesystem::Linked ))) {
+            pSearchPath *sp = fs.searchPaths.at( searchPathIndex );
+            if ( sp->type() == pFile::Directory ) {
                 // allocate library handle
-                this->handle = new QLibrary( sp->path + filename );
+                this->handle = new QLibrary( sp->path() + filename );
                 this->loadHandle();
             }
         } else {
@@ -178,8 +223,7 @@ void pModule::load() {
             this->loadHandle();
         }
     } else {
-        this->errorMessage = this->tr( "Could not load module" );
+        this->setErrorMessage( this->tr( "Could not load module" ));
         return;
     }
 }
-

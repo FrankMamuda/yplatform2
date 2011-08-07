@@ -34,12 +34,12 @@ extern class Mod_Trap mt;
 construct
 ============
 */
-mCvar::mCvar( const QString &name, const QString &string, int flags, const QString &desc ) {
+mCvar::mCvar( const QString &name, const QString &string, pCvar::Flags flags, const QString &desc ) {
     // set the defaults
     this->flags = flags;
-    this->name = name;
-    this->stringValue = string;
-    this->description = desc;
+    this->setName( name );
+    this->setString( string );
+    this->setDescription( desc );
 }
 
 /*
@@ -52,24 +52,15 @@ mCvar::~mCvar() {
 
 /*
 ============
-string
-============
-*/
-QString mCvar::string() {
-    return this->stringValue;
-}
-
-/*
-============
 integer
 ============
 */
-int mCvar::integer() {
+int mCvar::integer() const {
     bool valid;
     int y;
 
     // set integer if any
-    y = this->stringValue.toInt( &valid );
+    y = this->string().toInt( &valid );
 
     // all ok, return integer value
     if ( valid )
@@ -83,12 +74,12 @@ int mCvar::integer() {
 value
 ============
 */
-float mCvar::value() {
+float mCvar::value() const {
     bool valid;
     float y;
 
     // set integer if any
-    y = this->stringValue.toFloat( &valid );
+    y = this->string().toFloat( &valid );
 
     // all ok, return float value
     if ( valid )
@@ -103,10 +94,17 @@ set
 ============
 */
 bool mCvar::set( const QString &string, bool force ) {
-    // call platform
-    return mt.cvarSet( this->name, string, force );
-}
+    bool ret;
 
+    // call platform
+    ret = mt.cvarSet( this->name(), string, force );
+
+    // set local cvar
+    this->setString( mt.cvarGet( this->name()));
+
+    // return result
+    return ret;
+}
 
 /*
 ============
@@ -114,23 +112,23 @@ update
 ============
 */
 void mCvar::update( const QString &string ) {
-    this->stringValue = string;
+    this->setString( string );
 }
 
 /*
 ============
-setInteger
+set (integer)
 ============
 */
-bool mCvar::setInteger( int integer ) {
-    return this->set( QString( "%1" ).arg( integer ));
+bool mCvar::set( int integer, bool force ) {
+    return this->set( QString( "%1" ).arg( integer ), force );
 }
 
 /*
 ============
-setValue
+set (value)
 ============
 */
-bool mCvar::setValue( float value ) {
-    return this->set( QString( "%1" ).arg( value ));
+bool mCvar::set( float value, bool force ) {
+    return this->set( QString( "%1" ).arg( value ), force );
 }

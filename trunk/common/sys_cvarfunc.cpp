@@ -22,28 +22,23 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // includes
 //
 #include "sys_cvarfunc.h"
+#include "sys_cvar.h"
 #include "sys_common.h"
 #include "sys_module.h"
-
-//
-// classes
-//
-extern class Sys_Common com;
-extern class Sys_Module mod;
 
 /*
 ============
 construct
 ============
 */
-pCvar::pCvar( const QString &name, const QString &string, int flags, const QString &desc, bool mCvar ) {
+pCvar::pCvar( const QString &name, const QString &string, Flags flags, const QString &desc, bool mCvar ) {
     // set the defaults
     this->flags = flags;
-    this->name = name;
-    this->stringValue = string;
-    this->reset = string;
-    this->latch = QString::null;
-    this->description = desc;
+    this->setName( name );
+    this->setString( string );
+    this->setResetString( string );
+    this->setLatchString();
+    this->setDescription( desc );
 
     // perform module cvar updates when needed (instead of reloading value on each frame)
     if ( mCvar )
@@ -60,24 +55,15 @@ pCvar::~pCvar() {
 
 /*
 ============
-string
-============
-*/
-QString pCvar::string() {
-    return this->stringValue;
-}
-
-/*
-============
 integer
 ============
 */
-int pCvar::integer() {
+int pCvar::integer() const {
     bool valid;
     int y;
 
     // set integer if any
-    y = this->stringValue.toInt( &valid );
+    y = this->string().toInt( &valid );
 
     // all ok, return integer value
     if ( valid )
@@ -91,12 +77,12 @@ int pCvar::integer() {
 value
 ============
 */
-float pCvar::value() {
+float pCvar::value() const {
     bool valid;
     float y;
 
     // set integer if any
-    y = this->stringValue.toFloat( &valid );
+    y = this->string().toFloat( &valid );
 
     // all ok, return float value
     if ( valid )
@@ -111,26 +97,26 @@ set
 ============
 */
 bool pCvar::set( const QString &string, bool force ) {
-    if ( this->flags & CVAR_ROM && !force ) {
-        com.print( this->tr( " ^1'%1' is read only\n" ).arg( this->name ));
+    if ( this->flags.testFlag( ReadOnly ) && !force ) {
+        com.print( this->tr( " ^1'%1' is read only\n" ).arg( this->name()));
 #if 0
         // disabled for now
         // to be enabled when Gui_Settings is complete
-    } else if ( this->flags & CVAR_PASSWORD && !com.developerMode ) {
-        com.print( this->tr( " ^1'%1' is password protected\n" ).arg( this->name ));
+    } else if ( this->flags.testFlag( Password ) && !com.developerMode ) {
+        com.print( this->tr( " ^1'%1' is password protected\n" ).arg( this->name()));
 #endif
-    } else if ( this->flags & CVAR_LATCH && !force ) {
-        if ( !this->latch.isEmpty()) {
-            if ( !QString::compare( this->stringValue, string ))
+    } else if ( this->flags.testFlag( Latched ) && !force ) {
+        if ( !this->latchString().isEmpty()) {
+            if ( !QString::compare( this->string(), string ))
                 return true;
         }
-        if ( QString::compare( this->latch, string ))
-            this->latch = string;
-        com.print( this->tr( " ^3'%1' will be changed upon restart\n" ).arg( this->name ));
+        if ( QString::compare( this->latchString(), string ))
+            this->setLatchString( string );
+        com.print( this->tr( " ^3'%1' will be changed upon restart\n" ).arg( this->name()));
     } else {
-        if ( QString::compare( this->stringValue, string )) {
-            this->stringValue = string;
-            emit valueChanged( this->name, this->stringValue );
+        if ( QString::compare( this->string(), string )) {
+            this->setString( string );
+            emit valueChanged( this->name(), this->string());
         }
     }
     return true;
@@ -138,18 +124,18 @@ bool pCvar::set( const QString &string, bool force ) {
 
 /*
 ============
-setInteger
+set (integer)
 ============
 */
-bool pCvar::setInteger( int integer ) {
-    return this->set( QString( "%1" ).arg( integer ));
+bool pCvar::set( int integer, bool force ) {
+    return this->set( QString( "%1" ).arg( integer ), force );
 }
 
 /*
 ============
-setValue
+set (value)
 ============
 */
-bool pCvar::setValue( float value ) {
-    return this->set( QString( "%1" ).arg( value ));
+bool pCvar::set( float value, bool force ) {
+    return this->set( QString( "%1" ).arg( value ), force );
 }

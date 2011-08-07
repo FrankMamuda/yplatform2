@@ -27,22 +27,19 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../common/sys_shared.h"
 #include "../common/sys_cmd.h"
 #include "../modules/mod_public.h"
+#include "../gui/gui_settings.h"
 #ifndef MODULE_BUILD
 #include <QtGui>
 #endif
 
 //
-// defines
-//
-#define MAX_CONSOLE_HISTORY 32
-#define DEFAULT_HISTORY_FILE "history.xml"
-#define DEFAULT_TOOBAR_ICON_SIZE 48
-
-//
 // namespaces
 //
 namespace Ui {
-class Gui_Main;
+    class Gui_Main;
+    static const int MaxConsoleHistory = 32;
+    static const int DefaultToolbarIconSize = 48;
+    static const QString DefaultHistoryFile( "history.xml" );
 }
 
 // custom actions
@@ -62,32 +59,36 @@ typedef struct imageResourceDef_s {
 } imageResourceDef_t;
 
 //
-// classes
+// class:Gui_Main
 //
 class Gui_Main : public QMainWindow {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Platform main window" )
+    Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
+    Q_PROPERTY( bool tray READ hasTray WRITE setTrayInitialized )
+    Q_PROPERTY( bool visible READ isVisible WRITE setVisibility )
+    Q_PROPERTY( bool newText READ hasNewText WRITE setNewText )
+    Q_PROPERTY( bool historyChanged READ hasNewHistory WRITE setNewHistory )
+    Q_PROPERTY( int  historyOffset READ historyOffset WRITE setHistoryOffset RESET resetHistoryOffset )
+    Q_ENUMS( TabDestinations )
 
 public:
+    enum TabDestinations {
+        MainWindow,
+        Settings
+    };
+
     explicit Gui_Main( QWidget *parent = 0 );
     ~Gui_Main();
-    void print( const QString &msg, int fontSize = 10 );
-    void printHtml( const QString &html );
-    void addToCompleter( const QString &cmd );
-    void removeFromCompleter( const QString &cmd );
     QStringList cmdList;
-    bool newConsoleText;
-    void saveHistory( const QString &filename );
-    void loadHistory( const QString &filename );
-    bool initialized;
-    bool trayInitialized;
-    bool visible;
-    void addToolBarAction( const QString &name, const QString &icon, cmdCommand_t callBack );
-    void removeAction( const QString &name );
-    void addTab( QWidget *widget, const QString &name, const QString &icon );
-    void removeTab( const QString &name );
-    void setActiveTab( const QString &name );
-    void setConsoleState( int state );
-    void printImage( const QString &filename, int w = 0, int h = 0 );
+
+    // property getters
+    bool hasInitialized() const { return this->m_initialized; }
+    bool hasTray() const { return this->m_tray; }
+    bool isVisible() const { return this->m_visible; }
+    bool hasNewText() const { return this->m_newText; }
+    bool hasNewHistory() const { return this->m_historyChanged; }
+    int  historyOffset() const { return this->m_historyOffset; }
 
 protected:
     void changeEvent( QEvent *e );
@@ -96,11 +97,8 @@ protected:
 
 private:
     Ui::Gui_Main *ui;
-    void addToHistory( const QString &text );
     QStringList lastMatch;
     QStringList history;
-    int historyOffset;
-    bool historyChanged;
     QImage *addImageResource( const QString &filename, int w = 0, int h = 0 );
 
     // actions
@@ -110,7 +108,7 @@ private:
     QList <customActionDef_t*>toolBarActions;
 
     // tabs
-    QList <customTabDef_t*>tabWidgetTabs;
+    QList <customTabDef_t*>tabWidgetTabs[2];
 
     // tray
     QMenu *trayIconMenu;
@@ -124,13 +122,55 @@ private:
     // resources
     QList <imageResourceDef_t*>imageResources;
 
+    // properties
+    bool m_initialized;
+    bool m_tray;
+    bool m_visible;
+    bool m_newText;
+    bool m_historyChanged;
+    int  m_historyOffset;
+
+    // settings
+    Gui_Settings *settings;
+
 public slots:
-    void shutdown();
+    // initialization & gui
     void init();
+    void shutdown();
     void freeze();
-    void removeSystemTray();
-    void createSystemTray();
     void hideOrMinimize();
+    void setWindowFocus();
+    void autoScroll();
+    void addTabExt( TabDestinations dest, QWidget *widget, const QString &name, const QString &icon );
+    void removeTabExt( TabDestinations dest, const QString &name );
+
+    // systray
+    void createSystemTray();
+    void removeSystemTray();
+
+    // toolbar & tabs
+    void addToolBarAction( const QString &name, const QString &icon, cmdCommand_t callBack );
+    void removeAction( const QString &name );
+    void setActiveTab( const QString &name );
+
+    // printing & console
+    void print( const QString &msg, int fontSize = 10 );
+    void printImage( const QString &filename, int w = 0, int h = 0 );
+    void printHtml( const QString &html );
+    void setConsoleState( ModuleAPI::ConsoleState state );
+    void addToCompleter( const QString &cmd );
+    void removeFromCompleter( const QString &cmd );
+
+    // property setters
+    void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
+    void setTrayInitialized( bool intialized = true ) { this->m_tray = intialized; }
+    void setVisibility( bool visiblity = true ) { this->m_visible = visiblity; }
+    void setNewText( bool text = true ) { this->m_newText = text; }
+    void setNewHistory( bool hist = true ) { this->m_historyChanged = hist; }
+    void setHistoryOffset( int offset ) { this->m_historyOffset = offset; }
+    void resetHistoryOffset() { this->m_historyOffset = 0; }
+    void pushHistoryOffset() { this->m_historyOffset++; }
+    void popHistoryOffset() { this->m_historyOffset--; }
 
 private slots:
     void actionAboutTriggered();
@@ -140,6 +180,11 @@ private slots:
     void iconActivated( QSystemTrayIcon::ActivationReason reason );
     void customActionSlot();
     void toolBarIconSizeModified();
+
+    // history
+    void addToHistory( const QString &text );
+    void saveHistory( const QString &filename );
+    void loadHistory( const QString &filename );
 };
 
 #endif // GUI_MAIN_H

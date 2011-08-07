@@ -27,34 +27,53 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_shared.h"
 #include "../gui/gui_main.h"
 
-// error types
-enum {
-    ERR_SOFT,
-    ERR_FATAL
-};
+//
+// namespaces
+//
+namespace Common {
+    class Sys_Common;
+}
 
 //
-// class::Sys_Common
+// class:Sys_Common
 //
 class Sys_Common : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Platform common functions" )
+    Q_PROPERTY( bool pError READ hasCaughtError WRITE catchError )
+    Q_PROPERTY( Gui_Main *gui READ gui WRITE setGui )
+    Q_ENUMS( ErrorTypes )
 
 public:
+    // enums
+    enum ErrorTypes {
+        SoftError = 0,
+        FatalError
+    };
     void print( const QString &msg, int fontSize = 10 );
-    Gui_Main *gui;
-    void error( int type, const QString &msg );
-    bool caughtFatalError;
+    void error( ErrorTypes type, const QString &msg );
+    bool hasCaughtError() const { return this->m_pError; }
+    Gui_Main *gui() { return this->m_gui; }
     int milliseconds();
 
 private:
     unsigned long timeBase;
+    bool m_pError;
+    Gui_Main *m_gui;
 
 signals:
 
 public slots:
-
+    void setGui( Gui_Main *gui ) { this->m_gui = gui; }
+    void catchError( bool error = true ) { this->m_pError = error; }
 };
+
+//
+// externals
+//
+#ifndef MODULE_LIBRARY
+extern class Sys_Common com;
+#endif
 
 // byte order
 short shortSwap( short );
@@ -62,7 +81,7 @@ int longSwap( int );
 float floatSwap( const float* );
 
 typedef union {
-    float   f;
+    float f;
     unsigned int i;
 } floatByteUnion;
 

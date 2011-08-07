@@ -30,19 +30,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../gui/gui_main.h"
 
 //
-// defines
+// classes
 //
 class App_Main m;
-extern class Sys_Common com;
-extern class Sys_Cmd cmd;
-extern class Sys_Cvar cv;
-extern class Sys_Filesystem fs;
-extern class Sys_Module mod;
-
-//
-// externals
-//
-extern void cmdParseManifest();
 
 //
 // commands
@@ -59,20 +49,22 @@ shutdown
 */
 void App_Main::shutdown() {
     // make sure we exit event loop
-    m.timer->stop();
+    this->timer->stop();
 
     // shut down subsystems
-    if ( !com.caughtFatalError ) {
-        cmd.removeCommand( "exit" );
+    if ( !com.hasCaughtError()) {
+        com.gui()->shutdown();
+        mod.shutdown();
+        cmd.remove( "exit" );
 #ifndef YP2_FINAL_RELEASE
-        cmd.removeCommand( "fatalError" );
+        cmd.remove( "fatalError" );
 #endif
-        cv.saveConfig( DEFAULT_CONFIG_FILE );
-        com.gui->shutdown();
+        cv.saveConfig( Cvar::DefaultConfigFile );
+        //com.gui->shutdown();
         cmd.shutdown();
+        pkg.shutdown();
         fs.shutdown();
         cv.shutdown();
-        mod.shutdown();
     }
 
     QApplication::quit();
@@ -86,35 +78,44 @@ parseArgs
 void App_Main::parseArgs( int argc, char *argv[] ) {
     int y;
     QList<QString> argList;
-    QString command;
+    QString cmdLine;
 
-    // compile a list for easier handling
-    for ( y = 1; y < argc; y++ )
-        argList << argv[y];
+    // failsafe
+    if ( argc <= 1 )
+        return;
+
+    // merge commandline
+    for ( y = 1; y < argc; y++ ) {
+        // this is dirrty, but we need to envelope string in quotes
+        // since they are removed by commandline
+        QString arg( argv[y] );
+        if ( arg.contains( " " )) {
+            arg.prepend( "\"" );
+            arg.append( "\"" );
+        }
+        cmdLine.append( QString( "%1 " ).arg( arg ));
+    }
+
+    // failsafe
+    if ( !cmdLine.startsWith( "+" )) {
+        com.error( Sys_Common::SoftError, this->tr( "App_Main::parseArgs: arguments must start with '+'\n" ));
+        return;
+    }
+
+    // compile a list of args
+    argList = cmdLine.split( "+" );
 
     // nothing? - leave!
     if ( argList.isEmpty())
         return;
 
-    // fast check
-    if ( !argList.first().startsWith( "+" )) {
-        com.error( ERR_SOFT, this->tr( "App_Main::parseArgs: arguments must start with '+'\n" ));
-        return;
-    }
-
     // reset counter
     y = 0;
-
-    // compile commands and args, execute
     foreach ( QString str, argList ) {
-        if (( y != 0 && str.startsWith( "+" ))) {
-            cmd.execute( command.remove( "+" ));
-            command.clear();
-        }
-        command.append( str + " " );
+        if ( y != 0 )
+            cmd.execute( str );
         y++;
     }
-    cmd.execute( command.remove( "+" ));
 }
 
 /*
@@ -123,7 +124,12 @@ update
 ================
 */
 void App_Main::update() {
-    mod.update();
+    if ( !com.hasCaughtError())
+        mod.update();
+
+    // dd: HACK to ensure autoscroll works (dirrty, I know)
+    if ( com.milliseconds() < 1000 )
+        com.gui()->autoScroll();
 }
 
 /*
@@ -134,7 +140,7 @@ cmdFatalError
 #ifndef YP2_FINAL_RELEASE
 void App_Main::fatalError() {
     // for debugging (of gui in general)
-    com.error( ERR_FATAL, this->tr( "cmdFatalError: we have failed\n" ));
+    com.error( Sys_Common::FatalError, this->tr( "cmdFatalError: we have failed\n" ));
 }
 #endif
 
@@ -162,7 +168,7 @@ int App_Main::startup( int argc, char *argv[] ) {
 
     // create ui
     gui.show();
-    com.gui = &gui;
+    com.setGui( &gui );
 
     // init subsystems
     cmd.init();
@@ -171,24 +177,24 @@ int App_Main::startup( int argc, char *argv[] ) {
     mod.init();
 
     // parse config only AFTER filesystem has been initialized
-    cv.parseConfig( DEFAULT_CONFIG_FILE );
-    com.gui->init();
+    cv.parseConfig( Cvar::DefaultConfigFile );
+    com.gui()->init();
 
 #ifndef YP2_FINAL_RELEASE
-    cmd.addCommand( "fatalError", fatalErrorCmd, this->tr( "let's have some fish" ));
+    cmd.add( "fatalError", fatalErrorCmd, this->tr( "let's have some fish" ));
 #endif
-    cmd.addCommand( "exit", shutdownCmd, this->tr( "shutdown platform" ));
+    cmd.add( "exit", shutdownCmd, this->tr( "shutdown platform" ));
 
     // set defaults for event handling & update subSystems
-    delay = ( 1000 / PLATFORM_UPDATE_FREQUENCY );
+    delay = ( 1000 / Main::PlatformUpdateFrequency );
     this->timer = new QTimer( this );
     connect( this->timer, SIGNAL( timeout()), this, SLOT( update()));
     this->timer->start( delay );
 
     // print info
-    com.gui->printImage( ":/icons/settings", 24, 24 );
+    com.gui()->printImage( ":/icons/settings", 24, 24 );
     com.print( this->tr( " ^5Platform: ^3initialization complete\n" ), 12 );
-    com.gui->printImage( ":/icons/about", 16, 16 );
+    com.gui()->printImage( ":/icons/about", 16, 16 );
     com.print( this->tr( "^5 Info: ^3to see full command list, execute \"^5cmd_list^3\", use ^5TAB^3 for completion\n" ));
 
     // check args after base system has init

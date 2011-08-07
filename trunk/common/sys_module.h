@@ -29,10 +29,34 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../modules/mod_public.h"
 
 //
-// class::Sys_Module
+// namespaces
+//
+namespace Module {
+    class Sys_Module;
+}
+
+//
+// class:pModuleWidget
+//
+class pModuleWidget : public QWidget {
+protected:
+    void keyPressEvent( QKeyEvent *event ) {
+        // catch ESC
+        if ( event->key() == Qt::Key_Escape ) {
+            this->close();
+            return;
+        }
+
+        QWidget::keyPressEvent( event );
+    }
+};
+
+//
+// class:Sys_Module
 //
 class Sys_Module : public QObject {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Module handling subsystem" )
 
 public slots:
     void init();
@@ -50,7 +74,7 @@ public slots:
 
 private:
     QList<pModule*>modList;
-    QWidget *modWidget;
+    pModuleWidget *modWidget;
     pModule *parseManifest( const QString &filename );
     QList<pModule*>preCachedList;
     QListWidget *modListWidget;
@@ -62,15 +86,21 @@ private:
     QBoxLayout *bLayout;
     QPushButton *loadButton;
     QPushButton *refreshButton;
-    //QPushButton *clearButton;
     QPushButton *closeButton;
 
 public:
-    intptr_t platformSyscalls( int callNum, int numArgs, intptr_t *args );
+    intptr_t platformSyscalls( ModuleAPI::PlatformAPICalls, int, intptr_t * );
+    intptr_t rendererSyscalls( RendererAPI::RendererAPICalls, int, intptr_t * );
 
 private slots:
     void listWidgetAction();
 };
 
-#endif // SYS_MODULE_H
+//
+// externals
+//
+#ifndef MODULE_LIBRARY
+extern class Sys_Module mod;
+#endif
 
+#endif // SYS_MODULE_H

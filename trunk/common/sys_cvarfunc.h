@@ -27,41 +27,67 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_shared.h"
 
 //
-// defines
-//
-#define CVAR_ARCHIVE    1
-#define CVAR_LATCH      2
-#define CVAR_ROM        4
-#define CVAR_USER       16
-//#define CVAR_PASSWORD   64
-#define CVAR_NULL       0xFFFFFFFF
-
-//
-// class::pCvar
+// class:pCvar
 //
 class pCvar : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Console variable" )
     Q_DISABLE_COPY( pCvar )
+    Q_PROPERTY( QString name READ name WRITE setName )
+    Q_PROPERTY( QString description READ description WRITE setDescription )
+    Q_PROPERTY( QString string READ string WRITE setString )
+    Q_PROPERTY( QString reset READ resetString WRITE setResetString )
+    Q_PROPERTY( QString latch READ latchString WRITE setLatchString )
+    Q_FLAGS( Flags Flag )
 
 public:
-    QString reset;
-    QString latch;
-    pCvar( const QString &name, const QString &string, int flags = 0, const QString &desc = QString::null, bool mCvar = false );
+    // cvar flags
+    enum Flag {
+        NoFlags     = 0,
+        Archive     = 1,
+        Latched     = 2,
+        ReadOnly    = 4/*,
+        Password  =  8*/
+    };
+    Q_DECLARE_FLAGS( Flags, Flag )
+    Flags flags;
+
+    // constructors/destructors
+    pCvar( const QString &name, const QString &string, Flags flags = NoFlags, const QString &desc = QString::null, bool mCvar = false );
     ~pCvar();
-    QString name;
-    QString stringValue;
-    QString string();
-    QString description;
-    int     flags;
-    int     integer();
+
+    // property getters
+    QString name() const { return this->m_name; }
+    QString description() const { return this->m_description; }
+    QString string() const { return this->m_string; }
+    QString resetString() const { return this->m_reset; }
+    QString latchString() const { return this->m_latch; }
+
+    // other funcs
+    int     integer() const;
+    float   value() const;
     bool    set( const QString &string, bool force = false );
-    float   value();
-    bool    setInteger( int );
-    bool    setValue( float );
+    bool    set( int, bool force = false );
+    bool    set( float, bool force = false );
+
+public slots:
+    // property setters
+    void setName( const QString &cvarName ) { this->m_name = cvarName; }
+    void setDescription( const QString &description ) { this->m_description = description; }
+    void setString( const QString &string ) { this->m_string = string; }
+    void setResetString( const QString &string ) { this->m_reset = string; }
+    void setLatchString( const QString &string = QString::null ) { this->m_latch = string; }
 
 signals:
     void valueChanged( const QString &cvar, const QString &stringValue );
+
+private:
+    // properties
+    QString m_string;
+    QString m_name;
+    QString m_description;
+    QString m_reset;
+    QString m_latch;
 };
 
 #endif // SYS_CVARFUNC_H

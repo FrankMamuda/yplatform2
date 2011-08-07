@@ -28,28 +28,30 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_cvarfunc.h"
 
 //
-// defines
+// namespaces
 //
-#define DEFAULT_CONFIG_FILE "platform.xml"
+namespace Cvar {
+    class Sys_Cvar;
+    static const QString DefaultConfigFile( "platform.xml" );
+}
 
 //
-// class::Sys_Cvar
+// class:Sys_Cvar
 //
 class Sys_Cvar : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Console variable subsystem" )
-
-private:
-    QList<pCvar*> cvars;
-    bool validate( const QString &s );
+    Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
 
 public:
-    pCvar *find( const QString &name );
-    bool initialized;
+    pCvar *find( const QString &name ) const;
     void saveConfig( const QString &filename );
     bool command();
     void parseConfig( const QString &filename, bool verbose = false );
-    pCvar *create( const QString &name, const QString &string, int flags = 0, const QString &description = QString::null, bool mCvar = false );
+    pCvar *create( const QString &name, const QString &string, pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null, bool mCvar = false );
+
+    // property getters
+    bool hasInitialized() const { return this->m_initialized; }
 
 public slots:
     void reset();
@@ -59,6 +61,23 @@ public slots:
     void shutdown();
     void create();
     void list();
+
+    // property setters
+    void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
+
+private:
+    QList<pCvar*> cvars;
+    bool validate( const QString &s ) const;
+
+    // properties
+    bool m_initialized;
 };
+
+//
+// externals
+//
+#ifndef MODULE_LIBRARY
+extern class Sys_Cvar cv;
+#endif
 
 #endif // SYS_CVAR_H

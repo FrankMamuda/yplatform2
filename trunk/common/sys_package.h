@@ -2,7 +2,6 @@
 ===========================================================================
 Original software:
 ===========================================================================
-
 Copyright (c) 1998, Gilles Vollant
 All rights reserved.
 
@@ -21,7 +20,7 @@ freely, subject to the following restrictions:
     * This notice may not be removed or altered from any source distribution.
 
 ===========================================================================
-C++ port for YPlatform2:
+C++ rewrite for YPlatform2:
 ===========================================================================
 Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
 
@@ -41,140 +40,69 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 ===========================================================================
 */
 
-#ifndef SYSPACKAGE_H
-#define SYSPACKAGE_H
+#ifndef SYS_PACKAGE_H
+#define SYS_PACKAGE_H
 
 //
 // includes
 //
 #include "sys_shared.h"
+#include "sys_filesystem.h"
+#include "sys_packagefunc.h"
 #include <zlib.h>
 
 //
-// defines
+// namespaces
 //
-typedef void *pkgFile;
-
-#define UNZ_OK                 0
-#define UNZ_EOF                0
-#define UNZ_EOLF            -100
-#define UNZ_PARAMERROR      -102
-#define UNZ_BADZIPFILE      -103
-#define UNZ_INTERNALERROR   -104
-#define UNZ_CRCERROR        -105
-
-//
-// defines
-//
-#define UNZ_BUFSIZE             16384
-#define UNZ_MAXFILENAMEINZIP    256
-#define SIZECENTRALDIRITEM      0x2e
-#define SIZEZIPLOCALHEADER      0x1e
-#define BUFREADCOMMENT          0x400
-
-// pkgTime_t contain date/time info
-typedef struct pkgTime_s  {
-    uInt tm_sec;
-    uInt tm_min;
-    uInt tm_hour;
-    uInt tm_mday;
-    uInt tm_mon;
-    uInt tm_year;
-} pkgTime_t;
-
-// global data about the package
-typedef struct globalInfo_s {
-    uLong number_entry;
-    uLong size_comment;
-} globalInfo_t;
-
-// information about a file in the zipfile
-typedef struct fileInfo_s {
-    uLong version;
-    uLong version_needed;
-    uLong flag;
-    uLong compression_method;
-    uLong dosDate;
-    uLong crc;
-    uLong compressed_size;
-    uLong uncompressed_size;
-    uLong size_filename;
-    uLong size_file_extra;
-    uLong size_file_comment;
-    uLong disk_num_start;
-    uLong internal_fa;
-    uLong external_fa;
-    pkgTime_t tmu_date;
-} fileInfo_t;
-
-// internal info about a file in package
-typedef struct fileInfoInternal_s {
-    uLong offset_curfile;
-} fileInfoInternal_t;
-
-// internal information about a file in zipfile when reading and decompressing it
-typedef struct fileInPackageReadInfo_s {
-    char *read_buffer;
-    z_stream stream;
-    uLong pos_in_zipfile;
-    uLong stream_initialised;
-    uLong offset_local_extrafield;
-    uInt  size_local_extrafield;
-    uLong pos_local_extrafield;
-    uLong crc32;
-    uLong crc32_wait;
-    uLong rest_read_compressed;
-    uLong rest_read_uncompressed;
-    FILE *file;
-    uLong compression_method;
-    uLong byte_before_the_zipfile;
-} fileInPackageReadInfo_t;
-
-// unz struct
-typedef struct unz_s {
-    FILE *file;
-    globalInfo_t gi;
-    uLong byte_before_the_zipfile;
-    uLong num_file;
-    uLong pos_in_central_dir;
-    uLong current_file_ok;
-    uLong central_pos;
-    uLong size_central_dir;
-    uLong offset_central_dir;
-    fileInfo_t cur_file_info;
-    fileInfoInternal_t cur_file_info_internal;
-    fileInPackageReadInfo_t *pfile_in_zip_read;
-} unz_t;
+namespace Package {
+    class Sys_Package;
+    static const unsigned int ReadBuffer = 16384;
+    static const unsigned int DeflateCompression = 8;
+    static const unsigned int OffsetHeaderCompression = 8;
+    static const unsigned int OffsetHeaderEntrySize = 18;
+    static const unsigned int OffsetHeaderEntryName = 30;
+    static const unsigned long IdentHeader = ((0x04<<24)+(0x03<<16)+('K'<<8)+'P');
+    static const unsigned long IdentCentralDir = ((0x02<<24)+(0x01<<16)+('K'<<8)+'P');
+}
 
 //
-// class::Sys_Package
+// class:Sys_Package
 //
+class pPackage;
+class pEntry;
+class Sys_Filesystem;
 class Sys_Package : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Filesystem package support class" )
-
-private:
-    int getByte( FILE*, int* );
-    int getShort( FILE*, uLong* );
-    int getLong( FILE*, uLong* );
-    uLong searchCentralDir( FILE* );
-    void legacyDateToTmuDate( uLong, pkgTime_t* );
-    int getCurrentFileInfoInternal( pkgFile, fileInfo_t *, fileInfoInternal_t *, char*, uLong, void*, uLong extraFieldBufferSize, char*, uLong );
-    int checkCurrentFileCoherencyHeader( unz_t*, uInt*, uLong*, uInt* );
+    Q_ENUMS( ReadModes )
 
 public:
-    pkgFile open( const char* );
-    int close( pkgFile );
-    int getGlobalInfo( pkgFile, globalInfo_t* );
-    int getCurrentFileInfo( pkgFile, fileInfo_t *, char*, uLong, void*, uLong, char*, uLong );
-    int openCurrentFile( pkgFile );
-    int closeCurrentFile( pkgFile );
-    int readCurrentFile( pkgFile, void*, unsigned );
-    int getCurrentFileInfoPosition( pkgFile, unsigned long* );
-    int setCurrentFileInfoPosition( pkgFile, unsigned long );
-    int goToFirstFile( pkgFile );
-    int goToNextFile( pkgFile );
-    long fTell( pkgFile );
+    // enums
+    enum ReadModes {
+        Byte    = 1,
+        Short   = 2,
+        Long    = 4
+    };
+    pPackage *load( const QString &, int flags );
+    template <class T>
+    bool readData( fileHandle_t, ReadModes mode, T & );
+    pEntry *find( const QString & );
+
+private:
+    bool readPackage( pPackage *pPtr );
+    QList<pPackage*>packageList;
+
+signals:
+
+public slots:
+    void shutdown();
 };
 
+//
+// externals
+//
+#ifndef MODULE_LIBRARY
+extern class Sys_Package pkg;
 #endif
+
+#endif // SYS_PACKAGE_H
