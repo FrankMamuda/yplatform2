@@ -221,10 +221,8 @@ update
 void Sys_Module::update() {
     // begin frame on each renderer window first
     foreach ( pModule *modPtr, this->modList ) {
-        if ( modPtr->type() == pModule::Renderer ) {
-            if ( modPtr->re.initialized )
-                modPtr->re.beginFrame();
-        }
+        if ( modPtr->type() == pModule::Renderer )
+            modPtr->call( RendererAPI::BeginFrame );
     }
 
     // do module updates here so that we can actually
@@ -234,10 +232,8 @@ void Sys_Module::update() {
 
     // end frame
     foreach ( pModule *modPtr, this->modList ) {
-        if ( modPtr->type() == pModule::Renderer ) {
-            if ( modPtr->re.initialized )
-                modPtr->re.endFrame();
-        }
+        if ( modPtr->type() == pModule::Renderer )
+            modPtr->call( RendererAPI::EndFrame );
     }
 }
 
@@ -642,54 +638,54 @@ intptr_t Sys_Module::rendererSyscalls( RendererAPI::RendererAPICalls callNum, in
     // yes, we support multiple renderers
     foreach ( pModule *modPtr, this->modList ) {
         if ( modPtr->type() == pModule::Renderer ) {
-            if ( !modPtr->re.initialized())
-                return false;
-
             switch ( callNum ) {
             case RendererAPI::LoadImage:
                 if ( numArgs < 1 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererLoadImage [path]\n" ));
                     return false;
                 }
-                return modPtr->re.loadImage(( const char* )args[0] );
+                return modPtr->call( RendererAPI::LoadImage, args[0] );
 
             case RendererAPI::DrawImage:
                 if ( numArgs < 9 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererDrawImage  [position] [size] [coords] [handle]\n" ));
                     return false;
                 }
-                modPtr->re.drawImage(( float )args[0], ( float )args[1], ( float )args[2], ( float )args[3], ( float )args[4], ( float )args[5], ( float )args[6], ( float )args[7], ( imgHandle_t )args[8] );
-                return true;
+                return modPtr->call( RendererAPI::DrawImage, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8] );
 
             case RendererAPI::LoadMaterial:
                 if ( numArgs < 1 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererLoadMaterial [name]\n" ));
                     return false;
                 }
-                return ( intptr_t )modPtr->re.loadMaterial(( const char* )args[0] );
+                return modPtr->call( RendererAPI::LoadMaterial, args[0] );
 
             case RendererAPI::DrawMaterial:
                 if ( numArgs < 5 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererDrawMaterial [position] [size] [handle]\n" ));
                     return false;
                 }
-                modPtr->re.drawMaterial(( float )args[0], ( float )args[1], ( float )args[2], ( float )args[3], ( mtrHandle_t )args[4] );
-                return true;
+                return modPtr->call( RendererAPI::DrawMaterial, args[0], args[1], args[2], args[3], args[4] );
 
             case RendererAPI::LoadFont:
-                if ( numArgs < 3 ) {
-                    com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererLoadFont [name] [pointSize] [&pointer]\n" ));
+                if ( numArgs < 2 ) {
+                    com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: [&poiner] RendererLoadFont [name] [pointSize]\n" ));
                     return false;
                 }
-                return modPtr->re.loadFont(( const char* )args[0], (int)args[1], *( fontInfo_t* )args[2] );
+                return modPtr->call( RendererAPI::LoadFont, args[0], args[1] );
 
             case RendererAPI::SetColour:
-                if ( numArgs < 3 ) {
+                if ( numArgs < 4 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererSetColour [red] [green] [blue] [alpha]\n" ));
                     return false;
                 }
-                modPtr->re.setColour( QColor::fromRgbF(( float )args[0], ( float )args[1], ( float )args[2], ( float )args[3] ));
-                return true;
+                return modPtr->call( RendererAPI::SetColour, args[0], args[1], args[2], args[3] );
+
+            case RendererAPI::Raise:
+                return modPtr->call( RendererAPI::Raise );
+
+            case RendererAPI::Hide:
+                return modPtr->call( RendererAPI::Hide );
 
             default:
                 // abort
@@ -710,7 +706,7 @@ updateCvar
 void Sys_Module::updateCvar( const QString &cvar, const QString &stringValue ) {
     foreach ( pModule *modPtr, this->modList ) {
         if ( modPtr->type() == pModule::Renderer )
-            modPtr->re.updateCvar( cvar, stringValue );
+            modPtr->call( RendererAPI::UpdateCvar, ( intptr_t )cvar.toLatin1().constData(), ( intptr_t )stringValue.toLatin1().constData());
         else
             modPtr->call( ModuleAPI::UpdateCvar, ( intptr_t )cvar.toLatin1().constData(), ( intptr_t )stringValue.toLatin1().constData());
     }

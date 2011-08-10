@@ -69,7 +69,7 @@ unload
 void pModule::unload() {
     if ( this->handle != NULL ) {
         if ( this->type() == Renderer )
-            this->re.shutdown();
+            this->call( RendererAPI::Shutdown );
         else
             this->call( ModuleAPI::Shutdown );
 
@@ -99,10 +99,10 @@ void pModule::loadHandle() {
     if ( this->handle->load()) {
         // resolve main entry (renderer uses different structure)
         if ( this->type() == Module ) {
-            this->modMain = ( modMainExtDef )this->handle->resolve( "modMain" );
+            this->modMain = ( modMainDef )this->handle->resolve( "modMain" );
             this->renderer = ( rendererEntryDef )this->handle->resolve( "modRendererEntry" );
         } else if ( this->type() == Renderer )
-            this->modMain = ( modMainExtDef )this->handle->resolve( "rendererMain" );
+            this->modMain = ( modMainDef )this->handle->resolve( "rendererMain" );
 
         // resolve syscall entry
         this->entry = ( modEntryDef )this->handle->resolve( "modEntry" );
@@ -123,7 +123,7 @@ void pModule::loadHandle() {
             // produce call to the module
             unsigned int version = 0;
             if ( this->type() == Renderer )
-                version = (( rendererMainDef )this->modMain )( &this->re );
+                version = this->call( RendererAPI::ModAPI );
             else
                 version = this->call( ModuleAPI::ModAPI );
 
@@ -146,8 +146,7 @@ void pModule::loadHandle() {
             // perform initialization
             bool mInit;
             if ( this->type() == Renderer ) {
-                this->re.init();
-                mInit = this->re.initialized;
+                mInit = this->call( RendererAPI::Init );
             } else
                 mInit = this->call( ModuleAPI::Init );
 
