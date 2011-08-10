@@ -525,8 +525,9 @@ void Mod_Trap::rSetColour( float r, float g, float b, float a ) {
 rLoadFont
 =============
 */
-void Mod_Trap::rLoadFont( const QString &filename, int pointSize, fontInfo_t *fontPtr ) {
-    this->call( ModuleAPI::Renderer, RendererAPI::LoadFont, ( intptr_t )filename.toLatin1().constData(), ( intptr_t )pointSize, ( intptr_t )fontPtr );
+fontInfo_t *Mod_Trap::rLoadFont( const QString &filename, int pointSize ) {
+    return ( fontInfo_t * )this->call( ModuleAPI::Renderer, RendererAPI::LoadFont, ( intptr_t )filename.toLatin1().constData(), ( intptr_t )pointSize );
 }
 
 #endif
+

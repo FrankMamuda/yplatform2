@@ -40,8 +40,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 typedef intptr_t ( *modMainDef )( int, int, intptr_t * );
 typedef void ( *modEntryDef )( intptr_t (*)( ModuleAPI::PlatformAPICalls, int, intptr_t * ));
 typedef void ( *rendererEntryDef )( intptr_t (*)( RendererAPI::RendererAPICalls, int, intptr_t * ));
-typedef intptr_t ( *rendererMainDef )( rendererExport_t * );
-typedef intptr_t ( *modMainExtDef )();
 
 //
 // class:pModule
@@ -83,9 +81,6 @@ public:
     intptr_t call( int, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t ) const;
     intptr_t call( int, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t ) const;
 
-    // renderer stuff
-    rendererExport_t re;
-
     // module info
     QString name() const { return this->m_name; }
     QString description() const { return this->m_description; }
@@ -118,7 +113,7 @@ private:
 
     // module libHandle and funcs
     QLibrary *handle;
-    modMainExtDef modMain;
+    modMainDef modMain;
     modEntryDef entry;
     rendererEntryDef renderer;
 

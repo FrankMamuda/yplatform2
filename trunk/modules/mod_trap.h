@@ -114,7 +114,7 @@ public:
     mtrHandle_t rLoadMaterial( const QString &filename );
     void rDrawMaterial( float x, float y, float w, float h, mtrHandle_t handle );
     void rSetColour( float r, float g, float b, float a = 1.0f );
-    void rLoadFont( const QString &filename, int pointSize, fontInfo_t *fontPtr );
+    fontInfo_t *rLoadFont( const QString &filename, int pointSize );
 #endif
 
     // cvars

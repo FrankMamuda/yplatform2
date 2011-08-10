@@ -33,6 +33,7 @@ HEADERS += \
     gui/gui_settings.h
 
 win32:HEADERS += common/sys_link.h
+win32:RC_FILE = resources/platform/YPlatform2.rc
 
 SOURCES += \
     applet/app_main.cpp \

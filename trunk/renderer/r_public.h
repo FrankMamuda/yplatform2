@@ -30,46 +30,25 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 
 // current api version
 namespace RendererAPI {
-    static const unsigned int Version = 1;
+    static const unsigned int Version = 2;
 
     // public API calls (renderer)
     enum RendererAPICalls {
-        LoadImage = 0,
+        ModAPI = 0,
+        Init,
+        UpdateCvar,
+        Shutdown,
+        BeginFrame,
+        EndFrame,
+        LoadImage,
         DrawImage,
         LoadMaterial,
         DrawMaterial,
         LoadFont,
-        SetColour
+        SetColour,
+        Raise,
+        Hide
     };
 }
-
-//
-// exports
-//
-typedef struct rendererExport_s {
-    // init and shutdown
-    void ( *init )();
-    void ( *shutdown )();
-    bool ( *initialized )();
-
-    // object loading
-    imgHandle_t ( *loadImage )( const QString & );
-    mtrHandle_t ( *loadMaterial )( const QString & );
-    bool ( *loadFont )( const QString &, int, fontInfo_t & );
-
-    // renderering
-    void ( *setColour )( const QColor & );
-    void ( *drawImage )( float, float, float, float, float, float, float, float, imgHandle_t );
-    void ( *drawMaterial )( float, float, float, float, mtrHandle_t );
-    void ( *beginFrame )();
-    void ( *endFrame )();
-
-    // window specific
-    void ( *raise )();
-    void ( *hide )();
-
-    // common
-    void ( *updateCvar )( const QString &, const QString & );
-} rendererExport_t;
 
 #endif // R_PUBLIC_H

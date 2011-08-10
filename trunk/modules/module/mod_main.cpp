@@ -45,7 +45,6 @@ modMain
 */
 extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callNum, int numArgs, intptr_t *args ) {
     Q_UNUSED( numArgs );
-    Q_UNUSED( args );
 
     switch ( callNum ) {
     case ModuleAPI::ModAPI:

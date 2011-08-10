@@ -1,2 +1,7 @@
 7th of August (YCommons 2.8.99.0 rc1)
     -a lot of changes since r3
+
+9th of August (YCommons 2.8.99.1 rc2)
+    -changes in renderer API
+    -platform icon
+
