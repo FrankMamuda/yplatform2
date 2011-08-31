@@ -1,0 +1,21 @@
+NOTE: This renderer backend is (almost) written from scratch, but is heavily influenced by idTech3.
+      Bits of textureMod, genFunc & native targa loading code are inherited from idTech3.
+      Materials (shaders) are written in JavaScript. Check material code for scriptable slots.
+
+29th of August (v0.98.42 (beta))
+    -abandoning idTech4 fonts, using Qt4's QFont
+
+30th of August (v0.98.42 (beta))
+    -a whole fucking lot
+    -clamp modes
+    -cleanup
+    -more props
+    -screen mode switching & adjust
+    -bugfixes (especially settings & cvar code)
+    -settings dialog
+    -a whole fucking more
+
+31st of August (v0.98.43 (beta))
+    -i18n
+    -cleanup
+    -public release?

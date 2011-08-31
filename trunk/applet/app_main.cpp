@@ -128,7 +128,7 @@ void App_Main::update() {
         mod.update();
 
     // dd: HACK to ensure autoscroll works (dirrty, I know)
-    if ( com.milliseconds() < 1000 )
+    if ( com.milliseconds() < 2000 )
         com.gui()->autoScroll();
 }
 

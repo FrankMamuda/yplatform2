@@ -5,3 +5,6 @@
     -changes in renderer API
     -platform icon
 
+30th of August (YCommons 2.8.99.2 rc3)
+    -fixes in cvar code
+    -fixes in settings code

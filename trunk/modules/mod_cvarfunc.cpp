@@ -24,11 +24,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "mod_cvarfunc.h"
 #include "mod_trap.h"
 
-//
-// classes
-//
-extern class Mod_Trap mt;
-
 /*
 ============
 construct
@@ -113,6 +108,18 @@ update
 */
 void mCvar::update( const QString &string ) {
     this->setString( string );
+}
+
+/*
+============
+setString
+============
+*/
+void mCvar::setString( const QString &string ) {
+    this->m_string = string;
+
+    // emit signal
+    emit this->valueChanged( this->name(), this->string());
 }
 
 /*

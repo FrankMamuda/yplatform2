@@ -298,7 +298,8 @@ mCvar *Mod_Trap::cvarCreate( const QString &name, const QString &string, pCvar::
     bool ok = this->call( ModuleAPI::Platform, ModuleAPI::CvarCreate, ( intptr_t )name.toLatin1().constData(), ( intptr_t )string.toLatin1().constData(), ( intptr_t )flags, ( intptr_t )desc.toLatin1().constData(), ( intptr_t )&ok );
 
     if ( ok ) {
-        this->cvars << new mCvar( name, string, flags, desc );
+        QString actualString = mt.cvarGet( name );
+        this->cvars << new mCvar( name, actualString, flags, desc );
         return this->cvars.last();
     } else
         return NULL;
@@ -525,8 +526,32 @@ void Mod_Trap::rSetColour( float r, float g, float b, float a ) {
 rLoadFont
 =============
 */
-fontInfo_t *Mod_Trap::rLoadFont( const QString &filename, int pointSize ) {
-    return ( fontInfo_t * )this->call( ModuleAPI::Renderer, RendererAPI::LoadFont, ( intptr_t )filename.toLatin1().constData(), ( intptr_t )pointSize );
+void Mod_Trap::rSetColour( const QColor &colour ) {
+    this->rSetColour( colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF());
+}
+
+/*
+=============
+rDrawText
+
+ dd: move to QRawFont on Qt 4.8?
+=============
+*/
+void Mod_Trap::rDrawText( float x, float y, QFont *font, const QString &text, float r, float g, float b, float a ) {
+    this->call( ModuleAPI::Renderer, RendererAPI::DrawText, ( intptr_t )x, ( intptr_t )y, ( intptr_t )font, ( intptr_t )text.toLatin1().constData(),
+               ( intptr_t )r,
+               ( intptr_t )g,
+               ( intptr_t )b,
+               ( intptr_t )a );
+}
+
+/*
+=============
+rDrawText
+=============
+*/
+void Mod_Trap::rDrawText( float x, float y, QFont *font, const QString &text, const QColor &colour ) {
+    this->rDrawText( x, y, font, text, colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF());
 }
 
 #endif

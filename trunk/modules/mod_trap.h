@@ -33,8 +33,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../../common/sys_shared.h"
 #include "../mod_public.h"
 #include "../renderer/r_shared.h"
-#include "../renderer/r_font.h"
 #include "../renderer/r_public.h"
+#include <QFont>
+#include <QColor>
 #endif
 #include <QObject>
 #if !defined( intptr_t )
@@ -104,7 +105,7 @@ public:
     void guiRemoveTab( const QString &name );
     void guiSetActiveTab( const QString &name );
     void guiSetConsoleState( int state );
-    void guiAddSettingsTab( QWidget *widget, const QString &name, const QString &icon );
+    void guiAddSettingsTab( QWidget *widget, const QString &name, const QString &icon = QString());
     void guiRemoveSettingsTab( const QString &name );
     // renderer
 #ifndef R_BUILD
@@ -114,7 +115,9 @@ public:
     mtrHandle_t rLoadMaterial( const QString &filename );
     void rDrawMaterial( float x, float y, float w, float h, mtrHandle_t handle );
     void rSetColour( float r, float g, float b, float a = 1.0f );
-    fontInfo_t *rLoadFont( const QString &filename, int pointSize );
+    void rSetColour( const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f ));
+    void rDrawText( float x, float y, QFont *font, const QString &text, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f );
+    void rDrawText( float x, float y, QFont *font, const QString &text, const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f ));
 #endif
 
     // cvars
@@ -158,5 +161,10 @@ inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum,
 inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7 ) { intptr_t args[8] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 }; return this->callExt( destination, callNum, 8, args ); }
 inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8 ) { intptr_t args[9] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 }; return this->callExt( destination, callNum, 9, args ); }
 inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9 ) { intptr_t args[10] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 }; return this->callExt( destination, callNum, 10, args ); }
+
+//
+// externals
+//
+extern class Mod_Trap mt;
 
 #endif // MOD_TRAP_H

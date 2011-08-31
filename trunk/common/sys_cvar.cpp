@@ -29,6 +29,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_common.h"
 #include "sys_cvar.h"
 #include "sys_cmd.h"
+#include "sys_module.h"
 #include "sys_filesystem.h"
 #include "../applet/app_main.h"
 
@@ -243,6 +244,11 @@ pCvar *Sys_Cvar::create( const QString &name, const QString &string, pCvar::Flag
 
     // search for available cvars
     pCvar *cvarPtr = this->find( name );
+
+    // when cvar is created from configuration file, it looses mCvar flag
+    // make sure we connect it for updates
+    if ( cvarPtr != NULL && mCvar )
+        this->connect( cvarPtr, SIGNAL( valueChanged( QString, QString )), &mod, SLOT( updateCvar( QString, QString )));
 
     // create new
     if ( cvarPtr == NULL ) {
