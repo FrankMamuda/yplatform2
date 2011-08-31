@@ -575,11 +575,10 @@ QImage *Gui_Main::addImageResource( const QString &filename, int width, int heig
         }
     }
 
-    // generate icon
+    // generate image
     byte *buffer;
     long len = fs.readFile( filename, &buffer, Sys_Filesystem::Silent );
 
-    // any icon?
     if ( len > 0 ) {
         this->imageResources << new imageResourceDef_t;
         if ( width > 0 && height > 0 )
@@ -686,7 +685,7 @@ freeze
 ================
 */
 void Gui_Main::freeze() {
-    // this is called from ERR_FATAL
+    // this is called from FatalError
     // since we have already failed, there is no need to shut
     // down additional subsystems which can cause even more
     // errors and then we're stuck in a loop
@@ -836,17 +835,19 @@ void Gui_Main::addToolBarAction( const QString &name, const QString &icon, cmdCo
     this->toolBarActions.last()->action->setText( name );
 
     // generate icon
-    if ( name.startsWith( ":" )) {
-        this->toolBarActions.last()->action->setIcon( QIcon( name ));
-    } else {
-        byte *buffer;
-        long len = fs.readFile( icon, &buffer, Sys_Filesystem::Silent );
+    if ( !icon.isEmpty()) {
+        if ( name.startsWith( ":" )) {
+            this->toolBarActions.last()->action->setIcon( QIcon( name ));
+        } else {
+            byte *buffer;
+            long len = fs.readFile( icon, &buffer, Sys_Filesystem::Silent );
 
-        // any icon?
-        if ( len > 0 ) {
-            QPixmap pixMap;
-            pixMap.loadFromData( QByteArray (( const char* )buffer, len ));
-            this->toolBarActions.last()->action->setIcon( QIcon( pixMap ));
+            // any icon?
+            if ( len > 0 ) {
+                QPixmap pixMap;
+                pixMap.loadFromData( QByteArray (( const char* )buffer, len ));
+                this->toolBarActions.last()->action->setIcon( QIcon( pixMap ));
+            }
         }
     }
 
@@ -911,8 +912,13 @@ void Gui_Main::addTabExt( TabDestinations dest, QWidget *widget, const QString &
     // check destination
     if ( dest == Gui_Main::MainWindow )
         destWidget = this->ui->tabWidget;
-    else
+    else {
         destWidget = this->settings->settingsTabWidget;
+
+        // external settings widgets must behave just like native widgets
+        this->connect( this->settigsAction, SIGNAL( triggered()), widget, SLOT( intializeCvars()));
+        this->connect( this->settings, SIGNAL( accepted()), widget, SLOT( saveCvars()));
+    }
 
     // failsafe
     foreach ( customTabDef_t *customTabPtr, this->tabWidgetTabs[dest] ) {
@@ -923,20 +929,23 @@ void Gui_Main::addTabExt( TabDestinations dest, QWidget *widget, const QString &
     }
 
     // generate icon
-    if ( name.startsWith( ":" )) {
-        destWidget->addTab( widget, QIcon( name ), name );
-    } else {
-        byte *buffer;
-        long len = fs.readFile( icon, &buffer, Sys_Filesystem::Silent );
+    if ( !icon.isEmpty()) {
+        if ( icon.startsWith( ":" )) {
+            destWidget->addTab( widget, QIcon( icon ), name );
+        } else {
+            byte *buffer;
+            long len = fs.readFile( icon, &buffer, Sys_Filesystem::Silent );
 
-        // any icon?
-        if ( len > 0 ) {
-            QPixmap pixMap;
-            pixMap.loadFromData( QByteArray (( const char* )buffer, len ));
-            destWidget->addTab( widget, QIcon( pixMap ), name );
-        } else
-            destWidget->addTab( widget, name );
-    }
+            // any icon?
+            if ( len > 0 ) {
+                QPixmap pixMap;
+                pixMap.loadFromData( QByteArray (( const char* )buffer, len ));
+                destWidget->addTab( widget, QIcon( pixMap ), name );
+            } else
+                destWidget->addTab( widget, name );
+        }
+    } else
+        destWidget->addTab( widget, name );
 
     // dd, store index
     this->tabWidgetTabs[dest] << new customTabDef_t;

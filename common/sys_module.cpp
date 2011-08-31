@@ -667,12 +667,13 @@ intptr_t Sys_Module::rendererSyscalls( RendererAPI::RendererAPICalls callNum, in
                 }
                 return modPtr->call( RendererAPI::DrawMaterial, args[0], args[1], args[2], args[3], args[4] );
 
-            case RendererAPI::LoadFont:
-                if ( numArgs < 2 ) {
-                    com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: [&poiner] RendererLoadFont [name] [pointSize]\n" ));
+            case RendererAPI::DrawText:
+                if ( numArgs < 4 ) {
+                    com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererLoadFont [x] [y] [fontPtr] [string] (colour)\n" ));
                     return false;
                 }
-                return modPtr->call( RendererAPI::LoadFont, args[0], args[1] );
+                return modPtr->call( RendererAPI::DrawText, args[0], args[1], args[2], args[3],
+                                    args[4], args[5], args[6], args[7] );
 
             case RendererAPI::SetColour:
                 if ( numArgs < 4 ) {

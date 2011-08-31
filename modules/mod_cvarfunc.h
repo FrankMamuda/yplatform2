@@ -30,7 +30,8 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // class::mCvar
 //
-class mCvar {
+class mCvar : public QObject {
+    Q_OBJECT
     Q_CLASSINFO( "description", "Module console variable" )
     Q_DISABLE_COPY( mCvar )
     Q_PROPERTY( QString name READ name WRITE setName )
@@ -63,7 +64,10 @@ public slots:
     // property setters
     void setName( const QString &cvarName ) { this->m_name = cvarName; }
     void setDescription( const QString &description ) { this->m_description = description; }
-    void setString( const QString &string ) { this->m_string = string; }
+    void setString( const QString &string );
+
+signals:
+    void valueChanged( const QString &cvar, const QString &stringValue );
 
 private:
     // properties

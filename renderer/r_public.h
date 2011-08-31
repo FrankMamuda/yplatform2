@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,11 +26,10 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "../modules/mod_public.h"
 #include "r_shared.h"
-#include "r_font.h"
 
 // current api version
 namespace RendererAPI {
-    static const unsigned int Version = 2;
+    static const unsigned int Version = 3;
 
     // public API calls (renderer)
     enum RendererAPICalls {
@@ -44,7 +43,7 @@ namespace RendererAPI {
         DrawImage,
         LoadMaterial,
         DrawMaterial,
-        LoadFont,
+        DrawText,
         SetColour,
         Raise,
         Hide
