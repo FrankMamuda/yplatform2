@@ -71,6 +71,10 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
     case ModuleAPI::Shutdown:
         // perform shutdown
         mt.comPrint( "Goodbye cruel world\n" );
+
+        // clear cvars
+        foreach ( mCvar *cvarPtr, mt.cvars )
+            delete cvarPtr;
         break;
     }
 

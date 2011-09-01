@@ -47,6 +47,9 @@ public:
     bool cvarsLocked() const { return this->m_cvarsLocked; };
     QTabWidget *settingsTabWidget;
 
+signals:
+    void updateModules();
+
 protected:
     void changeEvent( QEvent *e );
 

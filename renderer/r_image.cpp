@@ -36,6 +36,9 @@ R_Image::R_Image( const QString &filename, ClampModes mode, QObject *parent ) : 
     byte *buffer;
     byte *imageBuffer = NULL;
     int len;
+#ifdef BUILTIN_TARGA_LOADER
+    bool targa = false;
+#endif
 
     // defaults
     this->validate( false );
@@ -53,6 +56,7 @@ R_Image::R_Image( const QString &filename, ClampModes mode, QObject *parent ) : 
             imageBuffer = this->loadTargaImage( filename, len, buffer, w, h );
             this->setWidth( w );
             this->setHeight( h );
+            targa = true;
         } else {
 #endif
             image = QGLWidget::convertToGLFormat( QImage::fromData( buffer, len ).mirrored( false, true ));
@@ -73,6 +77,12 @@ R_Image::R_Image( const QString &filename, ClampModes mode, QObject *parent ) : 
 
     // create texture
     this->createTexture( imageBuffer, this->width(), this->height());
+
+#ifdef BUILTIN_TARGA_LOADER
+    // must clear targa rgba buffer
+    if ( targa )
+        delete[] imageBuffer;
+#endif
 
     // set filename (without extension)
     this->setName( QString( QFileInfo( filename ).path() + "/" + QFileInfo( filename ).baseName()));

@@ -51,6 +51,7 @@ public:
     void init();
     void shutdown();
     void adjustCoords( float &x, float &y );
+    int getScreenMode();
 
     // property getters
     bool hasInitialized() const { return this->m_initialized; }
@@ -59,9 +60,6 @@ public:
 
     // renderer window
     QWidget *widget;
-
-private slots:
-    int  getScreenMode();
 
 private:
     R_GlimpWidget *openGL;

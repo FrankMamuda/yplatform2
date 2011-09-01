@@ -24,6 +24,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "r_image.h"
 #include "r_material.h"
 #include "r_materialstage.h"
+#include "r_mtrlib.h"
 #include "r_main.h"
 #include "r_cmd.h"
 #include "../modules/mod_trap.h"
@@ -75,6 +76,9 @@ destruct
 ===================
 */
 R_MaterialStage::~R_MaterialStage() {
+    delete this->m_textureMod;
+    delete this->m_colourGen;
+    delete this->m_alphaGen;
 }
 
 /*
@@ -411,19 +415,12 @@ GenFunc::Types GenFunc::typeForName( const QString &name ) const {
 
 /*
 ===================
-clampMode
+setClampMode
 ===================
 */
 void R_MaterialStage::setClampMode( const QString &mode ) {
-    if ( !QString::compare( mode, "repeat", Qt::CaseInsensitive )) {
-        this->setClampMode( R_Image::Repeat );
-    } else if ( !QString::compare( mode, "clamp", Qt::CaseInsensitive )) {
-        this->setClampMode( R_Image::Clamp );
-    } else if ( !QString::compare( mode, "clampToEdge", Qt::CaseInsensitive ) || !QString::compare( mode, "edge", Qt::CaseInsensitive )) {
-        this->setClampMode( R_Image::ClampToEdge );
-    } else {
-        mt.comError( Sys_Common::SoftError, this->tr( "R_MaterialStage::setClampMode: unknown clamp mode \"%1\"\n" ).arg( this->m_clamp ));
-        this->setClampMode( R_Image::Repeat );
-    }
-}
+    R_Image::ClampModes clampMode;
 
+    clampMode = mLib.getClampMode( mode );
+    this->setClampMode( clampMode );
+}

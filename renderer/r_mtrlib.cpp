@@ -208,8 +208,8 @@ QScriptValue scriptTexture( QScriptContext *context, QScriptEngine *engine ) {
     }
 
     // failsafe
-    if ( context->argumentCount() > 1 ) {
-        context->throwError( QObject::trUtf8( "'registerTexture' called with multiple arguments\n" ));
+    if ( context->argumentCount() > 2 ) {
+        context->throwError( QObject::trUtf8( "'registerTexture' called with >2 arguments\n" ));
         return engine->undefinedValue();
     } else if ( context->argumentCount() == 0 ) {
         context->throwError( QObject::trUtf8( "'registerTexture' called without arguments\n" ));
@@ -217,7 +217,28 @@ QScriptValue scriptTexture( QScriptContext *context, QScriptEngine *engine ) {
     }
 
     // create new material
-    return engine->toScriptValue((int)m.loadImage( context->argument( 0 ).toString()));
+    if ( context->argumentCount() == 2 )
+        return engine->toScriptValue((int)m.loadImage( context->argument( 0 ).toString(), mLib.getClampMode( context->argument( 1 ).toString())));
+    else
+        return engine->toScriptValue((int)m.loadImage( context->argument( 0 ).toString()));
+}
+
+/*
+===================
+getClampMode
+===================
+*/
+R_Image::ClampModes R_MtrLib::getClampMode( const QString &mode ) {
+    if ( !QString::compare( mode, "repeat", Qt::CaseInsensitive )) {
+        return R_Image::Repeat;
+    } else if ( !QString::compare( mode, "clamp", Qt::CaseInsensitive )) {
+        return R_Image::Clamp;
+    } else if ( !QString::compare( mode, "clampToEdge", Qt::CaseInsensitive ) || !QString::compare( mode, "edge", Qt::CaseInsensitive )) {
+        return R_Image::ClampToEdge;
+    } else {
+        mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::setClampMode: unknown clamp mode \"%1\", setting \"repeat\"\n" ).arg( mode ));
+        return R_Image::Repeat;
+    }
 }
 
 /*

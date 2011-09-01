@@ -19,3 +19,7 @@ NOTE: This renderer backend is (almost) written from scratch, but is heavily inf
     -i18n
     -cleanup
     -public release?
+
+1st of September (v0.98.44 (beta))
+    -high resolution logo
+    -some minor fixes

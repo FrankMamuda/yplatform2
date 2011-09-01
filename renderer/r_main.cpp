@@ -96,8 +96,6 @@ void R_Main::init() {
     // add settings widget
     this->settingsWidget = new R_Settings();
     mt.guiAddSettingsTab( this->settingsWidget, "Renderer" /*, ":/common/platform"*/ );
-    //this->connect( r_screenMode, SIGNAL( valueChanged( QString, QString )), this->settingsWidget, SLOT( intializeCvars()));
-    //this->connect( r_adjustScreen, SIGNAL( valueChanged( QString, QString )), this->settingsWidget, SLOT( intializeCvars()));
 
     // all done
     this->setInitialized();
@@ -282,6 +280,10 @@ void R_Main::shutdown() {
     // remove commands
     mt.cmdRemove( "r_listImages" );
     mt.cmdRemove( "r_listMaterials" );
+
+    // remove settings widget
+    mt.guiRemoveSettingsTab( "Renderer" );
+    //delete this->settingsWidget;
 
     // we are down
     this->setInitialized( false );

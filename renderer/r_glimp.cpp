@@ -138,6 +138,8 @@ void R_GLimp::shutdown() {
 
         // clean up
         delete this->context;
+        this->openGL->~QGLWidget();
+        this->widget->~QWidget();
         this->setInitialized( false );
     }
 }

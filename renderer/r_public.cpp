@@ -28,6 +28,12 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
 
+//
+// cvars
+//
+extern mCvar *r_screenMode;
+extern mCvar *r_adjustScreen;
+
 /*
 ================
 modEntry
@@ -73,6 +79,10 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
 
         // perform shutdown
         m.shutdown();
+
+        // clear cvars
+        foreach ( mCvar *cvarPtr, mt.cvars )
+            delete cvarPtr;
         break;
 
     case RendererAPI::BeginFrame:
@@ -83,9 +93,15 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         m.beginFrame();
 
         // draw platform logo
-        cmd.setColour( 1, 1, 1, 1 );
-        cmd.drawMaterial( 640/2-256/2, 480/2-256/2, 256, 256, m.platformLogo );
-
+        cmd.setColour( Renderer::ColourWhite );
+        if ( r_adjustScreen->integer())
+            cmd.drawMaterial( Renderer::HorizontalScreenModes[Renderer::DefaultScreenMode]/2-256/2,
+                              Renderer::VerticalScreenModes[Renderer::DefaultScreenMode]/2-256/2,
+                              256, 256, m.platformLogo );
+        else
+            cmd.drawMaterial( Renderer::HorizontalScreenModes[glImp.getScreenMode()]/2-256/2,
+                              Renderer::VerticalScreenModes[glImp.getScreenMode()]/2-256/2,
+                              256, 256, m.platformLogo );
         break;
 
     case RendererAPI::EndFrame:

@@ -916,7 +916,7 @@ void Gui_Main::addTabExt( TabDestinations dest, QWidget *widget, const QString &
         destWidget = this->settings->settingsTabWidget;
 
         // external settings widgets must behave just like native widgets
-        this->connect( this->settigsAction, SIGNAL( triggered()), widget, SLOT( intializeCvars()));
+        this->connect( this->settings, SIGNAL( updateModules()), widget, SLOT( intializeCvars()));
         this->connect( this->settings, SIGNAL( accepted()), widget, SLOT( saveCvars()));
     }
 
