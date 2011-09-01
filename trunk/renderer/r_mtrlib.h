@@ -53,6 +53,7 @@ private:
 public:
     // property getters
     bool hasInitialized() const { return this->m_initialized; }
+    R_Image::ClampModes getClampMode( const QString & );
 
 signals:
 

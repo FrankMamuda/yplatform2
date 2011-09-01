@@ -84,6 +84,9 @@ void Gui_Settings::intializeCvars() {
 
     // unlock cvars
     this->lockCvars( false );
+
+    // emit signal for modules
+    emit this->updateModules();
 }
 
 /*

@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/common">
-        <file alias="platform">assets/common/yplatform_256.png</file>
         <file alias="default">assets/common/default_128.png</file>
+        <file alias="platform">assets/common/yplatform_512.png</file>
     </qresource>
     <qresource prefix="/materials">
         <file alias="common.js">materials/common.js</file>

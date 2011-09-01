@@ -8,3 +8,6 @@
 30th of August (YCommons 2.8.99.2 rc3)
     -fixes in cvar code
     -fixes in settings code
+
+1st of September (YCommons 2.8.99.3 rc4)
+    -more fixes in settings code
