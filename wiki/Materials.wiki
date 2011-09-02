@@ -14,7 +14,7 @@ Materials are updated via *update()* function which is called with 50 FPS.
 * Syntax* (keywords)
   * Material is constructed in the following way:
     * _var foo = new material( mtrName )_
-  *Stage can be initialized in multiple ways:
+  * Stage can be initialized in multiple ways:
     * _var bar = new stage( texture, material, (clampMode))_
     * _var bar = new stage( texture, (clampMode))_
     * _material.stage( stageNum )_ - creates/returns stage automatically as long as *stageNum* is not larger than total number of stages plus 1.
