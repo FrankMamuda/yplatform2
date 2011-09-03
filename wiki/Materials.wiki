@@ -13,18 +13,32 @@ Materials are updated via *update()* function which is called with 50 FPS.
 
 * Syntax* (keywords)
   * Material is constructed in the following way:
-    * _var foo = new material( mtrName )_
+    * _var foo = new material( mtrName )_.
   * Stage can be initialized in multiple ways:
-    * _var bar = new stage( texture, material, (clampMode))_
-    * _var bar = new stage( texture, (clampMode))_
+    * _var bar = new stage( texture, material, (clampMode))_.
+    * _var bar = new stage( texture, (clampMode))_.
     * _material.stage( stageNum )_ - creates/returns stage automatically as long as *stageNum* is not larger than total number of stages plus 1.
-      * _setBlendMode( src, dst )_ - "one", "zero"
-      * _setBlendMode( keyword )_ - e.g. "add", "blend"
-      * _setColourGen( type, args, .. )_ - e.g. ( "const", 1.0, 0.0, 0.0, 1.0 )
-      * _setAlphaGen( type, args, .. )_ - e.g. "const" or "func" ( "sine", "square", etc.)
-      * _setTextureMod( type, args, .. )_ - e.g. "scale", "rotate"
+      * _setBlendMode( src, dst )_ - "one", "zero".
+      * _setBlendMode( keyword )_ - e.g. "add", "blend".
+      * _setColourGen( type, args, .. )_ - e.g. ( "const", 1.0, 0.0, 0.0, 1.0 ).
+      * _setAlphaGen( type, args, .. )_ - e.g. "const" or "func" ( "sine", "square", etc.).
+      * _setTextureMod( type, args, .. )_ - e.g. "scale", "rotate".
   * _milliseconds()_ - returns current platform time.
   * _print( msg )_ - prints message to console.
-  * _cvar( cvarName )_ - returns value of a cvar
+  * _cvar( cvarName )_ - returns value of a cvar.
 
 To see the rest, undocumented features, check *r_mtrlib.cpp* and *r_materialstage.h* for public slots.
+
+*Example material*:
+{{{
+// this constructs a material named 'duck'
+var superAwesome = new material( "duck" );
+
+// this directly adds a stage to the material
+// texture is set to 'textures/duck' and clampMode is "repeat" by default
+stage( "textures/duck", superAwesome );
+
+// this selects the first stage and sets a blend mode for it
+superAwesome.stage( 0 ).setBlendMode( "add" );
+
+}}}
