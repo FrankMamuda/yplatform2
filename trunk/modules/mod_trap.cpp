@@ -22,11 +22,34 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // includes
 //
 #include "mod_trap.h"
+#include "../common/sys_common.h"
 
 //
 // classes
 //
 class Mod_Trap mt;
+
+/*
+================
+passFloat
+================
+*/
+int Mod_Trap::passFloat( float v ) {
+    floatIntUnion f;
+    f.v = v;
+    return f.i;
+}
+
+/*
+================
+getFloat
+================
+*/
+float Mod_Trap::getFloat( intptr_t i ) {
+    floatIntUnion f;
+    f.i = (int)i;
+    return f.v;
+}
 
 /*
 ================
@@ -467,33 +490,7 @@ void Mod_Trap::guiRemoveSettingsTab( const QString &name ) {
 }
 
 #ifndef R_BUILD
-/*
-=============
-rLoadImage
-=============
-*/
-imgHandle_t Mod_Trap::rLoadImage( const QString &filename ) {
-    return ( imgHandle_t )this->call( ModuleAPI::Renderer, RendererAPI::LoadImage, ( intptr_t )filename.toLatin1().constData());
-}
-
-/*
-=============
-rDrawImage
-=============
-*/
-void Mod_Trap::rDrawImage( float x, float y, float w, float h, float s1, float t1, float s2, float t2, imgHandle_t handle ) {
-    this->call( ModuleAPI::Renderer, RendererAPI::DrawImage, (intptr_t)x, (intptr_t)y, (intptr_t)w, (intptr_t)h, (intptr_t)s1, (intptr_t)t1, (intptr_t)s2, (intptr_t)t2, (intptr_t)handle );
-}
-
-/*
-=============
-rDrawImage
-=============
-*/
-void Mod_Trap::rDrawImage( float x, float y, float w, float h, imgHandle_t handle ) {
-    this->rDrawImage( x, y, w, h, 0, 0, 1, 1, handle );
-}
-
+#ifdef RENDERER_ENABLED
 /*
 =============
 rLoadMaterial
@@ -509,7 +506,7 @@ rDrawMaterial
 =============
 */
 void Mod_Trap::rDrawMaterial( float x, float y, float w, float h, mtrHandle_t handle ) {
-    this->call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, (intptr_t)x, (intptr_t)y, (intptr_t)w, (intptr_t)h, (intptr_t)handle );
+    this->call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, this->passFloat( x ), this->passFloat( y ), this->passFloat( w ), this->passFloat( h ), (intptr_t)handle );
 }
 
 /*
@@ -518,7 +515,7 @@ rSetColour
 =============
 */
 void Mod_Trap::rSetColour( float r, float g, float b, float a ) {
-    this->call( ModuleAPI::Renderer, RendererAPI::SetColour, ( intptr_t )r, ( intptr_t )g, ( intptr_t )b, ( intptr_t )a );
+    this->call( ModuleAPI::Renderer, RendererAPI::SetColour, ( intptr_t )this->passFloat( r ), ( intptr_t )this->passFloat( g ), ( intptr_t )this->passFloat( b ), ( intptr_t )this->passFloat( a ));
 }
 
 /*
@@ -538,11 +535,11 @@ rDrawText
 =============
 */
 void Mod_Trap::rDrawText( float x, float y, QFont *font, const QString &text, float r, float g, float b, float a ) {
-    this->call( ModuleAPI::Renderer, RendererAPI::DrawText, ( intptr_t )x, ( intptr_t )y, ( intptr_t )font, ( intptr_t )text.toLatin1().constData(),
-               ( intptr_t )r,
-               ( intptr_t )g,
-               ( intptr_t )b,
-               ( intptr_t )a );
+    this->call( ModuleAPI::Renderer, RendererAPI::DrawText, this->passFloat( x ), this->passFloat( y ), ( intptr_t )font, ( intptr_t )text.toLatin1().constData(),
+               this->passFloat( r ),
+               this->passFloat( g ),
+               this->passFloat( b ),
+               this->passFloat( a ));
 }
 
 /*
@@ -553,6 +550,41 @@ rDrawText
 void Mod_Trap::rDrawText( float x, float y, QFont *font, const QString &text, const QColor &colour ) {
     this->rDrawText( x, y, font, text, colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF());
 }
-
 #endif
+#else
+/*
+=============
+keyEvent
+=============
+*/
+void Mod_Trap::keyEvent( ModuleAPI::KeyEventType type, int key ) {
+    this->call( ModuleAPI::Platform, ModuleAPI::RendererKeyEvent, ( intptr_t )type, ( intptr_t )key );
+}
 
+/*
+=============
+mouseEvent
+=============
+*/
+void Mod_Trap::mouseEvent( ModuleAPI::KeyEventType type, Qt::MouseButton key ) {
+    this->call( ModuleAPI::Platform, ModuleAPI::RendererMouseEvent, ( intptr_t )type, ( intptr_t )key );
+}
+
+/*
+=============
+mouseMotion
+=============
+*/
+void Mod_Trap::mouseMotion( int x, int y ) {
+    this->call( ModuleAPI::Platform, ModuleAPI::RendererMouseMotion, ( intptr_t )x, ( intptr_t )y );
+}
+
+/*
+=============
+mouseMotion
+=============
+*/
+void Mod_Trap::wheelEvent( int delta ) {
+    this->call( ModuleAPI::Platform, ModuleAPI::RendererWheelEvent, ( intptr_t )delta );
+}
+#endif

@@ -26,6 +26,12 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "../common/sys_shared.h"
 #include "../common/sys_cvarfunc.h"
+#ifndef R_BUILD
+#include "module_global.h"
+#endif
+#ifdef QTSCRIPT_ENABLED
+#include <QtScript>
+#endif
 
 //
 // class::mCvar
@@ -48,19 +54,22 @@ public:
     QString name() const { return this->m_name; }
     QString description() const { return this->m_description; }
     QString string() const { return this->m_string; }
+#ifdef QTSCRIPT_ENABLED
+    Q_INVOKABLE QScriptValue str() const { return QScriptValue( this->m_string.toLatin1().constData()); }
+#endif
 
     // flags & other funcs
     pCvar::Flags flags;
 
     // other funcs
-    int     integer() const;
-    float   value() const;
-    bool    set( const QString &string, bool force = false );
-    bool    set( int, bool force = false );
-    bool    set( float, bool force = false );
+    Q_INVOKABLE int     integer() const;
+    Q_INVOKABLE float   value() const;
+    Q_INVOKABLE bool    set( const QString &string, bool force = false );
+    Q_INVOKABLE bool    set( int, bool force = false );
+    Q_INVOKABLE bool    set( float, bool force = false );
     void    update( const QString &string );
 
-public slots:
+private slots:
     // property setters
     void setName( const QString &cvarName ) { this->m_name = cvarName; }
     void setDescription( const QString &description ) { this->m_description = description; }

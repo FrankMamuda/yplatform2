@@ -74,7 +74,7 @@ bool Sys_Package::readData( fileHandle_t handle, ReadModes mode, T &out ) {
     // mind endianess
     for ( y = 0; y < mode; y++ ) {
         if ( fs.read( &buffer, 1, handle, Sys_Filesystem::Silent ))
-            data += (( unsigned int )buffer ) << 8 * y;
+            data += ( static_cast<unsigned int>( buffer )) << 8 * y;
         else {
             out = 0;
             return false;
@@ -147,7 +147,7 @@ bool Sys_Package::readPackage( pPackage *pPtr ) {
 
                 // read entry name byte by byte
                 eName.clear();
-                for ( k = 0; k < (int)entryNameSize; k++ ) {
+                for ( k = 0; k < static_cast<int>( entryNameSize ); k++ ) {
                     if ( !this->readData( pPtr->fileHandle(), Byte, c ))
                         goto corruptHeader;
                     eName.append( QChar( c ));

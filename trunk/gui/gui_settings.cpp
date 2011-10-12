@@ -140,7 +140,7 @@ saveCvars
 ================
 */
 void Gui_Settings::saveCvars() {
-    gui_toolBarIconSize->set((int)this->s_guiIconSize );
+    gui_toolBarIconSize->set( static_cast<int>( this->s_guiIconSize ));
     mod_extract->set( this->s_modExtract );
     fs_debug->set( this->s_fsDebug );
     fs_ignoreLinks->set( this->s_ignoreLinks );

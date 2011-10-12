@@ -28,14 +28,17 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "renderer_global.h"
 #include "../common/sys_shared.h"
 #include "../modules/mod_public.h"
+#include <QtScript>
 #else
 #include "module_global.h"
 #include "../../common/sys_shared.h"
 #include "../mod_public.h"
+#ifdef RENDERER_ENABLED
 #include "../renderer/r_shared.h"
 #include "../renderer/r_public.h"
 #include <QFont>
 #include <QColor>
+#endif
 #endif
 #include <QObject>
 #if !defined( intptr_t )
@@ -58,9 +61,22 @@ class Mod_Trap : public QObject {
     Q_OBJECT
 
 public:
+    // float conversion struct
+    typedef union {
+            float v;
+            int i;
+            unsigned int ui;
+    } floatIntUnion;
+
     void setPlatformCalls( platformSyscallDef pSysCall );
     void setRendererCalls( platformSyscallDef pSysCall );
+    int passFloat( float v );
+    float getFloat( intptr_t i );
 
+    // cvars
+    QList <mCvar*>cvars;
+
+public slots:
     //
     // platform calls
     //
@@ -68,6 +84,7 @@ public:
     void comPrint( const QString &msg );
     void comError( int type, const QString &msg );
     int comMilliseconds();
+
     // filesystem
     int fsOpen( int mode, const QString &path, fileHandle_t *fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
     void fsClose( const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
@@ -83,8 +100,8 @@ public:
     bool fsExtract( const QString &filename );
     QStringList fsListFiles( const QString &directory, QRegExp *filter = NULL, Sys_Filesystem::ListModes mode = Sys_Filesystem::ListAll );
     // cmd subsystem
-    void cmdAdd( const QString &filename, cmdCommand_t cmd, const QString &description );
-    void cmdRemove( const QString &filename );
+    void cmdAdd( const QString &cmdName, cmdCommand_t cmd, const QString &description );
+    void cmdRemove( const QString &cmdName );
     int cmdArgc();
     QString cmdArgv( int arg );
     void cmdExecute( QString cmd );
@@ -109,19 +126,20 @@ public:
     void guiRemoveSettingsTab( const QString &name );
     // renderer
 #ifndef R_BUILD
-    imgHandle_t rLoadImage( const QString &filename );
-    void rDrawImage( float x, float y, float w, float h, float s1, float t1, float s2, float t2, imgHandle_t handle );
-    void rDrawImage( float x, float y, float w, float h, imgHandle_t handle );
+#ifdef RENDERER_ENABLED
     mtrHandle_t rLoadMaterial( const QString &filename );
     void rDrawMaterial( float x, float y, float w, float h, mtrHandle_t handle );
     void rSetColour( float r, float g, float b, float a = 1.0f );
     void rSetColour( const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f ));
-    void rDrawText( float x, float y, QFont *font, const QString &text, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f );
+    void rDrawText( float x, float y, QFont *font, const QString &text, float r, float g, float b, float a = 1.0f );
     void rDrawText( float x, float y, QFont *font, const QString &text, const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f ));
 #endif
-
-    // cvars
-    QList <mCvar*>cvars;
+#else
+    void keyEvent( ModuleAPI::KeyEventType, int );
+    void mouseEvent( ModuleAPI::KeyEventType = ModuleAPI::KeyPress, Qt::MouseButton = Qt::LeftButton );
+    void mouseMotion( int, int );
+    void wheelEvent( int );
+#endif
 
 private:
     platformSyscallDef platformSyscall;

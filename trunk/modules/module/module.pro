@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       -= gui
+win32:INCLUDEPATH += ../../includes
 
 TARGET = module
 TEMPLATE = lib
@@ -18,4 +18,6 @@ DEFINES += MODULE_BUILD
 HEADERS += mod_main.h\
         module_global.h \
     ../mod_public.h \
-    ../mod_trap.h
+    ../mod_trap.h \
+    ../mod_cvarfunc.h
+

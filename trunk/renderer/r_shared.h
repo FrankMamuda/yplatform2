@@ -48,7 +48,7 @@ namespace Renderer {
     static const QString PlatformLogo ( ":/common/platform" );
     static const QString Title        ( QObject::trUtf8( "Nu Renderer" ));
     static const QString Copyright    ( QObject::trUtf8( "Copyright (c) 2011, Edd 'Double Dee' Psycho." ));
-    static const QString Version      ( QObject::trUtf8( "v0.98.44 (beta)" ));
+    static const QString Version      ( QObject::trUtf8( "v0.98.46 (beta)" ));
     typedef float Vec2D[2];
     typedef float Vec4D[4];
 }

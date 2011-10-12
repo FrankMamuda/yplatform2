@@ -512,10 +512,11 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
     // get material
     mtrPtr = m.mtrList.at( handle );
 
-    // no stages at all
+    // no stages at all?
+    // no problem, search for an image
     if ( mtrPtr->stageList.isEmpty()) {
         // draw default image and return
-        this->drawImage( x, y, w, h, 0, 0, 1, 1, m.defaultImage );
+        this->drawImage( x, y, w, h, 0, 0, 1, 1, m.loadImage( mtrPtr->name()));
         return;
     }
 

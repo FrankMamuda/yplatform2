@@ -582,9 +582,9 @@ QImage *Gui_Main::addImageResource( const QString &filename, int width, int heig
     if ( len > 0 ) {
         this->imageResources << new imageResourceDef_t;
         if ( width > 0 && height > 0 )
-            this->imageResources.last()->image = QImage::fromData( QByteArray (( const char* )buffer, len )).scaled( QSize( width, height ));
+            this->imageResources.last()->image = QImage::fromData( QByteArray( reinterpret_cast<const char*>( buffer ), len )).scaled( QSize( width, height ));
         else
-            this->imageResources.last()->image = QImage::fromData( QByteArray (( const char* )buffer, len ));
+            this->imageResources.last()->image = QImage::fromData( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
 
         this->imageResources.last()->name = filename;
         this->ui->consoleScreen->document()->addResource( QTextDocument::ImageResource, QUrl( filename ), this->imageResources.last()->image );
@@ -766,7 +766,7 @@ void Gui_Main::loadHistory( const QString &filename ) {
     //
     // parse document
     //
-    histFile.setContent( QByteArray(( const char* )buffer, len ));
+    histFile.setContent( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
     QDomNode histNode = histFile.firstChild();
     while ( !histNode.isNull()) {
         if ( histNode.isElement()) {
@@ -808,8 +808,13 @@ closeEvent
 ===============
 */
 void Gui_Main::closeEvent( QCloseEvent *event ) {
-    m.shutdown();
-    event->accept();
+    if ( this->hasTray()) {
+        this->hide();
+        event->ignore();
+    } else {
+        m.shutdown();
+        event->accept();
+    }
 }
 
 /*
@@ -845,7 +850,7 @@ void Gui_Main::addToolBarAction( const QString &name, const QString &icon, cmdCo
             // any icon?
             if ( len > 0 ) {
                 QPixmap pixMap;
-                pixMap.loadFromData( QByteArray (( const char* )buffer, len ));
+                pixMap.loadFromData( QByteArray ( reinterpret_cast<const char*>( buffer ), len ));
                 this->toolBarActions.last()->action->setIcon( QIcon( pixMap ));
             }
         }
@@ -939,7 +944,7 @@ void Gui_Main::addTabExt( TabDestinations dest, QWidget *widget, const QString &
             // any icon?
             if ( len > 0 ) {
                 QPixmap pixMap;
-                pixMap.loadFromData( QByteArray (( const char* )buffer, len ));
+                pixMap.loadFromData( QByteArray ( reinterpret_cast<const char*>( buffer ), len ));
                 destWidget->addTab( widget, QIcon( pixMap ), name );
             } else
                 destWidget->addTab( widget, name );

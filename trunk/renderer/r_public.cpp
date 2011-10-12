@@ -115,21 +115,6 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         m.endFrame();
         break;
 
-    case RendererAPI::LoadImage:
-        if ( !m.hasInitialized())
-            return false;
-
-        return ( intptr_t )m.loadImage(( const char *)args[0] );
-
-    case RendererAPI::DrawImage:
-        if ( !m.hasInitialized())
-            return false;
-
-        cmd.drawImage(( float )args[0], ( float )args[1], ( float )args[2], ( float )args[3],
-                      ( float )args[4], ( float )args[5], ( float )args[6], ( float )args[7],
-                      ( imgHandle_t )args[8] );
-        break;
-
     case RendererAPI::LoadMaterial:
         if ( !m.hasInitialized())
             return false;
@@ -140,10 +125,9 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         if ( !m.hasInitialized())
             return false;
 
-        cmd.drawMaterial(( float )args[0], ( float )args[1], ( float )args[2], ( float )args[3],
+        cmd.drawMaterial( mt.getFloat( args[0] ), mt.getFloat( args[1] ), mt.getFloat( args[2] ), mt.getFloat( args[3] ),
                          ( mtrHandle_t )args[4] );
         break;
-
 
     case RendererAPI::DrawText:
         if ( !m.hasInitialized())
@@ -151,10 +135,10 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
 
         // save colour, set new font colour
         cmd.saveColour();
-        cmd.setColour(( float )args[4], ( float )args[5], ( float )args[6], ( float )args[7], true );
+        cmd.setColour( mt.getFloat( args[4] ), mt.getFloat( args[5] ), mt.getFloat( args[6] ), mt.getFloat( args[7] ), true );
 
         // draw Qt font
-        glImp.drawText(( float )args[0], ( float )args[1], *( QFont* )args[2], ( const char * )args[3] );
+        glImp.drawText( mt.getFloat( args[0] ), mt.getFloat( args[1] ), *( QFont* )args[2], ( const char * )args[3] );
 
         // restore colour
         cmd.restoreColour();
@@ -165,7 +149,7 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         if ( !m.hasInitialized())
             return false;
 
-        cmd.setColour(( float )args[0], ( float )args[1], ( float )args[2], ( float )args[3] );
+        cmd.setColour( mt.getFloat( args[0] ), mt.getFloat( args[1] ), mt.getFloat( args[2] ), mt.getFloat( args[3] ));
         break;
 
     case RendererAPI::Raise:

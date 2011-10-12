@@ -73,8 +73,12 @@ void pModule::unload() {
         else
             this->call( ModuleAPI::Shutdown );
 
-        // dd, it seems like we cannot perform unload, it crashes for some reason
-        //this->handle->unload();
+        // dd, it seems like we cannot perform unload, platform crashes on exit for some reason
+        // BUT, if we don't perform unload, the renderer reload bug appears, go figure
+        /*if ( this->handle->isLoaded() )
+            if ( this->handle->unload())
+                com.print( "success\n" );
+        */
         delete this->handle;
     }
 }
@@ -99,13 +103,13 @@ void pModule::loadHandle() {
     if ( this->handle->load()) {
         // resolve main entry (renderer uses different structure)
         if ( this->type() == Module ) {
-            this->modMain = ( modMainDef )this->handle->resolve( "modMain" );
-            this->renderer = ( rendererEntryDef )this->handle->resolve( "modRendererEntry" );
+            this->modMain = reinterpret_cast<modMainDef>( this->handle->resolve( "modMain" ));
+            this->renderer = reinterpret_cast<rendererEntryDef>( this->handle->resolve( "modRendererEntry" ));
         } else if ( this->type() == Renderer )
-            this->modMain = ( modMainDef )this->handle->resolve( "rendererMain" );
+            this->modMain = reinterpret_cast<modMainDef>( this->handle->resolve( "rendererMain" ));
 
         // resolve syscall entry
-        this->entry = ( modEntryDef )this->handle->resolve( "modEntry" );
+        this->entry = reinterpret_cast<modEntryDef>( this->handle->resolve( "modEntry" ));
 
         // see if we have properly resolved entry/main functions
         if ( !this->modMain || !this->entry ) {

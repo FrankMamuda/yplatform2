@@ -59,10 +59,10 @@ public:
     float verticalFactor() const { return this->m_verticalFactor; }
 
     // renderer window
-    QWidget *widget;
+    R_GlimpWidget *widget;
 
 private:
-    R_GlimpWidget *openGL;
+   // R_GlimpWidget *openGL;
     QGLContext *context;
 
     // properties
@@ -73,7 +73,7 @@ private:
 public slots:
     void resizeScreen();
     void update();
-    void drawText( float x, float y, QFont &font, const QString &text );
+    void drawText( float x, float y, QFont font, const QString &text );
 
     // property setters
     void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }

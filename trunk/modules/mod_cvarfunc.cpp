@@ -107,7 +107,8 @@ update
 ============
 */
 void mCvar::update( const QString &string ) {
-    this->setString( string );
+    if ( QString::compare( this->string(), string ))
+        this->setString( string );
 }
 
 /*

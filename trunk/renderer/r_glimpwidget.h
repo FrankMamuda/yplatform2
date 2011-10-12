@@ -48,7 +48,15 @@ class R_GlimpWidget : public QGLWidget {
     Q_CLASSINFO( "description", "Renderer window" )
 
 protected:
-    void resizeGL( int w, int h );
+    virtual void resizeGL( int, int );
+    virtual void closeEvent( QCloseEvent* );
+    virtual void keyPressEvent( QKeyEvent * );
+    virtual void keyReleaseEvent( QKeyEvent * );
+    virtual void mousePressEvent( QMouseEvent * );
+    virtual void mouseReleaseEvent( QMouseEvent * );
+    virtual void mouseDoubleClickEvent( QMouseEvent * );
+    virtual void mouseMoveEvent( QMouseEvent * );
+    virtual void wheelEvent( QWheelEvent *);
 
 public:
     R_GlimpWidget( QWidget *parent );

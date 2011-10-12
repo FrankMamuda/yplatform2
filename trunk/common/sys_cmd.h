@@ -98,7 +98,7 @@ public:
     void add( const QString &cmdName, cmdCommand_t, const QString &description = QString::null );
     void remove( const QString &cmdName );
     int argc() const;
-    QString argv( int ) const;
+    QString argv( unsigned int ) const;
     QList<pCmd*> cmdList;
     pCmd *find( const QString &name ) const;
     bool execute( const QString &command );
