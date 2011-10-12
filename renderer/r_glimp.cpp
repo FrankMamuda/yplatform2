@@ -24,6 +24,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "r_glimp.h"
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
+#include "../common/sys_cmd.h"
 
 //
 // classes
@@ -35,6 +36,12 @@ R_GLimp glImp;
 //
 mCvar *r_screenMode;
 mCvar *r_adjustScreen;
+
+//
+// commands
+//
+createCommandPtr( glImp.widget, hide );
+createCommandPtr( glImp.widget, show );
 
 /*
 ===============
@@ -59,19 +66,15 @@ void R_GLimp::init() {
     // create context
     this->context = new QGLContext( format );
 
-    // create window
-    this->widget = new QWidget();
+    // create openGL widget
+    this->widget = new R_GlimpWidget( this->widget );
+    this->widget->setFormat( format );
+    this->widget->setAutoFillBackground( false );
+    this->widget->setMouseTracking( true );
+    this->widget->makeCurrent();
 
     // set default paint engine as OpenGL
     QGL::setPreferredPaintEngine( QPaintEngine::OpenGL );
-
-    // create openGL widget
-    this->openGL = new R_GlimpWidget( this->widget );
-    this->openGL->setFormat( format );
-    this->openGL->setAutoFillBackground( false );
-    this->widget->setMouseTracking( true );
-    this->openGL->setMouseTracking( true );
-    this->openGL->makeCurrent();
 
     // init widget
     this->widget->setWindowTitle( Renderer::Title );
@@ -80,8 +83,11 @@ void R_GLimp::init() {
 
     // update screen on cvar changes
     this->connect( r_screenMode, SIGNAL( valueChanged( QString, QString )), this, SLOT(resizeScreen()));
-
     this->resizeScreen();
+
+    // add cmds
+    mt.cmdAdd( "r_raise", showCmd, this->tr( "raise renderer window" ));
+    mt.cmdAdd( "r_hide", hideCmd, this->tr( "hide renderer window" ));
 
     // glimp is ok
     this->setInitialized();
@@ -109,7 +115,6 @@ void R_GLimp::resizeScreen() {
 
     // set size
     this->widget->setFixedSize( Renderer::HorizontalScreenModes[this->getScreenMode()], Renderer::VerticalScreenModes[this->getScreenMode()] );
-    this->openGL->setFixedSize( Renderer::HorizontalScreenModes[this->getScreenMode()], Renderer::VerticalScreenModes[this->getScreenMode()] );
 }
 
 /*
@@ -118,10 +123,8 @@ update
 ===============
 */
 void R_GLimp::update() {
-    if ( this->hasInitialized()) {
-        this->openGL->swapBuffers();
+    if ( this->hasInitialized())
         this->widget->update();
-    }
 }
 
 /*
@@ -136,10 +139,13 @@ void R_GLimp::shutdown() {
         // announce
         mt.comPrint( this->tr( "^3R_GLimp: shutdown\n" ));
 
+        // remove cmds
+        mt.cmdRemove( "r_raise" );
+        mt.cmdRemove( "r_hide" );
+
         // clean up
         delete this->context;
-        this->openGL->~QGLWidget();
-        this->widget->~QWidget();
+        this->widget->~QGLWidget();
         this->setInitialized( false );
     }
 }
@@ -149,7 +155,7 @@ void R_GLimp::shutdown() {
 drawText
 ===============
 */
-void R_GLimp::drawText( float x, float y, QFont &font, const QString &text ) {
+void R_GLimp::drawText( float x, float y, QFont font, const QString &text ) {
     int pixelSize;
     this->adjustCoords( x, y );
 
@@ -159,7 +165,7 @@ void R_GLimp::drawText( float x, float y, QFont &font, const QString &text ) {
         font.setPixelSize( pixelSize * this->horizontalFactor());
 
     // render font
-    this->openGL->renderText( x, y, 0.0f, text, font );
+    this->widget->renderText( x, y, 0.0f, text, font );
 }
 
 /*

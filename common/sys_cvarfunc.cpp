@@ -26,6 +26,10 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_common.h"
 #include "sys_module.h"
 
+//
+//  move slots to private?
+//
+
 /*
 ============
 construct
@@ -124,7 +128,7 @@ bool pCvar::set( const QString &string, bool force ) {
 
 /*
 ============
-set (integer)
+set
 ============
 */
 bool pCvar::set( int integer, bool force ) {
@@ -133,9 +137,27 @@ bool pCvar::set( int integer, bool force ) {
 
 /*
 ============
-set (value)
+set
+============
+*/
+bool pCvar::set( double integer, bool force ) {
+    return this->set( QString( "%1" ).arg( integer ), force );
+}
+
+/*
+============
+set
 ============
 */
 bool pCvar::set( float value, bool force ) {
     return this->set( QString( "%1" ).arg( value ), force );
+}
+
+/*
+============
+reset
+============
+*/
+void pCvar::reset() {
+    this->setString( this->resetString());
 }

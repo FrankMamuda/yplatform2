@@ -33,7 +33,11 @@ namespace ModuleAPI {
         Init,
         Update,
         UpdateCvar,
-        Shutdown
+        Shutdown,
+        KeyEvent,
+        MouseEvent,
+        MouseMotion,
+        WheelEvent
     };
     // public API calls (platform)
     enum PlatformAPICalls {
@@ -85,7 +89,18 @@ namespace ModuleAPI {
         GuiSetActiveTab,
         GuiSetConsoleState,
         GuiAddSettingsTab,
-        GuiRemoveSettingsTab
+        GuiRemoveSettingsTab,
+
+        // renderer only
+        RendererKeyEvent = 50,
+        RendererMouseEvent,
+        RendererMouseMotion,
+        RendererWheelEvent
+    };
+    enum KeyEventType {
+        KeyPress,
+        KeyRelease,
+        DoubleClick
     };
     enum Destination {
         Platform,
@@ -93,7 +108,7 @@ namespace ModuleAPI {
         Soundsystem*/
     };
     // api version (to avoid mismatch)
-    const static unsigned int Version = 4;
+    const static unsigned int Version = 5;
 }
 
 #endif // MOD_PUBLIC_H

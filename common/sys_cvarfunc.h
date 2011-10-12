@@ -68,7 +68,9 @@ public:
     float   value() const;
     bool    set( const QString &string, bool force = false );
     bool    set( int, bool force = false );
+    bool    set( double, bool force = false );
     bool    set( float, bool force = false );
+    void    reset();
 
 public slots:
     // property setters

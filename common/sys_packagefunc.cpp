@@ -125,11 +125,11 @@ long pEntry::read( byte *buffer, unsigned long len, int flags ) {
 
     // set read params, bind buffer to stream
     this->stream.next_out = buffer;
-    this->stream.avail_out = ( unsigned int )len;
+    this->stream.avail_out = static_cast<unsigned int>( len );
 
     // failsafe, can't read more than uncompressed length
     if (( unsigned long )len > this->length())
-        this->stream.avail_out = ( unsigned int )this->length();
+        this->stream.avail_out = static_cast<unsigned int>( this->length());
 
     // allocate read buffer
     this->readBuffer = new byte[Package::ReadBuffer];
@@ -141,25 +141,25 @@ long pEntry::read( byte *buffer, unsigned long len, int flags ) {
 
             // set read buffer size
             if ( this->remaining() < readBufferSize )
-                readBufferSize = ( unsigned int )this->remaining();
+                readBufferSize = static_cast<unsigned int>( this->remaining());
 
             // failsafe
             if ( readBufferSize == 0 )
                 return -1;
 
             // seek until compressed data
-            if ( !fs.seek( this->parent()->fileHandle(), this->offset() + this->pos(), ( Sys_Filesystem::OpenFlags )flags ))
+            if ( !fs.seek( this->parent()->fileHandle(), this->offset() + this->pos(), static_cast<Sys_Filesystem::OpenFlags>( flags )))
                 return -1;
 
             // read compressed data with buffer size
-            if ( !fs.read( readBuffer, readBufferSize, this->parent()->fileHandle(), ( Sys_Filesystem::OpenFlags )flags ))
+            if ( !fs.read( readBuffer, readBufferSize, this->parent()->fileHandle(), static_cast<Sys_Filesystem::OpenFlags>( flags )))
                 return -1;
 
             // advance by number of bytes read
             this->setPos( this->pos() + readBufferSize );
             this->setRemaining( this->remaining() - readBufferSize );
             this->stream.next_in = readBuffer;
-            this->stream.avail_in = ( unsigned int )readBufferSize;
+            this->stream.avail_in = static_cast<unsigned int>( readBufferSize );
         }
 
         // if data is uncompressed, just copy it

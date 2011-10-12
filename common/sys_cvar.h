@@ -66,7 +66,7 @@ public slots:
     void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
 
 private:
-    QList<pCvar*> cvars;
+    QList<pCvar*> cvarList;
     bool validate( const QString &s ) const;
 
     // properties

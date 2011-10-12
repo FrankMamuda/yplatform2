@@ -37,7 +37,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 namespace Sys {
     static const QString Title       ( QObject::trUtf8( "YPlatform2" ));
     static const QString Copyright   ( QObject::trUtf8( "Copyright (c) 2009-2011, Edd 'Double Dee' Psycho." ));
-    static const QString Version     ( QObject::trUtf8( "Yuna Commons: v2.8.99.3 (rc4)" ));
+    static const QString Version     ( QObject::trUtf8( "Yuna Commons: v2.8.99.5 (rc6)" ));
     static const QString GUIVersion  ( QObject::trUtf8( "GUI: v1.0.1" ));
 
     // colours

@@ -56,23 +56,29 @@ void R_MtrLib::loadMtrLib( const QString &filename ) {
         mt.fsFreeFile( filename );
     }
 
-    // do static check so far of code:
-    if ( !engine.canEvaluate( mtrLib )) {
+    // create new context
+    this->engine.pushContext();
+
+    // do static check
+    if ( !this->engine.canEvaluate( mtrLib )) {
         mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: cannot evaluate mtrLib \'%1\'\n" ).arg( filename ));
         return;
     }
-    engine.evaluate( mtrLib );
+    this->engine.evaluate( mtrLib );
 
     // uncaught exception?
-    if ( engine.hasUncaughtException()) {
-        QScriptValue exception = engine.uncaughtException();
+    if ( this->engine.hasUncaughtException()) {
+        QScriptValue exception = this->engine.uncaughtException();
         this->catchError();
         mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib (\'%1\'): exception: \'%2\'\n" ).arg( filename ).arg( exception.toString()));
         return;
     }
 
     // find update function, if it is (not mandatory)
-    this->updateFunc = engine.evaluate( "update" );
+    this->updateFunc = this->engine.evaluate( "update" );
+
+    // pop context
+    this->engine.popContext();
 }
 
 /*
@@ -278,6 +284,10 @@ QScriptValue scriptCvar( QScriptContext *context, QScriptEngine *engine ) {
 /*
 ===================
 init
+
+dd: use separate context/engine to avoid conflict?
+    done, though we should handle multiple update
+    funcs not just single one (QList<QScriptValue>updateFuncList smth.)
 ===================
 */
 void R_MtrLib::init() {
@@ -312,12 +322,14 @@ void R_MtrLib::init() {
 
     // nothing at all?
     if ( !numMtrLibFiles ) {
-        mt.comPrint( this->tr( "^3WARNING: R_Material::scanMtrLib: no material libraries found\n" ));
+        mt.comPrint( this->tr( "^3WARNING: R_Material::init: no material libraries found\n" ));
         return;
     }
 
-    foreach ( QString filename, fileList )
-        loadMtrLib( filename );
+    foreach ( QString filename, fileList ) {
+        mt.comPrint( QString( "^1read %1\n" ).arg( filename ));
+        this->loadMtrLib( filename );
+    }
 
     // all done
     this->setInitialized();

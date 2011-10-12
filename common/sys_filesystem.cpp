@@ -100,7 +100,7 @@ void Sys_Filesystem::init() {
     }
 
     // add resources
-    QDir::setSearchPaths( ":", QStringList(":/"));
+    QDir::setSearchPaths( ":", QStringList( ":/" ));
 }
 
 /*
@@ -377,8 +377,10 @@ void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHa
     int searchPathIndex = this->getSearchPathIndex( Filesystem::HomePathID );
 
     // failed
-    if ( searchPathIndex < 0 )
+    if ( searchPathIndex < 0 ) {
         com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInWriteMode: could not resolve homePath\n" ));
+        return;
+    }
 
     if ( fs_debug->integer())
         com.print( this->tr( "^6Sys_Filesystem::openInWriteMode: open \"%1\" in \"%2\" in write mode\n" ).arg( filename, this->searchPaths.at( searchPathIndex )->path()));
@@ -668,7 +670,7 @@ long Sys_Filesystem::read( byte *buffer, unsigned long len, fileHandle_t fHandle
             }
 
             if ( filePtr->pathType() == pFile::Directory )
-                return filePtr->fHandle.read((char*)buffer, len );
+                return filePtr->fHandle.read( reinterpret_cast<char*>( buffer ), len );
             else
                 return filePtr->pHandle->read( buffer, len, flags );
         }
@@ -704,7 +706,7 @@ long Sys_Filesystem::write( const byte *buffer, unsigned long len, fileHandle_t 
             }
 
             if ( filePtr->pathType() == pFile::Directory )
-                return filePtr->fHandle.write( QByteArray((const char*)buffer, len ));
+                return filePtr->fHandle.write( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
             else {
                 if ( !( flags.testFlag( Silent )))
                     com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::write: file \"%1\" is in a package\n" ).arg( filePtr->name()));
@@ -811,7 +813,7 @@ print
 =================
 */
 void Sys_Filesystem::print( const fileHandle_t fHandle, const QString &msg, OpenFlags flags ) {
-    this->write((const byte*)msg.toLatin1().constData(), msg.length(), fHandle, flags );
+    this->write( reinterpret_cast<const byte*>( msg.toLatin1().constData()), msg.length(), fHandle, flags );
 }
 
 /*
@@ -1209,7 +1211,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
         return false;
     }
 
-    if ( !this->read(( byte* )&header, sizeof( header ), fHandle )) {
+    if ( !this->read( reinterpret_cast<byte*>( &header ), sizeof( header ), fHandle )) {
         com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read header of win32 link \"%1\"\n" ).arg( filename ));
         this->close( fHandle );
         return false;
@@ -1226,13 +1228,12 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
         quint16 len;
 
         // skip that list
-        if ( !this->read(( byte* )&len, sizeof( len ), fHandle ) || ( !this->seek( fHandle, len, flags, Current ))) {
+        if ( !this->read( reinterpret_cast<byte*>( &len ), sizeof( len ), fHandle ) || ( !this->seek( fHandle, len, flags, Current ))) {
             com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read shell item id list for win32 link \"%1\"\n" ).arg( filename ));
             this->close( fHandle );
             return false;
         }
     }
-
     info.isDirectory = ( header.attributes & 0x10 );
 
     // not a directory
@@ -1245,7 +1246,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
     if ( info.isFileOrDir ) {
         lnkFileLocation_t loc;
 
-        if ( !this->read(( byte* )&loc, sizeof( loc ), fHandle )) {
+        if ( !this->read( reinterpret_cast<byte*>( &loc ), sizeof( loc ), fHandle )) {
             com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read shell item id list for win32 link \"%1\"\n" ).arg( filename ));
             this->close( fHandle );
             return false;
@@ -1260,10 +1261,10 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
         }
 
         size_t size = loc.totalLen - sizeof( loc );
-        char *data = new char[size];
-        char *start = data - sizeof( loc );
+        byte *data = new byte[size];
+        char *start = reinterpret_cast<char*>( data ) - sizeof( loc );
 
-        if ( !this->read(( byte* )data, size, fHandle )) {
+        if ( !this->read( data, size, fHandle )) {
             com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read path data for win32 link \"%1\"\n" ).arg( filename ));
             this->close( fHandle );
             return false;
@@ -1296,11 +1297,8 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
             }
             // network path
             // dd, do we really need to handle network path?
-        } else {
-            info.path = QString( "%1\\%2" )
-                    .arg( start + loc.netVolume + 0x14 )  // network share name
-                    .arg( start + loc.pathname );
-        }
+        } else
+            info.path = QString( "%1\\%2" ).arg( start + loc.netVolume + 0x14 ).arg( start + loc.pathname );
 
         delete [] data;
         data = 0;
@@ -1309,16 +1307,16 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
         if ( header.flags & 0x4 ) {
             quint16 len;
 
-            if ( !this->read(( byte* )&len, sizeof( len ), fHandle )) {
+            if ( !this->read( reinterpret_cast<byte*>( &len ), sizeof( len ), fHandle )) {
                 com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read description string length for win32 link \"%1\"\n" ).arg( filename ));
                 this->close( fHandle );
                 return false;
             }
 
             // this can never be > 65K, so its OK to not check the size
-            data = new char[len+1];
+            data = new byte[len+1];
 
-            if ( !this->read(( byte* )data, len, fHandle )) {
+            if ( !this->read( data, len, fHandle )) {
                 com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read description string for win32 link \"%1\"\n" ).arg( filename ));
                 delete [] data;
                 this->close( fHandle );
@@ -1327,7 +1325,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
 
             // nullbyte seems to miss
             data[len] = 0;
-            info.description = data;
+            info.description = reinterpret_cast<char*>( data );
             delete [] data;
         }
     }

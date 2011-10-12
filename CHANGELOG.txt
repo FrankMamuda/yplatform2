@@ -11,3 +11,12 @@
 
 1st of September (YCommons 2.8.99.3 rc4)
     -more fixes in settings code
+
+12th of September (YCommons 2.8.99.4 rc5)
+    -mouse/key events from renderer
+    -intercepting close event (for tray)
+
+12th of October (YCommons 2.8.99.5 rc6)
+    -casting fixes, other minor stuff
+    -FIXME: renderer crashes on reload
+    -TODO: add module icon to print from module

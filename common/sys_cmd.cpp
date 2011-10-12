@@ -136,8 +136,8 @@ int Sys_Cmd::argc() const {
 argv
 ============
 */
-QString Sys_Cmd::argv( int arg ) const {
-    if ( arg >= this->argumentList.count())
+QString Sys_Cmd::argv( unsigned int arg ) const {
+    if ( arg >= static_cast<unsigned int>( this->argumentList.count()))
         return QString( "" );
 
     return this->argumentList.at( arg );

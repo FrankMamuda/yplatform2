@@ -23,19 +23,14 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "mod_main.h"
 #include "../mod_trap.h"
-
-//
-// classes
-//
-extern class Mod_Trap mt;
+#include "../../common/sys_common.h"
 
 /*
 ================
 construct
 ================
 */
-Mod_Main::Mod_Main()
-{
+Mod_Main::Mod_Main() {
 }
 
 /*
@@ -44,8 +39,6 @@ modMain
 ================
 */
 extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callNum, int numArgs, intptr_t *args ) {
-    Q_UNUSED( numArgs );
-
     switch ( callNum ) {
     case ModuleAPI::ModAPI:
         // return api version
@@ -61,6 +54,11 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
         break;
 
     case ModuleAPI::UpdateCvar:
+        if ( numArgs < 2 ) {
+            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: updateCvar [cvarName] [string]\n" ));
+            return false;
+        }
+
         // console variable auto updater
         foreach ( mCvar *cvarPtr, mt.cvars ) {
             if ( !QString::compare( cvarPtr->name(), ( const char *)args[0] ))
@@ -76,6 +74,70 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
         foreach ( mCvar *cvarPtr, mt.cvars )
             delete cvarPtr;
         break;
+
+
+    case ModuleAPI::KeyEvent:
+        if ( numArgs < 2 ) {
+            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: keyEvent [type] [key]\n" ));
+            return false;
+        }
+
+        switch (( ModuleAPI::KeyEventType )args[0] ) {
+        case ModuleAPI::KeyPress:
+            // do smth with this data
+            break;
+
+        case ModuleAPI::KeyRelease:
+            // do smth with this data
+            break;
+
+        default:
+        case ModuleAPI::DoubleClick:
+            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: invalid keyEvent type '%1'\n" ).arg(( ModuleAPI::KeyEventType )args[0] ));
+            return false;
+        }
+        break;
+
+    case ModuleAPI::MouseEvent:
+        if ( numArgs < 2 ) {
+            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: mouseEvent [type] [key]\n" ));
+            return false;
+        }
+
+        switch (( ModuleAPI::KeyEventType )args[0] ) {
+        case ModuleAPI::KeyPress:
+            // do smth with this data
+            break;
+
+        case ModuleAPI::KeyRelease:
+            // do smth with this data
+            break;
+
+        case ModuleAPI::DoubleClick:
+            // do smth with this data
+            break;
+
+        default:
+            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: invalid keyEvent type '%1'\n" ).arg(( ModuleAPI::KeyEventType )args[0] ));
+            return false;
+        }
+        break;
+
+    case ModuleAPI::MouseMotion:
+        if ( numArgs < 2 ) {
+            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: mouseMotion [x] [y]\n" ));
+            return false;
+        }
+        // do smth with this data
+        break;
+
+    case ModuleAPI::WheelEvent:
+        // do smth with this data
+        break;
+
+    default:
+        mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: unknown callNum %1\n" ).arg( callNum ));
+        return false;
     }
 
     return true;

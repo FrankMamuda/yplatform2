@@ -25,7 +25,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // includes
 //
 #include "sys_shared.h"
+#ifndef MODULE_BUILD
 #include "../gui/gui_main.h"
+#endif
 
 //
 // namespaces
@@ -39,9 +41,11 @@ namespace Common {
 //
 class Sys_Common : public QObject {
     Q_OBJECT
+#ifndef MODULE_BUILD
     Q_CLASSINFO( "description", "Platform common functions" )
     Q_PROPERTY( bool pError READ hasCaughtError WRITE catchError )
     Q_PROPERTY( Gui_Main *gui READ gui WRITE setGui )
+#endif
     Q_ENUMS( ErrorTypes )
 
 public:
@@ -50,6 +54,18 @@ public:
         SoftError = 0,
         FatalError
     };
+
+    // byte order
+    typedef union {
+        float f;
+        unsigned int i;
+    } floatByteUnion;
+
+    short shortSwap( short );
+    int longSwap( int );
+    float floatSwap( const float* );
+
+#ifndef MODULE_BUILD
     void print( const QString &msg, int fontSize = 10 );
     void error( ErrorTypes type, const QString &msg );
     bool hasCaughtError() const { return this->m_pError; }
@@ -66,6 +82,7 @@ signals:
 public slots:
     void setGui( Gui_Main *gui ) { this->m_gui = gui; }
     void catchError( bool error = true ) { this->m_pError = error; }
+#endif
 };
 
 //
@@ -74,15 +91,5 @@ public slots:
 #ifndef MODULE_LIBRARY
 extern class Sys_Common com;
 #endif
-
-// byte order
-short shortSwap( short );
-int longSwap( int );
-float floatSwap( const float* );
-
-typedef union {
-    float f;
-    unsigned int i;
-} floatByteUnion;
 
 #endif // SYS_COMMON_H

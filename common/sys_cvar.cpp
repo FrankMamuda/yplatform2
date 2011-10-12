@@ -54,6 +54,9 @@ createCommand( cv, create )
 /*
 ============
 validate
+
+ TODO/YP2BackPort: use only [a-z][0-9]
+                   validate strings, on save convert UTF to XML safe strings and vice versa
 ============
 */
 bool Sys_Cvar::validate( const QString &s ) const {
@@ -61,13 +64,12 @@ bool Sys_Cvar::validate( const QString &s ) const {
     if ( s.isNull())
         return false;
 
-    if ( s.contains( '\\' ))
+    // we cannot have backward slash paths in a cvar
+    if ( s.contains( '\\' ) || s.contains( '\"' ))
         return false;
 
-    if ( s.contains( '\"' ))
-        return false;
-
-    if ( s.contains( ';' ))
+    // no xml stuff either
+    if ( s.contains( '>' ) || s.contains( '<' ))
         return false;
 
     return true;
@@ -84,7 +86,7 @@ pCvar *Sys_Cvar::find( const QString &name ) const {
         return NULL;
     }
 
-    foreach ( pCvar *cvarPtr, this->cvars ) {
+    foreach ( pCvar *cvarPtr, this->cvarList ) {
         if ( !QString::compare( name, cvarPtr->name(), Qt::CaseInsensitive ))
             return cvarPtr;
     }
@@ -97,7 +99,7 @@ clear
 ============
 */
 void Sys_Cvar::clear() {
-    foreach ( pCvar *cvarPtr, this->cvars )
+    foreach ( pCvar *cvarPtr, this->cvarList )
         delete cvarPtr;
 }
 
@@ -142,7 +144,7 @@ void Sys_Cvar::reset() {
     cvarPtr = this->find( cmd.argv(1));
 
     if ( cvarPtr != NULL ) {
-        cvarPtr->set( cvarPtr->resetString(), false );
+        cvarPtr->reset();
     } else
         com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::reset: could not find cvar \"%1\"\n" ).arg( cmd.argv( 1 )));
 }
@@ -176,7 +178,7 @@ void Sys_Cvar::set() {
     }
 
     if ( numArgs == 4 )
-        flags = ( pCvar::Flags )cmd.argv(3).toInt();
+        flags = static_cast<pCvar::Flags>( cmd.argv(3).toInt());
 
     if ( cvarPtr != NULL ) {
         cvarPtr->set( string );
@@ -203,7 +205,7 @@ void Sys_Cvar::create() {
     }
     cvar = this->find( cmd.argv(1));
     if ( numArgs == 4 ) {
-        flags = ( pCvar::Flags )cmd.argv(3).toInt();
+        flags = static_cast<pCvar::Flags>( cmd.argv(3).toInt());
 
         if ( flags < pCvar::NoFlags /*|| flags > Password*/ ) {
             com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::create: invalid flags\n" ));
@@ -254,7 +256,7 @@ pCvar *Sys_Cvar::create( const QString &name, const QString &string, pCvar::Flag
     if ( cvarPtr == NULL ) {
         // allocate & add to list
         cvarPtr = new pCvar( name, string, flags, description, mCvar );
-        this->cvars << cvarPtr;
+        this->cvarList << cvarPtr;
         com.gui()->addToCompleter( cvarPtr->name());
     }
     return cvarPtr;
@@ -272,8 +274,8 @@ void Sys_Cvar::list() {
         match = true;
 
     // announce
-    com.print( this->tr( "^2Sys_Cvar::list: ^5registered ^3%1 ^5cvars:\n" ).arg( this->cvars.count()));
-    foreach ( pCvar *cvarPtr, this->cvars ) {
+    com.print( this->tr( "^2Sys_Cvar::list: ^5registered ^3%1 ^5cvars:\n" ).arg( this->cvarList.count()));
+    foreach ( pCvar *cvarPtr, this->cvarList ) {
         if ( match && !cvarPtr->name().startsWith( cmd.argv( 1 )))
             continue;
 
@@ -364,7 +366,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
     //
     // parse document
     //
-    configFile.setContent( QByteArray(( const char* )buffer, len ));
+    configFile.setContent( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
     QDomNode configNode = configFile.firstChild();
     while ( !configNode.isNull()) {
         if ( configNode.isElement()) {
@@ -453,7 +455,7 @@ void Sys_Cvar::saveConfig( const QString &filename ) {
     configFile.appendChild( configElement );
 
     // generate cvars config strings
-    foreach ( pCvar *cvarPtr, this->cvars ) {
+    foreach ( pCvar *cvarPtr, this->cvarList ) {
         if ( cvarPtr->flags.testFlag( pCvar::Archive )) {
             if ( fs_debug->integer())
                 com.print( this->tr( "^6Sys_Cvar::saveConfig: setting \"%1\" value \"%2\"\n" ).arg( cvarPtr->name(), cvarPtr->string()));

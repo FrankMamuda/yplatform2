@@ -23,3 +23,16 @@ NOTE: This renderer backend is (almost) written from scratch, but is heavily inf
 1st of September (v0.98.44 (beta))
     -high resolution logo
     -some minor fixes
+
+10th of September (v0.98.45 (beta))
+    -cleanup in mtrlib code
+    -fixed font rendering bug
+    -fixed float passing in mod_trap
+
+12th of September (v0.98.46 (beta))
+    -mouse/key events
+    -raise/hide cmds
+
+TODO: remove tabs on exit
+FIXME: tab remove fails (settings widget crashes (reindex fault?))
+

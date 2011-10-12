@@ -30,6 +30,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 class Sys_Common com;
 
+#ifndef MODULE_BUILD
 /*
 ============
 print
@@ -85,13 +86,14 @@ int Sys_Common::milliseconds() {
     curtime = ( tp.tv_sec - timeBase ) * 1000 + tp.tv_usec / 1000;
     return curtime;
 }
+#endif
 
 /*
 ================
 shortSwap
 =================
 */
-short shortSwap( short l ) {
+short Sys_Common::shortSwap( short l ) {
     byte b1, b2;
 
     b1 = l&255;
@@ -105,7 +107,7 @@ short shortSwap( short l ) {
 longSwap
 =================
 */
-int longSwap( int l ) {
+int Sys_Common::longSwap( int l ) {
     byte b1, b2, b3, b4;
 
     b1 = l&255;
@@ -113,7 +115,7 @@ int longSwap( int l ) {
     b3 = ( l >> 16 )&255;
     b4 = ( l >> 24 )&255;
 
-    return (( int )b1 << 24 ) + (( int )b2 << 16 ) + (( int )b3 << 8 ) + b4;
+    return ( static_cast<int>( b1 ) << 24 ) + ( static_cast<int>( b2 ) << 16 ) + ( static_cast<int>( b3 ) << 8 ) + static_cast<int>( b4 );
 }
 
 /*
@@ -121,7 +123,7 @@ int longSwap( int l ) {
 floatSwap
 =================
 */
-float floatSwap( const float *f ) {
+float Sys_Common::floatSwap( const float *f ) {
     floatByteUnion out;
 
     out.f = *f;
