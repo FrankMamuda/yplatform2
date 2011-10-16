@@ -106,8 +106,8 @@ setBlendMode
 ===================
 */
 void R_MaterialStage::setBlendMode( const QString &src, const QString &dst ) {
-    this->m_srcBlend = ( int )cmd.getSrcBlendMode( src );
-    this->m_dstBlend = ( int )cmd.getDstBlendMode( dst );
+    this->m_srcBlend = static_cast<int>( cmd.getSrcBlendMode( src ));
+    this->m_dstBlend = static_cast<int>( cmd.getDstBlendMode( dst ));
 }
 
 /*
@@ -161,8 +161,8 @@ setTexture
 */
 void R_MaterialStage::setTexture( const QString &texture, const QString &src, const QString &dst ) {
     this->setTexture( texture );
-    this->setSrcBlend(( int )cmd.getSrcBlendMode( src ));
-    this->setDstBlend(( int )cmd.getDstBlendMode( dst ));
+    this->setSrcBlend( static_cast<int>( cmd.getSrcBlendMode( src )));
+    this->setDstBlend( static_cast<int>( cmd.getDstBlendMode( dst )));
 }
 
 /*
@@ -182,8 +182,8 @@ setTexture
 */
 void R_MaterialStage::setTexture( int texture, const QString &src, const QString &dst ) {
     this->imageList[0] = (imgHandle_t)texture;
-    this->setSrcBlend(( int )cmd.getSrcBlendMode( src ));
-    this->setDstBlend(( int )cmd.getDstBlendMode( dst ));
+    this->setSrcBlend( static_cast<int>( cmd.getSrcBlendMode( src )));
+    this->setDstBlend( static_cast<int>( cmd.getDstBlendMode( dst )));
 }
 
 /*

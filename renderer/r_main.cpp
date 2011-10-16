@@ -79,14 +79,14 @@ void R_Main::init() {
     // init function tables
     for ( y = 0; y < Renderer::FuncTableSize; y++ ) {
         this->funcTable[GenFunc::None][y] = 0.0f;
-        this->funcTable[GenFunc::Sine][y] = sin( degreesToRadians( y * 360.0f / (( float )( Renderer::FuncTableSize - 1 ))));
+        this->funcTable[GenFunc::Sine][y] = sin( degreesToRadians( y * 360.0f / ( static_cast<float>( Renderer::FuncTableSize - 1 ))));
         this->funcTable[GenFunc::Square][y] = ( y < Renderer::FuncTableSize / 2 ) ? 1.0f : -1.0f;
-        this->funcTable[GenFunc::SawTooth][y] = ( float )y / Renderer::FuncTableSize;
+        this->funcTable[GenFunc::SawTooth][y] = static_cast<float>( y ) / Renderer::FuncTableSize;
         this->funcTable[GenFunc::InverseSawtooth][y] = 1.0f - this->funcTable[GenFunc::SawTooth][y];
 
         if ( y < Renderer::FuncTableSize / 2 ) {
             if ( y < Renderer::FuncTableSize / 4 )
-                this->funcTable[GenFunc::Triangle][y] = ( float )y / ( Renderer::FuncTableSize / 4 );
+                this->funcTable[GenFunc::Triangle][y] = static_cast<float>( y ) / ( Renderer::FuncTableSize / 4 );
             else
                 this->funcTable[GenFunc::Triangle][y] = 1.0f - this->funcTable[GenFunc::Triangle][y - Renderer::FuncTableSize / 4];
         } else
@@ -283,7 +283,6 @@ void R_Main::shutdown() {
 
     // remove settings widget
     mt.guiRemoveSettingsTab( "Renderer" );
-    //delete this->settingsWidget;
 
     // we are down
     this->setInitialized( false );

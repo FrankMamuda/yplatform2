@@ -946,12 +946,13 @@ toggleWidget
 */
 void Sys_Module::toggleWidget() {
     if ( this->modWidget != NULL ) {
-        if ( this->modWidget->isVisible())
+        if ( this->modWidget->isVisible() && this->modWidget->hasFocus()) {
             this->modWidget->hide();
-        else {
+        } else {
             // position it properly
             this->modWidget->move( QPoint( com.gui()->pos().x() + com.gui()->width()/2 - this->modWidget->width()/2, com.gui()->pos().y()));
             this->modWidget->showNormal();
+            this->modWidget->raise();
         }
     }
 }
@@ -985,7 +986,7 @@ void Sys_Module::toggleFromList( QListWidgetItem *item ) {
             // is it errorous already?
             if ( modPtr->getErrorMessage().isEmpty()) {
                 // unload if loaded
-                if ( modPtr->isLoaded() ) {
+                if ( modPtr->isLoaded() && modPtr->type() == pModule::Module ) {
                     // perform unloading, mark as unloaded
                     modPtr->unload();
                     modPtr->setLoaded( false );
@@ -997,6 +998,28 @@ void Sys_Module::toggleFromList( QListWidgetItem *item ) {
                     item->setFont( font );
                     item->setBackground( QBrush( QColor( 0, 0, 0, 0 )));
                     break;
+                } else if ( modPtr->isLoaded() && modPtr->type() == pModule::Renderer ) {
+                    // just hide the renderer, we cannot reload it
+                    RendererAPI::WindowState state = static_cast<RendererAPI::WindowState>( modPtr->call( RendererAPI::State ));
+                    if ( state == RendererAPI::Raised ) {
+                        // change font in list
+                        QFont font = item->font();
+                        font.setItalic( true );
+                        item->setFont( font );
+                        item->setBackground( QBrush( QColor( 255, 250, 0, 64 )));
+
+                        // hide
+                        modPtr->call( RendererAPI::Hide );
+                    } else {
+                        // change font in list
+                        QFont font = item->font();
+                        font.setItalic( false );
+                        item->setFont( font );
+                        item->setBackground( QBrush( QColor( 0, 128, 0, 64 )));
+
+                        // show
+                        modPtr->call( RendererAPI::Raise );
+                    }
                 } else {
                     // perform loading
                     modPtr->load();

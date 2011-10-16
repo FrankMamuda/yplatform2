@@ -57,6 +57,7 @@ protected:
     virtual void mouseDoubleClickEvent( QMouseEvent * );
     virtual void mouseMoveEvent( QMouseEvent * );
     virtual void wheelEvent( QWheelEvent *);
+    virtual void initializeGL();
 
 public:
     R_GlimpWidget( QWidget *parent );

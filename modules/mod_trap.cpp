@@ -34,10 +34,10 @@ class Mod_Trap mt;
 passFloat
 ================
 */
-int Mod_Trap::passFloat( float v ) {
+intptr_t Mod_Trap::passFloat( float v ) {
     floatIntUnion f;
     f.v = v;
-    return f.i;
+    return static_cast<intptr_t>( f.i );
 }
 
 /*
@@ -47,7 +47,7 @@ getFloat
 */
 float Mod_Trap::getFloat( intptr_t i ) {
     floatIntUnion f;
-    f.i = (int)i;
+    f.i = static_cast<int>( i );
     return f.v;
 }
 
@@ -101,7 +101,7 @@ comPrint
 ================
 */
 void Mod_Trap::comPrint( const QString &msg ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::ComPrint, ( intptr_t )msg.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::ComPrint, reinterpret_cast<intptr_t>( msg.toLatin1().constData()));
 }
 
 /*
@@ -110,7 +110,7 @@ comError
 ================
 */
 void Mod_Trap::comError( int type, const QString &msg ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::ComError, type, ( intptr_t )msg.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::ComError, type, reinterpret_cast<intptr_t>( msg.toLatin1().constData()));
 }
 
 /*
@@ -119,7 +119,7 @@ comMilliseconds
 ================
 */
 int Mod_Trap::comMilliseconds() {
-    return this->call( ModuleAPI::Platform, ModuleAPI::ComMilliseconds );
+    return static_cast<int>( this->call( ModuleAPI::Platform, ModuleAPI::ComMilliseconds ));
 }
 
 //
@@ -132,7 +132,7 @@ fsOpen
 =============
 */
 int Mod_Trap::fsOpen( int mode, const QString &path, fileHandle_t *fHandle, Sys_Filesystem::OpenFlags flags ) {
-    return this->call( ModuleAPI::Platform, ModuleAPI::FsOpen, ( intptr_t )mode, ( intptr_t )path.toLatin1().constData(), ( intptr_t )fHandle, ( intptr_t )flags );
+    return static_cast<int>( this->call( ModuleAPI::Platform, ModuleAPI::FsOpen, static_cast<intptr_t>( mode ), reinterpret_cast<intptr_t>( path.toLatin1().constData()), reinterpret_cast<intptr_t>( fHandle ), static_cast<intptr_t>( flags )));
 }
 
 /*
@@ -141,7 +141,7 @@ fsClose
 =============
 */
 void Mod_Trap::fsClose( const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::FsClose, ( intptr_t )fHandle, ( intptr_t )flags  );
+    this->call( ModuleAPI::Platform, ModuleAPI::FsClose, static_cast<intptr_t>( fHandle ), static_cast<intptr_t>( flags ));
 }
 
 /*
@@ -150,7 +150,7 @@ fsClose
 =============
 */
 void Mod_Trap::fsClose( const QString &filename, Sys_Filesystem::OpenFlags flags ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::FsCloseByName, ( intptr_t )filename.toLatin1().constData(), ( intptr_t )flags );
+    this->call( ModuleAPI::Platform, ModuleAPI::FsCloseByName, reinterpret_cast<intptr_t>( filename.toLatin1().constData()), static_cast<intptr_t>( flags ));
 }
 
 /*
@@ -159,7 +159,7 @@ fsExists
 =============
 */
 bool Mod_Trap::fsExists( const QString &path, Sys_Filesystem::OpenFlags flags ) {
-    return this->call( ModuleAPI::Platform, ModuleAPI::FsExists, ( intptr_t )path.toLatin1().constData(), ( intptr_t )flags );
+    return static_cast<bool>( this->call( ModuleAPI::Platform, ModuleAPI::FsExists, reinterpret_cast<intptr_t>( path.toLatin1().constData()), static_cast<intptr_t>( flags )));
 }
 
 /*
@@ -168,7 +168,7 @@ fsRead
 =============
 */
 int Mod_Trap::fsRead( byte **buffer, int len, const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags ) {
-    return this->call( ModuleAPI::Platform, ModuleAPI::FsRead, ( intptr_t )buffer, ( intptr_t )len, ( intptr_t )fHandle, ( intptr_t )flags );
+    return static_cast<int>( this->call( ModuleAPI::Platform, ModuleAPI::FsRead, reinterpret_cast<intptr_t>( buffer ), static_cast<intptr_t>( len ), static_cast<intptr_t>( fHandle ), static_cast<intptr_t>( flags )));
 }
 
 /*
@@ -177,7 +177,7 @@ fsWrite
 =============
 */
 int Mod_Trap::fsWrite( const byte *buffer, int len, const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags ) {
-    return this->call( ModuleAPI::Platform, ModuleAPI::FsWrite, ( intptr_t )buffer, ( intptr_t )len, ( intptr_t )fHandle, ( intptr_t )flags );
+    return static_cast<int>( this->call( ModuleAPI::Platform, ModuleAPI::FsWrite, reinterpret_cast<intptr_t>( buffer ), static_cast<intptr_t>( len ), static_cast<intptr_t>( fHandle ), static_cast<intptr_t>( flags )));
 }
 
 /*
@@ -186,7 +186,7 @@ fsSeek
 =============
 */
 bool Mod_Trap::fsSeek( const fileHandle_t fHandle, int offset, Sys_Filesystem::OpenFlags flags ) {
-    return this->call( ModuleAPI::Platform, ModuleAPI::FsSeek, ( intptr_t )fHandle, ( intptr_t )offset, ( intptr_t )fHandle, ( intptr_t )flags );
+    return static_cast<bool>( this->call( ModuleAPI::Platform, ModuleAPI::FsSeek, static_cast<intptr_t>( fHandle ), static_cast<intptr_t>( offset ), static_cast<intptr_t>( fHandle ), static_cast<intptr_t>( flags )));
 }
 
 /*
@@ -195,7 +195,7 @@ fsTouch
 =============
 */
 void Mod_Trap::fsTouch( const QString &filename, Sys_Filesystem::OpenFlags flags ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::FsTouch, ( intptr_t )filename.toLatin1().constData(), ( intptr_t )flags );
+    this->call( ModuleAPI::Platform, ModuleAPI::FsTouch, reinterpret_cast<intptr_t>( filename.toLatin1().constData()), static_cast<intptr_t>( flags ));
 }
 
 /*
@@ -204,7 +204,7 @@ fsReadFile
 =============
 */
 int Mod_Trap::fsReadFile( const QString &filename, byte **buffer, Sys_Filesystem::OpenFlags flags ) {
-    return this->call( ModuleAPI::Platform, ModuleAPI::FsReadFile, ( intptr_t )filename.toLatin1().constData(), ( intptr_t )buffer, ( intptr_t )flags );
+    return static_cast<int>( this->call( ModuleAPI::Platform, ModuleAPI::FsReadFile, reinterpret_cast<intptr_t>( filename.toLatin1().constData()), reinterpret_cast<intptr_t>( buffer ), static_cast<intptr_t>( flags )));
 }
 
 /*
@@ -213,7 +213,7 @@ fsPrint
 =============
 */
 void Mod_Trap::fsPrint( const fileHandle_t fHandle, const QString &msg, Sys_Filesystem::OpenFlags flags ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::FsPrint, ( intptr_t )fHandle, ( intptr_t )msg.toLatin1().constData(), ( intptr_t )flags );
+    this->call( ModuleAPI::Platform, ModuleAPI::FsPrint, static_cast<intptr_t>( fHandle ), reinterpret_cast<intptr_t>( msg.toLatin1().constData()), static_cast<intptr_t>( flags ));
 }
 
 /*
@@ -222,7 +222,7 @@ fsFreeFile
 =============
 */
 void Mod_Trap::fsFreeFile( const QString &filename ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::FsFreeFile, ( intptr_t )filename.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::FsFreeFile, reinterpret_cast<intptr_t>( filename.toLatin1().constData()));
 }
 
 /*
@@ -231,7 +231,7 @@ fsExtract
 =============
 */
 bool Mod_Trap::fsExtract( const QString &filename ) {
-    return this->call( ModuleAPI::Platform, ModuleAPI::FsExtract, ( intptr_t )filename.toLatin1().constData());
+    return static_cast<bool>( this->call( ModuleAPI::Platform, ModuleAPI::FsExtract, reinterpret_cast<intptr_t>( filename.toLatin1().constData())));
 }
 
 /*
@@ -244,7 +244,7 @@ QStringList Mod_Trap::fsListFiles( const QString &directory, QRegExp *filter, Sy
     char buffer[STRING_BUFFER_SIZE*256];
 
     // call platform
-    this->call( ModuleAPI::Platform, ModuleAPI::FsList, ( intptr_t )directory.toLatin1().constData(), ( intptr_t )buffer, ( intptr_t )STRING_BUFFER_SIZE*256, ( intptr_t )filter, ( intptr_t )mode );
+    this->call( ModuleAPI::Platform, ModuleAPI::FsList, reinterpret_cast<intptr_t>( directory.toLatin1().constData()), reinterpret_cast<intptr_t>( buffer ), static_cast<intptr_t>( STRING_BUFFER_SIZE * 256 ), reinterpret_cast<intptr_t>( filter ), static_cast<intptr_t>( mode ));
 
     // create filelist
     QStringList fileList = QString( buffer ).split( ";" );
@@ -263,7 +263,7 @@ cmdAdd
 =============
 */
 void Mod_Trap::cmdAdd( const QString &cmdName, cmdCommand_t cmd, const QString &description ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::CmdAdd, ( intptr_t )cmdName.toLatin1().constData(), ( intptr_t )cmd, ( intptr_t )description.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::CmdAdd, reinterpret_cast<intptr_t>( cmdName.toLatin1().constData()), reinterpret_cast<intptr_t>( cmd ), reinterpret_cast<intptr_t>( description.toLatin1().constData()));
 }
 
 /*
@@ -272,7 +272,7 @@ cmdRemove
 =============
 */
 void Mod_Trap::cmdRemove( const QString &cmdName ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::CmdRemove, ( intptr_t )cmdName.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::CmdRemove, reinterpret_cast<intptr_t>( cmdName.toLatin1().constData()));
 }
 
 /*
@@ -281,7 +281,7 @@ cmdArgc
 =============
 */
 int Mod_Trap::cmdArgc() {
-    return this->call( ModuleAPI::Platform, ModuleAPI::CmdArgc );
+    return static_cast<int>( this->call( ModuleAPI::Platform, static_cast<intptr_t>( ModuleAPI::CmdArgc )));
 }
 
 /*
@@ -293,10 +293,10 @@ QString Mod_Trap::cmdArgv( int arg ) {
     char buffer[STRING_BUFFER_SIZE];
 
     // call platform
-    this->call( ModuleAPI::Platform, ModuleAPI::CmdArgv, ( intptr_t )arg, ( intptr_t )buffer, ( intptr_t )STRING_BUFFER_SIZE );
+    this->call( ModuleAPI::Platform, ModuleAPI::CmdArgv, static_cast<intptr_t>( arg ), reinterpret_cast<intptr_t>( buffer ), static_cast<intptr_t>( STRING_BUFFER_SIZE ));
 
     // return string buffer
-    return QString( buffer );
+    return QString::fromLatin1( buffer );
 }
 
 /*
@@ -305,7 +305,7 @@ cmdExecute
 =============
 */
 void Mod_Trap::cmdExecute( QString cmd ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::CmdExecute, ( intptr_t )cmd.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::CmdExecute, reinterpret_cast<intptr_t>( cmd.toLatin1().constData()));
 }
 
 //
@@ -318,7 +318,7 @@ cvarCreate
 =============
 */
 mCvar *Mod_Trap::cvarCreate( const QString &name, const QString &string, pCvar::Flags flags, const QString &desc ) {
-    bool ok = this->call( ModuleAPI::Platform, ModuleAPI::CvarCreate, ( intptr_t )name.toLatin1().constData(), ( intptr_t )string.toLatin1().constData(), ( intptr_t )flags, ( intptr_t )desc.toLatin1().constData(), ( intptr_t )&ok );
+    bool ok = static_cast<bool>( this->call( ModuleAPI::Platform, ModuleAPI::CvarCreate, reinterpret_cast<intptr_t>( name.toLatin1().constData()), reinterpret_cast<intptr_t>( string.toLatin1().constData()), static_cast<intptr_t>( flags ), reinterpret_cast<intptr_t>( desc.toLatin1().constData()), reinterpret_cast<intptr_t>( &ok )));
 
     if ( ok ) {
         QString actualString = mt.cvarGet( name );
@@ -334,7 +334,7 @@ cvarSet
 =============
 */
 bool Mod_Trap::cvarSet( const QString &name, const QString &string, bool force ) {
-    return this->call( ModuleAPI::Platform, ModuleAPI::CvarSet, ( intptr_t )name.toLatin1().constData(), ( intptr_t )string.toLatin1().constData(), ( intptr_t )force );
+    return static_cast<bool>( this->call( ModuleAPI::Platform, ModuleAPI::CvarSet, reinterpret_cast<intptr_t>( name.toLatin1().constData()), reinterpret_cast<intptr_t>( string.toLatin1().constData()), static_cast<intptr_t>( force )));
 }
 
 /*
@@ -346,11 +346,11 @@ QString Mod_Trap::cvarGet( const QString &name ) {
     char buffer[STRING_BUFFER_SIZE];
 
     // call platform
-    bool result = this->call( ModuleAPI::Platform, ModuleAPI::CvarGet, ( intptr_t )name.toLatin1().constData(), ( intptr_t )buffer, ( intptr_t )STRING_BUFFER_SIZE );
+    bool result = static_cast<bool>( this->call( ModuleAPI::Platform, ModuleAPI::CvarGet, reinterpret_cast<intptr_t>( name.toLatin1().constData()), reinterpret_cast<intptr_t>( buffer ), static_cast<intptr_t>( STRING_BUFFER_SIZE )));
 
     // success
     if ( result )
-        return QString( buffer );
+        return QString::fromLatin1( buffer );
     else
         return QString( "" );
 }
@@ -361,7 +361,7 @@ cvarReset
 =============
 */
 void Mod_Trap::cvarReset( const QString &name ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::CvarReset, ( intptr_t )name.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::CvarReset, reinterpret_cast<intptr_t>( name.toLatin1().constData()));
 }
 
 //
@@ -423,7 +423,7 @@ guiAddAction
 =============
 */
 void Mod_Trap::guiAddAction( const QString &name, const QString &icon, cmdCommand_t callback ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiAddAction, ( intptr_t )name.toLatin1().constData(), ( intptr_t )icon.toLatin1().constData(), ( intptr_t )callback );
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiAddAction, reinterpret_cast<intptr_t>( name.toLatin1().constData()), reinterpret_cast<intptr_t>( icon.toLatin1().constData()), reinterpret_cast<intptr_t>( callback ));
 }
 
 /*
@@ -432,7 +432,7 @@ guiRemoveAction
 =============
 */
 void Mod_Trap::guiRemoveAction( const QString &name ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveAction, ( intptr_t )name.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveAction, reinterpret_cast<intptr_t>( name.toLatin1().constData()));
 }
 
 /*
@@ -441,7 +441,7 @@ guiAddTab
 =============
 */
 void Mod_Trap::guiAddTab( QWidget *widget, const QString &name, const QString &icon ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiAddTab, ( intptr_t )widget, ( intptr_t )name.toLatin1().constData(), ( intptr_t )icon.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiAddTab, reinterpret_cast<intptr_t>( widget ), reinterpret_cast<intptr_t>( name.toLatin1().constData()), reinterpret_cast<intptr_t>( icon.toLatin1().constData()));
 }
 
 /*
@@ -450,7 +450,7 @@ guiRemoveTab
 =============
 */
 void Mod_Trap::guiRemoveTab( const QString &name ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveTab, ( intptr_t )name.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveTab, reinterpret_cast<intptr_t>( name.toLatin1().constData()));
 }
 
 /*
@@ -459,7 +459,7 @@ guiSetActiveTab
 =============
 */
 void Mod_Trap::guiSetActiveTab( const QString &name ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiSetActiveTab, ( intptr_t )name.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiSetActiveTab, reinterpret_cast<intptr_t>( name.toLatin1().constData()));
 }
 
 /*
@@ -468,7 +468,7 @@ guiSetConsoleState
 =============
 */
 void Mod_Trap::guiSetConsoleState( int state ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiSetConsoleState, ( intptr_t )state );
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiSetConsoleState, static_cast<intptr_t>( state ));
 }
 
 /*
@@ -477,7 +477,7 @@ guiAddSettingsTab
 =============
 */
 void Mod_Trap::guiAddSettingsTab( QWidget *widget, const QString &name, const QString &icon ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiAddSettingsTab, ( intptr_t )widget, ( intptr_t )name.toLatin1().constData(), ( intptr_t )icon.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiAddSettingsTab, reinterpret_cast<intptr_t>( widget ), reinterpret_cast<intptr_t>( name.toLatin1().constData()), reinterpret_cast<intptr_t>( icon.toLatin1().constData()));
 }
 
 /*
@@ -486,7 +486,7 @@ guiRemoveSettingsTab
 =============
 */
 void Mod_Trap::guiRemoveSettingsTab( const QString &name ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSettingsTab, ( intptr_t )name.toLatin1().constData());
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSettingsTab, reinterpret_cast<intptr_t>( name.toLatin1().constData()));
 }
 
 #ifndef R_BUILD
@@ -497,7 +497,7 @@ rLoadMaterial
 =============
 */
 mtrHandle_t Mod_Trap::rLoadMaterial( const QString &filename ) {
-    return ( mtrHandle_t )this->call( ModuleAPI::Renderer, RendererAPI::LoadMaterial, ( intptr_t )filename.toLatin1().constData());
+    return static_cast<mtrHandle_t>( this->call( ModuleAPI::Renderer, RendererAPI::LoadMaterial, reinterpret_cast<intptr_t>( filename.toLatin1().constData())));
 }
 
 /*
@@ -506,7 +506,7 @@ rDrawMaterial
 =============
 */
 void Mod_Trap::rDrawMaterial( float x, float y, float w, float h, mtrHandle_t handle ) {
-    this->call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, this->passFloat( x ), this->passFloat( y ), this->passFloat( w ), this->passFloat( h ), (intptr_t)handle );
+    this->call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, this->passFloat( x ), this->passFloat( y ), this->passFloat( w ), this->passFloat( h ), static_cast<intptr_t>( handle ));
 }
 
 /*
@@ -515,7 +515,7 @@ rSetColour
 =============
 */
 void Mod_Trap::rSetColour( float r, float g, float b, float a ) {
-    this->call( ModuleAPI::Renderer, RendererAPI::SetColour, ( intptr_t )this->passFloat( r ), ( intptr_t )this->passFloat( g ), ( intptr_t )this->passFloat( b ), ( intptr_t )this->passFloat( a ));
+    this->call( ModuleAPI::Renderer, RendererAPI::SetColour, this->passFloat( r ), this->passFloat( g ), this->passFloat( b ), this->passFloat( a ));
 }
 
 /*
@@ -535,7 +535,7 @@ rDrawText
 =============
 */
 void Mod_Trap::rDrawText( float x, float y, QFont *font, const QString &text, float r, float g, float b, float a ) {
-    this->call( ModuleAPI::Renderer, RendererAPI::DrawText, this->passFloat( x ), this->passFloat( y ), ( intptr_t )font, ( intptr_t )text.toLatin1().constData(),
+    this->call( ModuleAPI::Renderer, RendererAPI::DrawText, this->passFloat( x ), this->passFloat( y ), reinterpret_cast<intptr_t>( font ), reinterpret_cast<intptr_t>( text.toLatin1().constData()),
                this->passFloat( r ),
                this->passFloat( g ),
                this->passFloat( b ),
@@ -558,7 +558,7 @@ keyEvent
 =============
 */
 void Mod_Trap::keyEvent( ModuleAPI::KeyEventType type, int key ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::RendererKeyEvent, ( intptr_t )type, ( intptr_t )key );
+    this->call( ModuleAPI::Platform, ModuleAPI::RendererKeyEvent, static_cast<intptr_t>( type ), static_cast<intptr_t>( key ));
 }
 
 /*
@@ -567,7 +567,7 @@ mouseEvent
 =============
 */
 void Mod_Trap::mouseEvent( ModuleAPI::KeyEventType type, Qt::MouseButton key ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::RendererMouseEvent, ( intptr_t )type, ( intptr_t )key );
+    this->call( ModuleAPI::Platform, ModuleAPI::RendererMouseEvent, static_cast<intptr_t>( type ), static_cast<intptr_t>( key ));
 }
 
 /*
@@ -576,7 +576,7 @@ mouseMotion
 =============
 */
 void Mod_Trap::mouseMotion( int x, int y ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::RendererMouseMotion, ( intptr_t )x, ( intptr_t )y );
+    this->call( ModuleAPI::Platform, ModuleAPI::RendererMouseMotion, static_cast<intptr_t>( x ), static_cast<intptr_t>( y ));
 }
 
 /*
@@ -585,6 +585,6 @@ mouseMotion
 =============
 */
 void Mod_Trap::wheelEvent( int delta ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::RendererWheelEvent, ( intptr_t )delta );
+    this->call( ModuleAPI::Platform, ModuleAPI::RendererWheelEvent, static_cast<intptr_t>( delta ));
 }
 #endif

@@ -33,10 +33,23 @@ construct
 ===============
 */
 R_GlimpWidget::R_GlimpWidget( QWidget *parent ) : QGLWidget( parent ) {
-    glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-    glClearDepth( 1.0f );
+    this->setAutoFillBackground( false );
+    this->setMouseTracking( true );
+}
+
+/*
+===============
+initializeGL
+===============
+*/
+void R_GlimpWidget::initializeGL() {
+    glDisable( GL_TEXTURE_2D );
+    glDisable( GL_COLOR_MATERIAL );
+    glEnable( GL_POLYGON_SMOOTH );
     glEnable( GL_DEPTH_TEST );
     glDepthFunc( GL_LEQUAL );
+    glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+    glClearDepth( 1.0f );
 }
 
 /*
@@ -61,14 +74,9 @@ closeEvent
 ===============
 */
 void R_GlimpWidget::closeEvent( QCloseEvent *e ) {
-    if ( glImp.hasInitialized()) {
-        // don't actually shutdown renderer, just hide it
-        this->hide();
-
-        // show main window if hidden
-        // so that on exit user is reminded to shutdown the app completely
+    if ( glImp.hasInitialized())
         mt.guiRaise();
-    }
+
     e->accept();
 }
 
@@ -147,8 +155,8 @@ void R_GlimpWidget::mouseMoveEvent( QMouseEvent *e ) {
     float x, y, h, v;
 
     // get scale factors
-    h = Renderer::HorizontalScreenModes[glImp.getScreenMode()] / (float)Renderer::HorizontalScreenModes[Renderer::DefaultScreenMode];
-    v = Renderer::VerticalScreenModes[glImp.getScreenMode()]   / (float)Renderer::VerticalScreenModes[Renderer::DefaultScreenMode];
+    h = Renderer::HorizontalScreenModes[glImp.getScreenMode()] / static_cast<float>( Renderer::HorizontalScreenModes[Renderer::DefaultScreenMode] );
+    v = Renderer::VerticalScreenModes[glImp.getScreenMode()]   / static_cast<float>( Renderer::VerticalScreenModes[Renderer::DefaultScreenMode] );
 
     // get pos and adjust it
     x = e->x() / h;

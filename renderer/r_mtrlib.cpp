@@ -33,6 +33,7 @@ class R_MtrLib mLib;
 
 // declare scriptable stages for materials
 Q_DECLARE_METATYPE( R_MaterialStage* )
+Q_DECLARE_METATYPE( mCvar* )
 
 /*
 ===================
@@ -52,7 +53,7 @@ void R_MtrLib::loadMtrLib( const QString &filename ) {
             mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: NULL buffer for mtrLib \'%1\'\n" ).arg( filename ));
             return;
         }
-        mtrLib = QString(( const char* )buffer );
+        mtrLib = QString( reinterpret_cast<const char*>( buffer ));
         mt.fsFreeFile( filename );
     }
 
@@ -224,9 +225,9 @@ QScriptValue scriptTexture( QScriptContext *context, QScriptEngine *engine ) {
 
     // create new material
     if ( context->argumentCount() == 2 )
-        return engine->toScriptValue((int)m.loadImage( context->argument( 0 ).toString(), mLib.getClampMode( context->argument( 1 ).toString())));
+        return engine->toScriptValue( static_cast<int>( m.loadImage( context->argument( 0 ).toString()), mLib.getClampMode( context->argument( 1 ).toString())));
     else
-        return engine->toScriptValue((int)m.loadImage( context->argument( 0 ).toString()));
+        return engine->toScriptValue( static_cast<int>( m.loadImage( context->argument( 0 ).toString())));
 }
 
 /*
@@ -263,22 +264,40 @@ scriptCvar
 ===================
 */
 QScriptValue scriptCvar( QScriptContext *context, QScriptEngine *engine ) {
+    mCvar *cvarPtr= NULL;
+
+    // no constructors please
     if ( context->isCalledAsConstructor()) {
         context->throwError( QObject::trUtf8( "'cvar' called as a constructor\n" ));
         return engine->undefinedValue();
     }
 
     // failsafe
-    if ( context->argumentCount() > 1 ) {
+    if ( context->argumentCount() > 3 ) {
         context->throwError( QObject::trUtf8( "'cvar' called with multiple arguments\n" ));
         return engine->undefinedValue();
+    } else if ( context->argumentCount() == 1 ) {
+        cvarPtr = mt.cvarCreate( context->argument( 0 ).toString(), "", pCvar::NoFlags );
+    } else if ( context->argumentCount() == 2 ) {
+        cvarPtr = mt.cvarCreate( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::NoFlags );
+    } else if ( context->argumentCount() == 3 ) {
+        if ( context->argument( 2 ).toBool())
+            cvarPtr = mt.cvarCreate( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::Archive );
+        else
+            cvarPtr = mt.cvarCreate( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::NoFlags );
     } else if ( context->argumentCount() == 0 ) {
         context->throwError( QObject::trUtf8( "'cvar' called without arguments\n" ));
         return engine->undefinedValue();
     }
 
-    // not yet implemented, need mt.cvarValue
-    return mt.cvarGet( context->argument( 0 ).toString());
+    // find cvar
+    foreach ( cvarPtr, mt.cvars ) {
+        if ( !QString::compare( context->argument( 0 ).toString(), cvarPtr->name()))
+            return engine->newQObject( cvarPtr, QScriptEngine::ScriptOwnership );
+    }
+
+    // should we export all platform cvars to module?
+    return engine->undefinedValue();
 }
 
 /*
@@ -310,6 +329,7 @@ void R_MtrLib::init() {
 
     // register stage metatype
     qScriptRegisterMetaType( &this->engine, mtrStageToScriptValue, mtrStageFromScriptValue );
+    qRegisterMetaType<mCvar*>( "cvar" );
 
     // scan for material libraries, build filelist
     QRegExp filter( QString( "*.js" ));
@@ -326,10 +346,8 @@ void R_MtrLib::init() {
         return;
     }
 
-    foreach ( QString filename, fileList ) {
-        mt.comPrint( QString( "^1read %1\n" ).arg( filename ));
+    foreach ( QString filename, fileList )
         this->loadMtrLib( filename );
-    }
 
     // all done
     this->setInitialized();

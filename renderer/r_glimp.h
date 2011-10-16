@@ -62,9 +62,6 @@ public:
     R_GlimpWidget *widget;
 
 private:
-   // R_GlimpWidget *openGL;
-    QGLContext *context;
-
     // properties
     bool m_initialized;
     float m_horizontalFactor;
