@@ -40,8 +40,8 @@ mCvar *r_adjustScreen;
 //
 // commands
 //
-createCommandPtr( glImp.widget, hide );
-createCommandPtr( glImp.widget, show );
+createCommandPtr( glImp.widget, hide )
+createCommandPtr( glImp.widget, show )
 
 /*
 ===============
@@ -63,14 +63,9 @@ void R_GLimp::init() {
     format.setDoubleBuffer( true );
     format.setDirectRendering( true );
 
-    // create context
-    this->context = new QGLContext( format );
-
     // create openGL widget
     this->widget = new R_GlimpWidget( this->widget );
     this->widget->setFormat( format );
-    this->widget->setAutoFillBackground( false );
-    this->widget->setMouseTracking( true );
     this->widget->makeCurrent();
 
     // set default paint engine as OpenGL
@@ -102,8 +97,8 @@ void R_GLimp::resizeScreen() {
     float h, v;
 
     // get scale factors
-    h = Renderer::HorizontalScreenModes[this->getScreenMode()] / (float)Renderer::HorizontalScreenModes[Renderer::DefaultScreenMode];
-    v = Renderer::VerticalScreenModes[this->getScreenMode()]   / (float)Renderer::VerticalScreenModes[Renderer::DefaultScreenMode];
+    h = Renderer::HorizontalScreenModes[this->getScreenMode()] / static_cast<float>( Renderer::HorizontalScreenModes[Renderer::DefaultScreenMode] );
+    v = Renderer::VerticalScreenModes[this->getScreenMode()]   / static_cast<float>( Renderer::VerticalScreenModes[Renderer::DefaultScreenMode] );
 
     // check for abnormal sizes
     if ( h == 0.0f || v == 0.0f || h == 10.0f || v == 10.0f ) {
@@ -134,8 +129,6 @@ shutdown
 */
 void R_GLimp::shutdown() {
     if ( this->hasInitialized()) {
-        this->widget->close();
-
         // announce
         mt.comPrint( this->tr( "^3R_GLimp: shutdown\n" ));
 
@@ -143,9 +136,7 @@ void R_GLimp::shutdown() {
         mt.cmdRemove( "r_raise" );
         mt.cmdRemove( "r_hide" );
 
-        // clean up
-        delete this->context;
-        this->widget->~QGLWidget();
+        // glimp is disabled
         this->setInitialized( false );
     }
 }

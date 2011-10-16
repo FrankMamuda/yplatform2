@@ -300,7 +300,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
         for ( row = rows - 1; row >= 0; row-- ) {
             pixelBuffer = rgba + row * columns * 4;
 
-            for ( column = 0; column < (int)columns; ) {
+            for ( column = 0; column < static_cast<int>( columns ); ) {
                 if ( imageBuffer + 1 > endBuffer ) {
                     mt.comError( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") file truncated\n" ).arg( filename ));
                     return NULL;

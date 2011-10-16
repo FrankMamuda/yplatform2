@@ -32,4 +32,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #define RENDERERSHARED_EXPORT Q_DECL_IMPORT
 #endif
 
+#define QTSCRIPT_ENABLED
+
 #endif // RENDERER_GLOBAL_H

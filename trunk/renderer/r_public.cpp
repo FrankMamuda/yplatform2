@@ -54,7 +54,7 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
     switch ( callNum ) {
     case RendererAPI::ModAPI:
         // return api version
-        return RendererAPI::Version;
+        return static_cast<intptr_t>( RendererAPI::Version );
 
     case RendererAPI::Init:
         // perform initialization
@@ -68,13 +68,13 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
 
         // console variable auto updater
         foreach ( mCvar *cvarPtr, mt.cvars ) {
-            if ( !QString::compare( cvarPtr->name(), ( const char *)args[0] ))
-                cvarPtr->update(( const char *)args[1] );
+            if ( !QString::compare( cvarPtr->name(), QString::fromLatin1( reinterpret_cast<const char*>( args[0] ))))
+                cvarPtr->update( QString::fromLatin1( reinterpret_cast<const char*>( args[1] )));
         }
         break;
 
     case RendererAPI::Shutdown:
-        if ( !m.hasInitialized() )
+        if ( !m.hasInitialized())
             return false;
 
         // perform shutdown
@@ -86,7 +86,7 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         break;
 
     case RendererAPI::BeginFrame:
-        if ( !m.hasInitialized() )
+        if ( !m.hasInitialized())
             return false;
 
         // begin frame
@@ -119,14 +119,14 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         if ( !m.hasInitialized())
             return false;
 
-        return ( intptr_t )m.loadMaterial( ( const char *)args[0] );
+        return static_cast<intptr_t>( m.loadMaterial( QString::fromLatin1( reinterpret_cast<const char*>( args[0] ))));
 
     case RendererAPI::DrawMaterial:
         if ( !m.hasInitialized())
             return false;
 
         cmd.drawMaterial( mt.getFloat( args[0] ), mt.getFloat( args[1] ), mt.getFloat( args[2] ), mt.getFloat( args[3] ),
-                         ( mtrHandle_t )args[4] );
+                          static_cast<mtrHandle_t>( args[4] ));
         break;
 
     case RendererAPI::DrawText:
@@ -138,7 +138,7 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         cmd.setColour( mt.getFloat( args[4] ), mt.getFloat( args[5] ), mt.getFloat( args[6] ), mt.getFloat( args[7] ), true );
 
         // draw Qt font
-        glImp.drawText( mt.getFloat( args[0] ), mt.getFloat( args[1] ), *( QFont* )args[2], ( const char * )args[3] );
+        glImp.drawText( mt.getFloat( args[0] ), mt.getFloat( args[1] ), *( reinterpret_cast<QFont*>( args[2] )), QString::fromLatin1( reinterpret_cast<const char*>( args[3] )));
 
         // restore colour
         cmd.restoreColour();
@@ -165,6 +165,15 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
 
         glImp.widget->hide();
         break;
+
+    case RendererAPI::State:
+        if ( !m.hasInitialized())
+            return RendererAPI::Hidden;
+
+        if ( glImp.widget->isVisible())
+            return static_cast<intptr_t>( RendererAPI::Raised );
+        else
+            return static_cast<intptr_t>( RendererAPI::Hidden );
     }
 
     return true;

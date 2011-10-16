@@ -28,6 +28,8 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../common/sys_cvarfunc.h"
 #ifndef R_BUILD
 #include "module_global.h"
+#else
+#include "renderer_global.h"
 #endif
 #ifdef QTSCRIPT_ENABLED
 #include <QtScript>

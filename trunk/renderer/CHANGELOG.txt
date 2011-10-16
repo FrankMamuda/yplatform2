@@ -33,6 +33,8 @@ NOTE: This renderer backend is (almost) written from scratch, but is heavily inf
     -mouse/key events
     -raise/hide cmds
 
-TODO: remove tabs on exit
-FIXME: tab remove fails (settings widget crashes (reindex fault?))
+16th of September (v0.98.47 (beta))
+    -fixed issue with crashing on exit
+    -scripted cvar code change
+
 

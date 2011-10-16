@@ -29,7 +29,12 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 
 // current api version
 namespace RendererAPI {
-    static const unsigned int Version = 4;
+    static const unsigned int Version = 5;
+
+    enum WindowState {
+        Raised = 0,
+        Hidden
+    };
 
     // public API calls (renderer)
     enum RendererAPICalls {
@@ -44,7 +49,8 @@ namespace RendererAPI {
         DrawText,
         SetColour,
         Raise,
-        Hide
+        Hide,
+        State
     };
 }
 

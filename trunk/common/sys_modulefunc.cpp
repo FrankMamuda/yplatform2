@@ -73,13 +73,13 @@ void pModule::unload() {
         else
             this->call( ModuleAPI::Shutdown );
 
-        // dd, it seems like we cannot perform unload, platform crashes on exit for some reason
-        // BUT, if we don't perform unload, the renderer reload bug appears, go figure
-        /*if ( this->handle->isLoaded() )
-            if ( this->handle->unload())
-                com.print( "success\n" );
-        */
+        if ( this->handle->isLoaded() )
+            this->handle->unload();
+
         delete this->handle;
+        memset( &this->entry, 0, sizeof( this->entry ));
+        memset( &this->modMain, 0, sizeof( this->modMain ));
+        memset( &this->renderer, 0, sizeof( this->renderer ));
     }
 }
 

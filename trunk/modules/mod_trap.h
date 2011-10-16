@@ -70,7 +70,7 @@ public:
 
     void setPlatformCalls( platformSyscallDef pSysCall );
     void setRendererCalls( platformSyscallDef pSysCall );
-    int passFloat( float v );
+    intptr_t passFloat( float v );
     float getFloat( intptr_t i );
 
     // cvars

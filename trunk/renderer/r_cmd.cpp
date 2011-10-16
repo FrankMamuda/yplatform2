@@ -407,8 +407,8 @@ void R_Cmd::calcTurbulentTexCoords( R_MaterialStage *stagePtr ) {
         s = this->texCoords[y][0];
         t = this->texCoords[y][1];
 
-        this->create2DVector( s + m.funcTable[GenFunc::Sine][((int)((( this->coords[y][0]) * 1.0 / 128 * 0.125 + value ) * Renderer::FuncTableSize )) & ( Renderer::FuncTableSize - 1 )] * stagePtr->textureMod()->func()->amplitude(),
-                              t + m.funcTable[GenFunc::Sine][((int)(( this->coords[y][1] * 1.0 / 128 * 0.125 + value ) * Renderer::FuncTableSize )) & ( Renderer::FuncTableSize - 1 )] * stagePtr->textureMod()->func()->amplitude(),
+        this->create2DVector( s + m.funcTable[GenFunc::Sine][(static_cast<int>((( this->coords[y][0]) * 1.0 / 128 * 0.125 + value ) * Renderer::FuncTableSize )) & ( Renderer::FuncTableSize - 1 )] * stagePtr->textureMod()->func()->amplitude(),
+                              t + m.funcTable[GenFunc::Sine][(static_cast<int>(( this->coords[y][1] * 1.0 / 128 * 0.125 + value ) * Renderer::FuncTableSize )) & ( Renderer::FuncTableSize - 1 )] * stagePtr->textureMod()->func()->amplitude(),
                               turbCoords[y] );
     }
 
