@@ -26,6 +26,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "sys_shared.h"
 #include "sys_cvarfunc.h"
+#include <QRegExpValidator>
 
 //
 // namespaces
@@ -68,6 +69,7 @@ public slots:
 private:
     QList<pCvar*> cvarList;
     bool validate( const QString &s ) const;
+    QRegExpValidator *validator;
 
     // properties
     bool m_initialized;

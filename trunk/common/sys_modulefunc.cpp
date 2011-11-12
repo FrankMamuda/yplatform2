@@ -67,19 +67,18 @@ unload
 ================
 */
 void pModule::unload() {
-    if ( this->handle != NULL ) {
+    if ( this->handle.isLoaded()) {
         if ( this->type() == Renderer )
             this->call( RendererAPI::Shutdown );
         else
             this->call( ModuleAPI::Shutdown );
 
-        if ( this->handle->isLoaded() )
-            this->handle->unload();
+        // FIXME: still failing to properly unload such modules as renderer
+        this->handle.unload();
 
-        delete this->handle;
-        memset( &this->entry, 0, sizeof( this->entry ));
-        memset( &this->modMain, 0, sizeof( this->modMain ));
-        memset( &this->renderer, 0, sizeof( this->renderer ));
+        memset( &this->modMain, 0, sizeof( modMainDef ));
+        memset( &this->entry, 0, sizeof( modEntryDef ));
+        memset( &this->renderer, 0, sizeof( rendererEntryDef ));
     }
 }
 
@@ -100,22 +99,22 @@ loadHandle
 */
 void pModule::loadHandle() {
     // attempt loading
-    if ( this->handle->load()) {
+    if ( this->handle.load()) {
         // resolve main entry (renderer uses different structure)
         if ( this->type() == Module ) {
-            this->modMain = reinterpret_cast<modMainDef>( this->handle->resolve( "modMain" ));
-            this->renderer = reinterpret_cast<rendererEntryDef>( this->handle->resolve( "modRendererEntry" ));
+            this->modMain = reinterpret_cast<modMainDef>( this->handle.resolve( "modMain" ));
+            this->renderer = reinterpret_cast<rendererEntryDef>( this->handle.resolve( "modRendererEntry" ));
         } else if ( this->type() == Renderer )
-            this->modMain = reinterpret_cast<modMainDef>( this->handle->resolve( "rendererMain" ));
+            this->modMain = reinterpret_cast<modMainDef>( this->handle.resolve( "rendererMain" ));
 
         // resolve syscall entry
-        this->entry = reinterpret_cast<modEntryDef>( this->handle->resolve( "modEntry" ));
+        this->entry = reinterpret_cast<modEntryDef>( this->handle.resolve( "modEntry" ));
 
         // see if we have properly resolved entry/main functions
         if ( !this->modMain || !this->entry ) {
-            this->setErrorMessage( this->tr( "could not load module: errorString: %1" ).arg( this->handle->errorString()));
-            this->handle->unload();
-            delete this->handle;
+            this->setErrorMessage( this->tr( "could not load module: errorString: %1" ).arg( this->handle.errorString()));
+            this->handle.unload();
+            //this->handle;
         } else {
             // pass platform syscalls
             this->entry( platformSyscalls );
@@ -134,14 +133,12 @@ void pModule::loadHandle() {
             if ( this->type() == Module ) {
                 if ( version > ModuleAPI::Version ) {
                     this->setErrorMessage( this->tr( "Module API version mismatch - %1, expected less or equal to %2" ).arg( version ).arg( ModuleAPI::Version ));
-                    delete this->handle;
                     return;
                 } else
                     com.print( this->tr( "^2pModule::loadHandle: successfully loaded module \"%1\" with API - %2\n" ).arg( this->name()).arg( version ));
             } else if ( this->type() == Renderer ) {
                 if ( version > RendererAPI::Version ) {
                     this->setErrorMessage( this->tr( "Renderer API version mismatch - %1, expected less or equal to %2" ).arg( version ).arg( RendererAPI::Version ));
-                    delete this->handle;
                     return;
                 } else
                     com.print( this->tr( "^2pModule::loadHandle: successfully loaded renderer with API - %1\n" ).arg( version ));
@@ -162,14 +159,10 @@ void pModule::loadHandle() {
                     this->setErrorMessage( this->tr( "Module could be initialized" ));
                 else if ( this->type() == Renderer )
                     this->setErrorMessage( this->tr( "Renderer could be initialized" ));
-
-                delete this->handle;
             }
         }
-    } else {
-        this->setErrorMessage( this->tr( "%1" ).arg( this->handle->errorString()));
-        delete this->handle;
-    }
+    } else
+        this->setErrorMessage( this->tr( "%1" ).arg( this->handle.errorString()));
 }
 
 /*
@@ -217,12 +210,12 @@ void pModule::load() {
             pSearchPath *sp = fs.searchPaths.at( searchPathIndex );
             if ( sp->type() == pFile::Directory ) {
                 // allocate library handle
-                this->handle = new QLibrary( sp->path() + filename );
+                this->handle.setFileName( sp->path() + filename );
                 this->loadHandle();
             }
         } else {
             // by now we already have the link target stored in filename
-            this->handle = new QLibrary( filename );
+            this->handle.setFileName( filename );
             this->loadHandle();
         }
     } else {

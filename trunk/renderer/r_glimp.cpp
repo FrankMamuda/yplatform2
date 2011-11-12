@@ -138,6 +138,9 @@ void R_GLimp::shutdown() {
 
         // glimp is disabled
         this->setInitialized( false );
+
+        // kill window
+        this->widget->~QGLWidget();
     }
 }
 

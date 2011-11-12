@@ -25,6 +25,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // includes
 //
 #include <QtCore/qglobal.h>
+#include <QtGui>
 
 #if defined ( R_BUILD )
 #define RENDERERSHARED_EXPORT Q_DECL_EXPORT

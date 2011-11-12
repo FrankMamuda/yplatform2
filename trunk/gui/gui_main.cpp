@@ -59,6 +59,7 @@ Gui_Main::Gui_Main( QWidget *parent ) : QMainWindow( parent ), ui( new Ui::Gui_M
     this->setFocus();
     this->setInitialized();
     this->setTrayInitialized( false );
+    this->previousHeight = this->height();
 }
 
 /*
@@ -146,15 +147,6 @@ void Gui_Main::shutdown() {
     cmd.remove( "gui_hide" );
     cmd.remove( "gui_setFocus" );
 
-    // remove actions
-    foreach ( customActionDef_t *actionPtr, this->toolBarActions ) {
-        this->ui->toolBar->removeAction( actionPtr->action );
-        delete actionPtr->action;
-        this->toolBarActions.removeOne( actionPtr );
-        delete actionPtr;
-    }
-    this->toolBarActions.clear();
-
     // remove tabs
     this->tabWidgetTabs[Gui_Main::MainWindow].clear();
     this->tabWidgetTabs[Gui_Main::Settings].clear();
@@ -197,29 +189,21 @@ void Gui_Main::createActions() {
     this->connect( this->settigsAction, SIGNAL( triggered()), this->settings, SLOT( intializeCvars()));
     this->connect( this->settigsAction, SIGNAL( triggered()), this->settings, SLOT( exec()));
     this->ui->toolBar->addAction( this->settigsAction );
-    this->toolBarActions << new customActionDef_t;
-    this->toolBarActions.last()->action = this->settigsAction;
 
     // modules
     this->moduleAction = new QAction( QIcon( ":/icons/module" ), this->tr( "Modules" ), this );
     this->connect( this->moduleAction, SIGNAL( triggered()), &mod, SLOT( toggleWidget()));
     this->ui->toolBar->addAction( this->moduleAction );
-    this->toolBarActions << new customActionDef_t;
-    this->toolBarActions.last()->action = this->moduleAction;
 
     // about
     this->aboutAction = new QAction( QIcon( ":/icons/about" ), this->tr( "About" ), this );
     this->ui->toolBar->addAction( this->aboutAction );
     this->connect( this->aboutAction, SIGNAL( triggered()), this, SLOT( actionAboutTriggered()));
-    this->toolBarActions << new customActionDef_t;
-    this->toolBarActions.last()->action = this->aboutAction;
 
     // exit
-    this->exitAction = new QAction( QIcon( ":/icons/exit" ), this->tr( "Exit" ), this );
-    this->connect( this->exitAction, SIGNAL( triggered()), &m, SLOT( shutdown()));
-    this->ui->toolBar->addAction( this->exitAction );
-    this->toolBarActions << new customActionDef_t;
-    this->toolBarActions.last()->action = this->exitAction;
+    this->exitMainAction = new QAction( QIcon( ":/icons/exit" ), this->tr( "Exit" ), this );
+    this->connect( this->exitMainAction, SIGNAL( triggered()), &m, SLOT( shutdown()));
+    this->ui->toolBar->addAction( this->exitMainAction );
 }
 
 /*
@@ -819,78 +803,29 @@ void Gui_Main::closeEvent( QCloseEvent *event ) {
 
 /*
 ===============
-addToolBarAction
-
- dd: do we handle translated actions properly?
-===============
-*/
-void Gui_Main::addToolBarAction( const QString &name, const QString &icon, cmdCommand_t callBack ) {
-    // failsafe
-    foreach ( customActionDef_t *actionPtr, this->toolBarActions ) {
-        if ( !QString::compare( name, actionPtr->action->objectName())) {
-            com.error( Sys_Common::SoftError, this->tr( "Gui_Main::addAction: action \"%1\" already exists\n" ).arg( name ));
-            return;
-        }
-    }
-
-    // create custom action
-    this->toolBarActions << new customActionDef_t;
-    this->toolBarActions.last()->action = new QAction( this );
-    this->toolBarActions.last()->action->setObjectName( name );
-    this->toolBarActions.last()->action->setText( name );
-
-    // generate icon
-    if ( !icon.isEmpty()) {
-        if ( name.startsWith( ":" )) {
-            this->toolBarActions.last()->action->setIcon( QIcon( name ));
-        } else {
-            byte *buffer;
-            long len = fs.readFile( icon, &buffer, Sys_Filesystem::Silent );
-
-            // any icon?
-            if ( len > 0 ) {
-                QPixmap pixMap;
-                pixMap.loadFromData( QByteArray ( reinterpret_cast<const char*>( buffer ), len ));
-                this->toolBarActions.last()->action->setIcon( QIcon( pixMap ));
-            }
-        }
-    }
-
-    // add callback
-    this->toolBarActions.last()->callBack = callBack;
-
-    // connect
-    connect( this->toolBarActions.last()->action, SIGNAL( triggered()), this, SLOT( customActionSlot()));
-
-    // add to menuBar
-    this->ui->toolBar->addAction( this->toolBarActions.last()->action );
-}
-
-/*
-===============
 removeAction
 ===============
 */
-void Gui_Main::removeAction( const QString &name ) {
-    foreach ( customActionDef_t *actionPtr, this->toolBarActions ) {
-        if ( !QString::compare( name, actionPtr->action->objectName())) {
-            this->ui->toolBar->removeAction( actionPtr->action );
-            delete actionPtr->action;
-            this->toolBarActions.removeOne( actionPtr );
-        }
-    }
-}
+void Gui_Main::removeAction( ModuleAPI::ToolBarActions id ) {
+    switch ( id ) {
+    case ModuleAPI::ActionSettings:
+        this->ui->toolBar->removeAction( this->settigsAction );
+        break;
 
-/*
-===============
-customActionSlot
-===============
-*/
-void Gui_Main::customActionSlot() {
-    QAction* senderAction = qobject_cast<QAction *>( QObject::sender());
-    foreach ( customActionDef_t *actionPtr, this->toolBarActions ) {
-        if ( !QString::compare( senderAction->text(), actionPtr->action->text()))
-            actionPtr->callBack();
+    case ModuleAPI::ActionModules:
+        this->ui->toolBar->removeAction( this->moduleAction );
+        break;
+
+    case ModuleAPI::ActionAbout:
+        this->ui->toolBar->removeAction( this->aboutAction );
+        break;
+
+    case ModuleAPI::ActionExit:
+        this->ui->toolBar->removeAction( this->exitMainAction );
+        break;
+
+    default:
+        com.error( Sys_Common::SoftError, this->tr( "Gui_Main::removeAction: invalid action id '%1'\n" ).arg( id ));
     }
 }
 
@@ -996,4 +931,37 @@ void Gui_Main::setActiveTab( const QString &name ) {
             this->ui->tabWidget->setCurrentIndex( customTabPtr->index );
         }
     }
+}
+
+/*
+===============
+hideTabWidget
+===============
+*/
+void Gui_Main::hideTabWidget() {
+    this->ui->centralwidget->hide();
+    this->previousHeight = this->height();
+    this->setMinimumHeight( this->ui->toolBar->minimumSizeHint().height());
+    this->resize( this->width(), 0 );
+
+}
+
+/*
+===============
+showTabWidget
+===============
+*/
+void Gui_Main::showTabWidget() {
+    this->ui->centralwidget->show();
+    this->setMinimumHeight( this->previousHeight );
+    this->resize( this->width(), this->previousHeight );
+}
+
+/*
+===============
+showTabWidget
+===============
+*/
+void Gui_Main::removeMainToolBar() {
+    this->removeToolBar( this->ui->toolBar );
 }

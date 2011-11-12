@@ -1,22 +1,7 @@
-7th of August (YCommons 2.8.99.0 rc1)
-    -a lot of changes since r3
+r14:
+    -changes in gui handling & related module calls
+    -cvar string handling update
+    -module handling fixes
 
-9th of August (YCommons 2.8.99.1 rc2)
-    -changes in renderer API
-    -platform icon
-
-30th of August (YCommons 2.8.99.2 rc3)
-    -fixes in cvar code
-    -fixes in settings code
-
-1st of September (YCommons 2.8.99.3 rc4)
-    -more fixes in settings code
-
-12th of September (YCommons 2.8.99.4 rc5)
-    -mouse/key events from renderer
-    -intercepting close event (for tray)
-
-12th of October (YCommons 2.8.99.5 rc6)
-    -casting fixes, other minor stuff
-    -FIXME: renderer crashes on reload
-    -TODO: add module icon to print from module
+TODO:
+    validate cvarstrings, on save convert exotic chars to XML safe strings and vice versa

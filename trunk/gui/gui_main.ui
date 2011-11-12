@@ -101,7 +101,7 @@ p, li { white-space: pre-wrap; }
   </widget>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
-    <string>Tool Bar</string>
+    <string>Main toolbar</string>
    </property>
    <property name="movable">
     <bool>false</bool>

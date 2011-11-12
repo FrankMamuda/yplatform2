@@ -47,6 +47,7 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
     case ModuleAPI::Init:
         // perform initialization
         mt.comPrint( "Hello world\n" );
+
         break;
 
     case ModuleAPI::Update:
@@ -73,6 +74,7 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
         // clear cvars
         foreach ( mCvar *cvarPtr, mt.cvars )
             delete cvarPtr;
+
         break;
 
 

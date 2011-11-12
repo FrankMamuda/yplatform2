@@ -27,6 +27,13 @@ namespace ModuleAPI {
         ConsoleUnlocked = 0,
         ConsoleLocked
     };
+    // console state (gui)
+    enum ToolBarActions {
+        ActionSettings = 0,
+        ActionModules,
+        ActionAbout,
+        ActionExit
+    };
     // public API calls (modules)
     enum ModuleAPICalls {
         ModAPI = 0,
@@ -82,17 +89,21 @@ namespace ModuleAPI {
         GuiHide,
         GuiCreateSystray,
         GuiRemoveSystray,
-        GuiAddAction,
         GuiRemoveAction,
+        GuiAddToolBar,
+        GuiRemoveToolBar,
+        GuiRemoveMainToolBar,
         GuiAddTab,
         GuiRemoveTab,
         GuiSetActiveTab,
         GuiSetConsoleState,
         GuiAddSettingsTab,
         GuiRemoveSettingsTab,
+        GuiShowTabWidget,
+        GuiHideTabWidget,
 
         // renderer only
-        RendererKeyEvent = 50,
+        RendererKeyEvent = 100,
         RendererMouseEvent,
         RendererMouseMotion,
         RendererWheelEvent
@@ -108,7 +119,7 @@ namespace ModuleAPI {
         Soundsystem*/
     };
     // api version (to avoid mismatch)
-    const static unsigned int Version = 5;
+    const static unsigned int Version = 6;
 }
 
 #endif // MOD_PUBLIC_H

@@ -36,7 +36,7 @@ Gui_About::Gui_About( QWidget *parent ) :
     m_ui->setupUi( this );
 
     m_ui->versionCommons->setText( QString( "%1" ).arg( Sys::Version ));
-    m_ui->versionGUI->setText( QString( "Qt %1" ).arg( Sys::GUIVersion ));
+    m_ui->versionAPI->setText( this->tr( "API version: %1" ).arg( ModuleAPI::Version ));
 
     // this is a fixed frame
     this->setSizeGripEnabled( false );
