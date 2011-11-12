@@ -112,7 +112,7 @@ private:
     void loadHandle();
 
     // module libHandle and funcs
-    QLibrary *handle;
+    QLibrary handle;
     modMainDef modMain;
     modEntryDef entry;
     rendererEntryDef renderer;

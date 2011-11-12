@@ -116,14 +116,18 @@ public slots:
     void guiHide();
     void guiCreateSystemTray();
     void guiRemoveSystemTray();
-    void guiAddAction( const QString &name, const QString &icon, cmdCommand_t callback );
-    void guiRemoveAction( const QString &name );
+    void guiRemoveAction( ModuleAPI::ToolBarActions );
+    void guiAddToolBar( QToolBar * );
+    void guiRemoveToolBar( QToolBar * );
+    void guiRemoveMainToolBar();
     void guiAddTab( QWidget *widget, const QString &name, const QString &icon );
     void guiRemoveTab( const QString &name );
     void guiSetActiveTab( const QString &name );
     void guiSetConsoleState( int state );
     void guiAddSettingsTab( QWidget *widget, const QString &name, const QString &icon = QString());
     void guiRemoveSettingsTab( const QString &name );
+    void guiShowTabWidget();
+    void guiHideTabWidget();
     // renderer
 #ifndef R_BUILD
 #ifdef RENDERER_ENABLED

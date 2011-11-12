@@ -69,9 +69,7 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
         return modPtr;
     }
 
-    //
     // parse document
-    //
     manifest.setContent( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
     QDomNode moduleNode = manifest.firstChild();
     while ( !moduleNode.isNull()) {
@@ -549,21 +547,32 @@ intptr_t Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int 
         com.gui()->removeSystemTray();
         break;
 
-    case ModuleAPI::GuiAddAction:
-        if ( numArgs < 3 ) {
-            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiAddAction [name] [icon] [callback]\n" ));
-            return false;
-        }
-
-        com.gui()->addToolBarAction( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )), QString::fromLatin1( reinterpret_cast<const char*>( args[1] )),  reinterpret_cast<cmdCommand_t>( args[2] ));
-        break;
-
     case ModuleAPI::GuiRemoveAction:
         if ( numArgs < 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiRemoveAction [name]\n" ));
             return false;
         }
-        com.gui()->removeAction( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
+        com.gui()->removeAction( static_cast<ModuleAPI::ToolBarActions>( args[0] ));
+        break;
+
+    case ModuleAPI::GuiAddToolBar:
+        if ( numArgs < 1 ) {
+            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiAddToolbar [toolBarPtr]\n" ));
+            return false;
+        }
+        com.gui()->addToolBar( reinterpret_cast<QToolBar*>( args[0] ));
+        break;
+
+    case ModuleAPI::GuiRemoveToolBar:
+        if ( numArgs < 1 ) {
+            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiRemoveToolBar [toolBarPtr]\n" ));
+            return false;
+        }
+        com.gui()->removeToolBar( reinterpret_cast<QToolBar*>( args[0] ));
+        break;
+
+    case ModuleAPI::GuiRemoveMainToolBar:
+        com.gui()->removeMainToolBar();
         break;
 
     case ModuleAPI::GuiAddTab:
@@ -614,6 +623,17 @@ intptr_t Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int 
         com.gui()->removeTabExt( Gui_Main::Settings, QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
         break;
 
+    case ModuleAPI::GuiShowTabWidget:
+        com.gui()->showTabWidget();
+        break;
+
+    case ModuleAPI::GuiHideTabWidget:
+        com.gui()->hideTabWidget();
+        break;
+
+        //
+        // renderer
+        //
     case ModuleAPI::RendererKeyEvent:
         if ( numArgs < 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: RendererKeyEvent [type] [key]\n" ));
@@ -892,20 +912,17 @@ void Sys_Module::createWidget() {
     // create button layout
     this->bLayout = new QBoxLayout( QBoxLayout::LeftToRight );
 
-    //
-    // create & connect buttons
-    //
-    // load
+    // connect load button
     this->loadButton = new QPushButton( QIcon( ":/icons/exec" ), this->tr( "Load/Unload" ));
     this->connect( this->loadButton, SIGNAL( clicked()), this, SLOT( listWidgetAction()));
     this->bLayout->addWidget( this->loadButton );
 
-    // recache modules
+    // connect refresh button
     this->refreshButton = new QPushButton( QIcon( ":/icons/refresh" ),this->tr( "Refresh" ));
     this->connect( this->refreshButton, SIGNAL( clicked()), this, SLOT( reCacheModules()));
     this->bLayout->addWidget( this->refreshButton );
 
-    // close
+    // connect close button
     this->closeButton = new QPushButton( QIcon( ":/icons/close" ), this->tr( "Close" ));
     this->closeButton->setAutoDefault( true );
     this->closeButton->setDefault( true );

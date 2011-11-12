@@ -42,12 +42,6 @@ namespace Ui {
     static const QString DefaultHistoryFile( "history.xml" );
 }
 
-// custom actions
-typedef struct customActionDef_s {
-    QAction *action;
-    cmdCommand_t callBack;
-} customActionDef_t;
-
 typedef struct customTabDef_s {
     QString name;
     int index;
@@ -91,9 +85,9 @@ public:
     int  historyOffset() const { return this->m_historyOffset; }
 
 protected:
-    void changeEvent( QEvent *e );
-    void closeEvent( QCloseEvent *event );
-    bool eventFilter( QObject *object, QEvent *event );
+    void changeEvent( QEvent * );
+    void closeEvent( QCloseEvent * );
+    bool eventFilter( QObject *, QEvent * );
 
 private:
     Ui::Gui_Main *ui;
@@ -102,10 +96,10 @@ private:
     QImage *addImageResource( const QString &filename, int w = 0, int h = 0 );
 
     // actions
-    QAction *aboutAction;
     QAction *settigsAction;
+    QAction *moduleAction;
+    QAction *aboutAction;
     QAction *exitMainAction;
-    QList <customActionDef_t*>toolBarActions;
 
     // tabs
     QList <customTabDef_t*>tabWidgetTabs[2];
@@ -117,7 +111,6 @@ private:
     QAction *maximizeAction;
     QAction *restoreAction;
     QAction *exitAction;
-    QAction *moduleAction;
 
     // resources
     QList <imageResourceDef_t*>imageResources;
@@ -132,6 +125,9 @@ private:
 
     // settings
     Gui_Settings *settings;
+
+    // previous height (for hiding base widget)
+    int previousHeight;
 
 public slots:
     // initialization & gui
@@ -148,10 +144,12 @@ public slots:
     void createSystemTray();
     void removeSystemTray();
 
-    // toolbar & tabs
-    void addToolBarAction( const QString &name, const QString &icon, cmdCommand_t callBack );
-    void removeAction( const QString &name );
+    // toolbar & tab widget
+    void removeAction( ModuleAPI::ToolBarActions );
     void setActiveTab( const QString &name );
+    void hideTabWidget();
+    void showTabWidget();
+    void removeMainToolBar();
 
     // printing & console
     void print( const QString &msg, int fontSize = 10 );
@@ -178,7 +176,6 @@ private slots:
     void createActions();
     void createTrayActions();
     void iconActivated( QSystemTrayIcon::ActivationReason reason );
-    void customActionSlot();
     void toolBarIconSizeModified();
 
     // history

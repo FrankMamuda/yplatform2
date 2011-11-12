@@ -88,8 +88,6 @@ public slots:
 //
 // externals
 //
-#ifndef MODULE_LIBRARY
 extern class Sys_Common com;
-#endif
 
 #endif // SYS_COMMON_H

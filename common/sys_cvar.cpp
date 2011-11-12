@@ -54,25 +54,26 @@ createCommand( cv, create )
 /*
 ============
 validate
-
- TODO/YP2BackPort: use only [a-z][0-9]
-                   validate strings, on save convert UTF to XML safe strings and vice versa
 ============
 */
 bool Sys_Cvar::validate( const QString &s ) const {
+    int pos;
+
     // check for illegal chars
     if ( s.isNull())
         return false;
 
-    // we cannot have backward slash paths in a cvar
-    if ( s.contains( '\\' ) || s.contains( '\"' ))
-        return false;
+    // validate cvar name
+    pos = 0;
+    QString str( s );
+    QRegExpValidator::State state = this->validator->validate( str, pos );
 
-    // no xml stuff either
-    if ( s.contains( '>' ) || s.contains( '<' ))
-        return false;
+    // is valid string?
+    if ( state == QRegExpValidator::Acceptable )
+        return true;
 
-    return true;
+    // fail
+    return false;
 }
 
 /*
@@ -82,7 +83,7 @@ find
 */
 pCvar *Sys_Cvar::find( const QString &name ) const {
     if ( !this->validate( name )) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::find: invalid name\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::find: invalid cvar name \"%1\"\n" ).arg( name ));
         return NULL;
     }
 
@@ -121,6 +122,9 @@ void Sys_Cvar::shutdown() {
     cmd.remove( "cv_reset" );
     cmd.remove( "cv_list" );
     cmd.remove( "cv_create" );
+
+    // remove validator
+    delete this->validator;
 
     // cleanup
     this->clear();
@@ -231,6 +235,10 @@ void Sys_Cvar::init() {
 
     // we are up and running
     this->setInitialized();
+
+    // create cvar name validator
+    QRegExp rx( "[A-z0-9_\\-]+" );
+    this->validator = new QRegExpValidator( rx, this );
 }
 
 /*
@@ -240,7 +248,7 @@ create
 */
 pCvar *Sys_Cvar::create( const QString &name, const QString &string, pCvar::Flags flags, const QString &description, bool mCvar ) {
     if ( !this->validate( name )) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::create: invalid name\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::create: invalid cvar name \"%1\"\n" ).arg( name ));
         return NULL;
     }
 

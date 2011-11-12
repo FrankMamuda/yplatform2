@@ -419,20 +419,38 @@ void Mod_Trap::guiRemoveSystemTray() {
 
 /*
 =============
-guiAddAction
+guiRemoveAction
 =============
 */
-void Mod_Trap::guiAddAction( const QString &name, const QString &icon, cmdCommand_t callback ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiAddAction, reinterpret_cast<intptr_t>( name.toLatin1().constData()), reinterpret_cast<intptr_t>( icon.toLatin1().constData()), reinterpret_cast<intptr_t>( callback ));
+void Mod_Trap::guiRemoveAction( ModuleAPI::ToolBarActions id ) {
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveAction, static_cast<ModuleAPI::ToolBarActions>( id ));
 }
 
 /*
 =============
-guiRemoveAction
+guiAddToolBar
 =============
 */
-void Mod_Trap::guiRemoveAction( const QString &name ) {
-    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveAction, reinterpret_cast<intptr_t>( name.toLatin1().constData()));
+void Mod_Trap::guiAddToolBar( QToolBar *toolBarPtr ) {
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiAddToolBar, reinterpret_cast<intptr_t>( toolBarPtr ));
+}
+
+/*
+=============
+guiRemoveToolBar
+=============
+*/
+void Mod_Trap::guiRemoveToolBar( QToolBar *toolBarPtr ) {
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveToolBar, reinterpret_cast<intptr_t>( toolBarPtr ));
+}
+
+/*
+=============
+guiRemoveMainToolBar
+=============
+*/
+void Mod_Trap::guiRemoveMainToolBar() {
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveMainToolBar );
 }
 
 /*
@@ -487,6 +505,24 @@ guiRemoveSettingsTab
 */
 void Mod_Trap::guiRemoveSettingsTab( const QString &name ) {
     this->call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSettingsTab, reinterpret_cast<intptr_t>( name.toLatin1().constData()));
+}
+
+/*
+=============
+guiShowTabWidget
+=============
+*/
+void Mod_Trap::guiShowTabWidget() {
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiShowTabWidget );
+}
+
+/*
+=============
+guiHideTabWidget
+=============
+*/
+void Mod_Trap::guiHideTabWidget() {
+    this->call( ModuleAPI::Platform, ModuleAPI::GuiHideTabWidget );
 }
 
 #ifndef R_BUILD

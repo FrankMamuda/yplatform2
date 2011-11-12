@@ -121,7 +121,7 @@ p, li { white-space: pre-wrap; }
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="versionGUI">
+    <widget class="QLabel" name="versionAPI">
      <property name="toolTip">
       <string notr="true"/>
      </property>
