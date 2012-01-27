@@ -87,7 +87,8 @@ long pEntry::open() {
 
     // make sure we read from the start
     this->setInitialized();
-    this->resetRemaining();
+    this->resetRemainingCompressed();
+    this->resetRemainingUncompressed();
     this->resetPos();
 
     // return uncompressed size
@@ -117,56 +118,72 @@ read
 ============
 */
 long pEntry::read( byte *buffer, unsigned long len, int flags ) {
+    unsigned int totalBytesRead = 0;
+    int zlibError;
+
     // failsafe
     if ( !this->hasInitialized()) {
         com.error( Sys_Common::SoftError, this->tr( "pEntry( '%1' )::read: file has not been opened\n" ).arg( this->name()));
         return -1;
     }
 
-    // set read params, bind buffer to stream
+    // zero length fail
+    if ( static_cast<unsigned int>( len ) == 0 )
+        return -1;
+
+    // allocate stream
     this->stream.next_out = buffer;
     this->stream.avail_out = static_cast<unsigned int>( len );
 
-    // failsafe, can't read more than uncompressed length
-    if (( unsigned long )len > this->length())
-        this->stream.avail_out = static_cast<unsigned int>( this->length());
+    // read buffer can't exceed total uncompressed length
+    if ( static_cast<unsigned int>( len ) > this->remainingUncompressed())
+        this->stream.avail_out = static_cast<unsigned int>( this->remainingUncompressed());
 
     // allocate read buffer
     this->readBuffer = new byte[Package::ReadBuffer];
 
-    // enter read loop
+    // perform inflation loop
     while ( this->stream.avail_out > 0 ) {
-        if (( this->stream.avail_in == 0 ) && ( this->remaining() > 0 )) {
+        if (( this->stream.avail_in == 0 ) && ( this->remainingCompressed() > 0 )) {
             unsigned int readBufferSize = Package::ReadBuffer;
 
-            // set read buffer size
-            if ( this->remaining() < readBufferSize )
-                readBufferSize = static_cast<unsigned int>( this->remaining());
+            // determine read chunk size
+            if ( this->remainingCompressed() < readBufferSize )
+                readBufferSize = static_cast<unsigned int>( this->remainingCompressed());
 
             // failsafe
             if ( readBufferSize == 0 )
                 return -1;
 
             // seek until compressed data
-            if ( !fs.seek( this->parent()->fileHandle(), this->offset() + this->pos(), static_cast<Sys_Filesystem::OpenFlags>( flags )))
+            if ( !fs.seek( this->parent()->fileHandle(),
+                           this->pos() + this->offset(),
+                           static_cast<Sys_Filesystem::OpenFlags>( flags )))
                 return -1;
 
             // read compressed data with buffer size
-            if ( !fs.read( readBuffer, readBufferSize, this->parent()->fileHandle(), static_cast<Sys_Filesystem::OpenFlags>( flags )))
+            if ( fs.read( readBuffer,
+                          readBufferSize,
+                          this->parent()->fileHandle(),
+                          static_cast<Sys_Filesystem::OpenFlags>( flags )) != static_cast<long>( readBufferSize ))
                 return -1;
 
-            // advance by number of bytes read
+            // advance in compressed stream
             this->setPos( this->pos() + readBufferSize );
-            this->setRemaining( this->remaining() - readBufferSize );
+            this->setRemainingCompressed( this->remainingCompressed() - readBufferSize );
             this->stream.next_in = readBuffer;
             this->stream.avail_in = static_cast<unsigned int>( readBufferSize );
         }
 
-        // if data is uncompressed, just copy it
-        // if data is compressed with deflate algorithm, inflate it
+        // uncompress (or copy directly if no compression set)
         if ( this->compressionMode() == pEntry::NoCompression ) {
             unsigned int copyLength, y;
 
+            // nothing to read
+            if ( this->stream.avail_in == 0 && totalBytesRead == 0 )
+                return -1;
+
+            // determine number of bytes to copy
             if ( this->stream.avail_out < this->stream.avail_in )
                 copyLength = this->stream.avail_out;
             else
@@ -176,26 +193,35 @@ long pEntry::read( byte *buffer, unsigned long len, int flags ) {
             for ( y = 0; y < copyLength; y++ )
                 *( this->stream.next_out + y ) = *( this->stream.next_in + y );
 
-            // advance
-            this->setRemaining( this->remaining() - copyLength );
+            // advance in uncompressed stream
+            this->setRemainingUncompressed( this->remainingUncompressed() - copyLength );
             this->stream.avail_in -= copyLength;
             this->stream.avail_out -= copyLength;
             this->stream.next_out += copyLength;
             this->stream.next_in += copyLength;
             this->stream.total_out += copyLength;
+            totalBytesRead += copyLength;
         } else if ( this->compressionMode() == pEntry::Compressed ) {
-            unsigned long bytesBefore, bytesAfter, bytesTotal;
+            unsigned long startOffset, bytesRead;
+
+            // get bytes before inflation
+            startOffset = this->stream.total_out;
 
             // perform inflation
-            bytesBefore = this->stream.total_out;
-            if ( inflate( &this->stream, Z_SYNC_FLUSH ) != Z_OK )
+            zlibError = inflate( &this->stream, Z_SYNC_FLUSH );
+            if ( zlibError != Z_OK && zlibError != Z_STREAM_END )
                 return -1;
 
-            bytesAfter = this->stream.total_out;
-            bytesTotal = bytesBefore - bytesAfter;
+            // get number of inflated bytes
+            bytesRead = this->stream.total_out - startOffset;
 
-            // advance
-            this->setRemaining( this->remaining() - bytesTotal );
+            // advance in uncompressed stream
+            this->setRemainingUncompressed( this->remainingUncompressed() - bytesRead );
+            totalBytesRead += static_cast<unsigned int>( bytesRead );
+
+            // end of the stream, break out
+            if ( zlibError == Z_STREAM_END )
+                break;
         } else {
             com.error( Sys_Common::SoftError, this->tr( "pEntry( '%1' )::read: unsupported compression method\n" ).arg( this->name()));
             return -1;

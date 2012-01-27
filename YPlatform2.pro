@@ -66,3 +66,7 @@ RESOURCES += \
     resources/res_icons.qrc
 
 TRANSLATIONS = i18n/YPlatform2_lv_LV.ts
+
+
+
+

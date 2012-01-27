@@ -92,10 +92,10 @@ bool mCvar::set( const QString &string, bool force ) {
     bool ret;
 
     // call platform
-    ret = mt.cvarSet( this->name(), string, force );
+    ret = cv.set( this->name(), string, force );
 
     // set local cvar
-    this->setString( mt.cvarGet( this->name()));
+    this->setString( cv.get( this->name()));
 
     // return result
     return ret;

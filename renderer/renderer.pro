@@ -8,6 +8,8 @@ TEMPLATE = lib
 DEFINES += R_BUILD
 DEFINES += MODULE_LIBRARY
 win32:INCLUDEPATH += ../includes
+INCLUDEPATH += ../common
+INCLUDEPATH += ../modules
 SOURCES += r_public.cpp \
     r_glimp.cpp \
     ../modules/mod_trap.cpp \

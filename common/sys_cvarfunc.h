@@ -31,6 +31,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 class pCvar : public QObject {
     Q_OBJECT
+#ifndef MODULE_LIBRARY
     Q_CLASSINFO( "description", "Console variable" )
     Q_DISABLE_COPY( pCvar )
     Q_PROPERTY( QString name READ name WRITE setName )
@@ -38,20 +39,22 @@ class pCvar : public QObject {
     Q_PROPERTY( QString string READ string WRITE setString )
     Q_PROPERTY( QString reset READ resetString WRITE setResetString )
     Q_PROPERTY( QString latch READ latchString WRITE setLatchString )
+#endif
     Q_FLAGS( Flags Flag )
 
 public:
     // cvar flags
     enum Flag {
-        NoFlags     = 0,
-        Archive     = 1,
-        Latched     = 2,
-        ReadOnly    = 4/*,
-        Password  =  8*/
+        NoFlags     = 0x0,
+        Archive     = 0x1,
+        Latched     = 0x2,
+        ReadOnly    = 0x4
     };
     Q_DECLARE_FLAGS( Flags, Flag )
+    
+#ifndef MODULE_LIBRARY
     Flags flags;
-
+    
     // constructors/destructors
     pCvar( const QString &name, const QString &string, Flags flags = NoFlags, const QString &desc = QString::null, bool mCvar = false );
     ~pCvar();
@@ -90,6 +93,10 @@ private:
     QString m_description;
     QString m_reset;
     QString m_latch;
+#endif
 };
+
+// declare flags
+Q_DECLARE_OPERATORS_FOR_FLAGS( pCvar::Flags )
 
 #endif // SYS_CVARFUNC_H

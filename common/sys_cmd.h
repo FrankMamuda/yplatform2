@@ -29,7 +29,14 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // defines
 //
-typedef void ( *cmdCommand_t )();
+typedef void ( *cmdCommand_t )( const QStringList &args );
+Q_DECLARE_METATYPE( cmdCommand_t )
+
+// command macros (wrappers)
+#define createCommand( c, f ) static void f ## Cmd ( const QStringList &args ) { c.f( args ); }
+#define createCommandPtr( c, f ) static void f ## Cmd ( const QStringList &args ) { c->f( args ); }
+#define createSimpleCommand( c, f ) static void f ## Cmd ( const QStringList &args ) { Q_UNUSED( args ) c.f(); }
+#define createSimpleCommandPtr( c, f ) static void f ## Cmd ( const QStringList &args ) { Q_UNUSED( args ) c->f(); }
 
 //
 // namespaces
@@ -41,6 +48,7 @@ namespace Cmd {
 //
 // class:pCmd
 //
+#ifndef MODULE_LIBRARY
 class pCmd : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Platform console command" )
@@ -51,8 +59,8 @@ class pCmd : public QObject {
 
 public:
     // constructor
-    pCmd ( const QString &cmdName, cmdCommand_t &function, const QString &description ) {
-        this->setName( cmdName );
+    pCmd ( const QString &command, cmdCommand_t &function, const QString &description  ) {
+        this->setName( command );
         this->setFunction( function );
         this->setDescription( description );
     }
@@ -63,12 +71,12 @@ public:
     cmdCommand_t function() const { return this->m_function; }
 
     // other funcs
-    void exec() { this->m_function(); }
-    bool hasFunction() const { if ( this->m_function ) return true; return false; }
+    void execute( const QStringList &args ) { this->m_function( args ); }
+    bool hasFunction() const { if ( this->m_function != NULL ) return true; return false; }
 
 public slots:
     // property setters
-    void setName( const QString &cmdName ) { this->m_name = cmdName; }
+    void setName( const QString &command ) { this->m_name = command; }
     void setDescription( const QString &description ) { this->m_description = description; }
     void setFunction( const cmdCommand_t &function ) { this->m_function = function; }
 
@@ -80,50 +88,40 @@ private:
 };
 
 //
-// member function wrapper macro
-//
-#define createCommand( mClass, mFunc ) static void mFunc ## Cmd () { mClass.mFunc(); }
-#define createCommandPtr( mClass, mFunc ) static void mFunc ## Cmd () { mClass->mFunc(); }
-
-//
 // class:Sys_Cmd
 //
-#ifndef MODULE_LIBRARY
 class Sys_Cmd : public QObject {
     Q_OBJECT
     Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
-    Q_CLASSINFO( "description", "Command subsystem" )
+    Q_CLASSINFO( "description", "Command subsystem v3" )
 
 public:
-    void add( const QString &cmdName, cmdCommand_t, const QString &description = QString::null );
-    void remove( const QString &cmdName );
-    int argc() const;
-    QString argv( unsigned int ) const;
-    QList<pCmd*> cmdList;
-    pCmd *find( const QString &name ) const;
-    bool execute( const QString &command );
+    void add( const QString &, cmdCommand_t, const QString & = QString::null );
+    void remove( const QString & );
+    bool execute( const QString & );
     bool hasInitialized() const { return this->m_initialized; }
+    QList<pCmd*> cmdList;
+    pCmd *find( const QString & ) const;
 
 private:
-    void tokenize( const QString &command );
+    bool executeTokenized( const QString &, const QStringList & );
     bool m_initialized;
-    QStringList argumentList;
 
 public slots:
-    void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
     void init();
     void shutdown();
-    void list();
-    void exec();
-    void echo();
+    void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
+
+    // commands
+    void list( const QStringList & );
+    void echo( const QStringList & );
+    void exec( const QStringList & );
 };
 
 //
 // externals
 //
-#ifndef MODULE_LIBRARY
 extern class Sys_Cmd cmd;
-#endif
 
 #endif
 #endif // SYS_CMD_H

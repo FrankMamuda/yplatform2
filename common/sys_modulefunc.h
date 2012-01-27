@@ -37,9 +37,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // prototypes for resolvable functions
 //
-typedef intptr_t ( *modMainDef )( int, int, intptr_t * );
-typedef void ( *modEntryDef )( intptr_t (*)( ModuleAPI::PlatformAPICalls, int, intptr_t * ));
-typedef void ( *rendererEntryDef )( intptr_t (*)( RendererAPI::RendererAPICalls, int, intptr_t * ));
+typedef QVariant ( *modMainDef )( int, const QVariantList & );
+typedef void ( *modEntryDef )( QVariant (*)( ModuleAPI::PlatformAPICalls, const QVariantList & ));
+typedef void ( *rendererEntryDef )( QVariant (*)( RendererAPI::RendererAPICalls, const QVariantList & ));
 
 //
 // class:pModule
@@ -70,16 +70,16 @@ public:
     pModule( const QString &moduleName );
 
     // calls
-    intptr_t call( int ) const;
-    intptr_t call( int, const intptr_t ) const;
-    intptr_t call( int, const intptr_t, const intptr_t ) const;
-    intptr_t call( int, const intptr_t, const intptr_t, const intptr_t ) const;
-    intptr_t call( int, const intptr_t, const intptr_t, const intptr_t, const intptr_t ) const;
-    intptr_t call( int, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t ) const;
-    intptr_t call( int, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t ) const;
-    intptr_t call( int, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t ) const;
-    intptr_t call( int, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t ) const;
-    intptr_t call( int, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t, const intptr_t ) const;
+    QVariant call( int callNum ) const { return (( modMainDef )( this->modMain ))( callNum, QVariantList()); }
+    QVariant call( int callNum, const QVariant &arg0 ) const { QVariantList args; args << arg0; return (( modMainDef )( this->modMain ))( callNum, args ); }
+    QVariant call( int callNum, const QVariant &arg0, const QVariant &arg1 ) const { QVariantList args; args << arg0 << arg1; return (( modMainDef )( this->modMain ))( callNum, args ); }
+    QVariant call( int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2 ) const { QVariantList args; args << arg0 << arg1 << arg2; return (( modMainDef )( this->modMain ))( callNum, args ); }
+    QVariant call( int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3 ) const { QVariantList args; args << arg0 << arg1 << arg2 << arg3; return (( modMainDef )( this->modMain ))( callNum, args ); }
+    QVariant call( int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4 ) const { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4; return (( modMainDef )( this->modMain ))( callNum, args ); }
+    QVariant call( int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5 ) const { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5; return (( modMainDef )( this->modMain ))( callNum, args ); }
+    QVariant call( int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5, const QVariant &arg6 ) const { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5 << arg6; return (( modMainDef )( this->modMain ))( callNum, args ); }
+    QVariant call( int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5, const QVariant &arg6, const QVariant &arg7 ) const { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5 << arg6 << arg7; return (( modMainDef )( this->modMain ))( callNum, args ); }
+    QVariant call( int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5, const QVariant &arg6, const QVariant &arg7, const QVariant &arg8 ) const { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5 << arg6 << arg7 << arg8; return (( modMainDef )( this->modMain ))( callNum, args ); }
 
     // module info
     QString name() const { return this->m_name; }
@@ -128,19 +128,5 @@ private:
     unsigned int m_api;
     Types m_type;
 };
-
-//
-// inlines for module calls
-//
-inline intptr_t pModule::call( int callNum ) const { return (( modMainDef )( this->modMain ))( callNum, 0, NULL ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0 ) const { intptr_t args[1] = { arg0 }; return (( modMainDef )( this->modMain ))( callNum, 1, args ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0, const intptr_t arg1 ) const { intptr_t args[2] = { arg0, arg1 }; return (( modMainDef )( this->modMain ))( callNum, 2, args ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0, const intptr_t arg1, const intptr_t arg2 ) const { intptr_t args[3] = { arg0, arg1, arg2 }; return (( modMainDef )( this->modMain ))( callNum, 3, args ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0, const intptr_t arg1, const intptr_t arg2, const intptr_t arg3 ) const { intptr_t args[4] = { arg0, arg1, arg2, arg3 }; return (( modMainDef )( this->modMain ))( callNum, 4, args ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0, const intptr_t arg1, const intptr_t arg2, const intptr_t arg3, const intptr_t arg4 ) const { intptr_t args[5] = { arg0, arg1, arg2, arg3, arg4 }; return (( modMainDef )( this->modMain ))( callNum, 5, args ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0, const intptr_t arg1, const intptr_t arg2, const intptr_t arg3, const intptr_t arg4, const intptr_t arg5 ) const { intptr_t args[6] = { arg0, arg1, arg2, arg3, arg4, arg5 }; return (( modMainDef )( this->modMain ))( callNum, 6, args ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0, const intptr_t arg1, const intptr_t arg2, const intptr_t arg3, const intptr_t arg4, const intptr_t arg5, const intptr_t arg6 ) const { intptr_t args[7] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6 }; return (( modMainDef )( this->modMain ))( callNum, 7, args ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0, const intptr_t arg1, const intptr_t arg2, const intptr_t arg3, const intptr_t arg4, const intptr_t arg5, const intptr_t arg6, const intptr_t arg7 ) const { intptr_t args[8] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 }; return (( modMainDef )( this->modMain ))( callNum, 8, args ); }
-inline intptr_t pModule::call( int callNum, const intptr_t arg0, const intptr_t arg1, const intptr_t arg2, const intptr_t arg3, const intptr_t arg4, const intptr_t arg5, const intptr_t arg6, const intptr_t arg7, const intptr_t arg8 ) const { intptr_t args[9] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 }; return (( modMainDef )( this->modMain ))( callNum, 9, args ); }
 
 #endif // SYS_MODULEFUNC_H

@@ -40,8 +40,8 @@ mCvar *r_adjustScreen;
 //
 // commands
 //
-createCommandPtr( glImp.widget, hide )
-createCommandPtr( glImp.widget, show )
+createSimpleCommandPtr( glImp.widget, hide )
+createSimpleCommandPtr( glImp.widget, show )
 
 /*
 ===============
@@ -49,13 +49,13 @@ init
 ===============
 */
 void R_GLimp::init() {
-    mt.comPrint( this->tr( "^2R_GLimp::init: ^5initializing OpenGL display\n" ));
+    com.print( this->tr( "^2R_GLimp::init: ^5initializing OpenGL display\n" ));
     QGLFormat format;
 
 #ifndef Q_OS_WIN
     // breaks compatibility with intel inegrated graphics on winxp
     if (( format.openGLVersionFlags() & format.OpenGL_Version_1_5 ) == 0 )
-        mt.comError( Sys_Common::FatalError, this->tr( "R_GLimp::init: OpenGL version 1.5 or higher is required\n" ));
+        com.error( Sys_Common::FatalError, this->tr( "R_GLimp::init: OpenGL version 1.5 or higher is required\n" ));
 #endif
 
     // set format
@@ -81,8 +81,8 @@ void R_GLimp::init() {
     this->resizeScreen();
 
     // add cmds
-    mt.cmdAdd( "r_raise", showCmd, this->tr( "raise renderer window" ));
-    mt.cmdAdd( "r_hide", hideCmd, this->tr( "hide renderer window" ));
+    cmd.add( "r_raise", showCmd, this->tr( "raise renderer window" ));
+    cmd.add( "r_hide", hideCmd, this->tr( "hide renderer window" ));
 
     // glimp is ok
     this->setInitialized();
@@ -130,17 +130,19 @@ shutdown
 void R_GLimp::shutdown() {
     if ( this->hasInitialized()) {
         // announce
-        mt.comPrint( this->tr( "^3R_GLimp: shutdown\n" ));
+        com.print( this->tr( "^3R_GLimp: shutdown\n" ));
 
         // remove cmds
-        mt.cmdRemove( "r_raise" );
-        mt.cmdRemove( "r_hide" );
+        cmd.remove( "r_raise" );
+        cmd.remove( "r_hide" );
 
         // glimp is disabled
         this->setInitialized( false );
 
         // kill window
+#ifndef Q_OS_WIN
         this->widget->~QGLWidget();
+#endif
     }
 }
 
@@ -173,7 +175,7 @@ int R_GLimp::getScreenMode() {
     if ( currentMode >= 0 && currentMode < Renderer::NumScreenModes )
         return currentMode;
     else {
-        mt.comError( Sys_Common::SoftError, this->tr( "R_GLimp::getScreenMode: invalid screen mode '%1', setting default\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "R_GLimp::getScreenMode: invalid screen mode '%1', setting default\n" ));
         r_screenMode->set( Renderer::DefaultScreenMode );
         return Renderer::DefaultScreenMode;
     }

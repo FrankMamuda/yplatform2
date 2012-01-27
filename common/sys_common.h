@@ -54,17 +54,6 @@ public:
         SoftError = 0,
         FatalError
     };
-
-    // byte order
-    typedef union {
-        float f;
-        unsigned int i;
-    } floatByteUnion;
-
-    short shortSwap( short );
-    int longSwap( int );
-    float floatSwap( const float* );
-
 #ifndef MODULE_BUILD
     void print( const QString &msg, int fontSize = 10 );
     void error( ErrorTypes type, const QString &msg );
@@ -88,6 +77,8 @@ public slots:
 //
 // externals
 //
+#ifndef MODULE_LIBRARY
 extern class Sys_Common com;
+#endif
 
 #endif // SYS_COMMON_H

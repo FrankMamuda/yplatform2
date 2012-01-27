@@ -29,7 +29,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // class::Mod_Main
 //
-class MODULESHARED_EXPORT Mod_Main {
+class MODULESHARED_EXPORT Mod_Main : public QObject {
+    Q_OBJECT
+
 public:
     Mod_Main();
 };

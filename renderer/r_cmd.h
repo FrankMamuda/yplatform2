@@ -73,6 +73,7 @@ public:
     };
 
     void drawImage( float x, float y, float w, float h, float s1, float t1, float s2, float t2, imgHandle_t handle );
+    void drawImage( float x, float y, float w, float h, imgHandle_t handle ) { this->drawImage( x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f, handle ); }
     void drawMaterial( float x, float y, float w, float h, mtrHandle_t handle );
     void setColour( float r, float g, float b, float a = 1.0f, bool directly = false  );
     void setColour( const QColor = QColor::fromRgbF( 0.0f, 0.0f, 0.0f, 1.0f ), bool directly = false );
@@ -115,7 +116,7 @@ public slots:
 // externals
 //
 #ifdef R_BUILD
-extern class R_Cmd cmd;
+extern class R_Cmd rCmd;
 #endif
 
 #endif // R_CMD_H

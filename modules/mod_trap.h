@@ -24,15 +24,16 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // includes
 //
+#include "mod_public.h"
+#include "sys_shared.h"
+#include "sys_filesystem.h"
+#include "sys_cmd.h"
+#include "mod_cvarfunc.h"
 #ifdef R_BUILD
 #include "renderer_global.h"
-#include "../common/sys_shared.h"
-#include "../modules/mod_public.h"
 #include <QtScript>
 #else
 #include "module_global.h"
-#include "../../common/sys_shared.h"
-#include "../mod_public.h"
 #ifdef RENDERER_ENABLED
 #include "../renderer/r_shared.h"
 #include "../renderer/r_public.h"
@@ -44,124 +45,51 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #if !defined( intptr_t )
 #include <stdint.h>
 #endif
-#include "../common/sys_filesystem.h"
-#include "../common/sys_cmd.h"
-#include "mod_cvarfunc.h"
+
 
 //
 // defines
 //
-#define STRING_BUFFER_SIZE 4096
-typedef intptr_t( *platformSyscallDef )( int, int, intptr_t * );
+typedef QVariant( *platformSyscallDef )( int, const QVariantList & );
 
 //
 // class::Mod_Trap
 //
 class Mod_Trap : public QObject {
     Q_OBJECT
+    Q_CLASSINFO( "description", "Platform communication subsystem" )
 
 public:
-    // float conversion struct
-    typedef union {
-            float v;
-            int i;
-            unsigned int ui;
-    } floatIntUnion;
-
     void setPlatformCalls( platformSyscallDef pSysCall );
     void setRendererCalls( platformSyscallDef pSysCall );
-    intptr_t passFloat( float v );
-    float getFloat( intptr_t i );
-
-    // cvars
-    QList <mCvar*>cvars;
 
 public slots:
-    //
-    // platform calls
-    //
-    // commons
-    void comPrint( const QString &msg );
-    void comError( int type, const QString &msg );
-    int comMilliseconds();
+    QVariant call( ModuleAPI::Destination destination, int callNum ) { return this->callExt( destination, callNum ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0 ) { QVariantList args; args << arg0; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1 ) { QVariantList args; args << arg0 << arg1; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2 ) { QVariantList args; args << arg0 << arg1 << arg2; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3 ) { QVariantList args; args << arg0 << arg1 << arg2 << arg3; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4 ) { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5 ) { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5, const QVariant &arg6 ) { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5 << arg6; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5, const QVariant &arg6, const QVariant &arg7 ) { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5 << arg6 << arg7; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5, const QVariant &arg6, const QVariant &arg7, const QVariant &arg8 ) { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5 << arg6 << arg7 << arg8; return this->callExt( destination, callNum, args ); }
+    QVariant call( ModuleAPI::Destination destination, int callNum, const QVariant &arg0, const QVariant &arg1, const QVariant &arg2, const QVariant &arg3, const QVariant &arg4, const QVariant &arg5, const QVariant &arg6, const QVariant &arg7, const QVariant &arg8, const QVariant &arg9 ) { QVariantList args; args << arg0 << arg1 << arg2 << arg3 << arg4 << arg5 << arg6 << arg7 << arg8 << arg9; return this->callExt( destination, callNum, args ); }
 
-    // filesystem
-    int fsOpen( int mode, const QString &path, fileHandle_t *fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    void fsClose( const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    void fsClose( const QString &filename, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    bool fsExists( const QString &path, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    int fsRead( byte **buffer, int len, const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    int fsWrite( const byte *buffer, int len, const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    bool fsSeek( const fileHandle_t fHandle, int offset, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    void fsTouch( const QString &filename, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    int fsReadFile( const QString &filename, byte **buffer, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    void fsPrint( const fileHandle_t fHandle, const QString &msg, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags );
-    void fsFreeFile( const QString &filename );
-    bool fsExtract( const QString &filename );
-    QStringList fsListFiles( const QString &directory, QRegExp *filter = NULL, Sys_Filesystem::ListModes mode = Sys_Filesystem::ListAll );
-    // cmd subsystem
-    void cmdAdd( const QString &cmdName, cmdCommand_t cmd, const QString &description );
-    void cmdRemove( const QString &cmdName );
-    int cmdArgc();
-    QString cmdArgv( int arg );
-    void cmdExecute( QString cmd );
-    mCvar *cvarCreate( const QString &name, const QString &string, pCvar::Flags = pCvar::NoFlags, const QString &desc = QString::null );
-    bool cvarSet( const QString &name, const QString &string, bool force = false );
-    QString cvarGet( const QString &name );
-    void cvarReset( const QString &name );
-    // app
-    void appShutdown();
-    // gui
-    void guiRaise();
-    void guiHide();
-    void guiCreateSystemTray();
-    void guiRemoveSystemTray();
-    void guiRemoveAction( ModuleAPI::ToolBarActions );
-    void guiAddToolBar( QToolBar * );
-    void guiRemoveToolBar( QToolBar * );
-    void guiRemoveMainToolBar();
-    void guiAddTab( QWidget *widget, const QString &name, const QString &icon );
-    void guiRemoveTab( const QString &name );
-    void guiSetActiveTab( const QString &name );
-    void guiSetConsoleState( int state );
-    void guiAddSettingsTab( QWidget *widget, const QString &name, const QString &icon = QString());
-    void guiRemoveSettingsTab( const QString &name );
-    void guiShowTabWidget();
-    void guiHideTabWidget();
     // renderer
-#ifndef R_BUILD
-#ifdef RENDERER_ENABLED
-    mtrHandle_t rLoadMaterial( const QString &filename );
-    void rDrawMaterial( float x, float y, float w, float h, mtrHandle_t handle );
-    void rSetColour( float r, float g, float b, float a = 1.0f );
-    void rSetColour( const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f ));
-    void rDrawText( float x, float y, QFont *font, const QString &text, float r, float g, float b, float a = 1.0f );
-    void rDrawText( float x, float y, QFont *font, const QString &text, const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f ));
-#endif
-#else
+#ifdef R_BUILD
     void keyEvent( ModuleAPI::KeyEventType, int );
     void mouseEvent( ModuleAPI::KeyEventType = ModuleAPI::KeyPress, Qt::MouseButton = Qt::LeftButton );
     void mouseMotion( int, int );
     void wheelEvent( int );
 #endif
 
-private:
+protected:
     platformSyscallDef platformSyscall;
 #ifndef R_BUILD
     platformSyscallDef rendererSyscall;
 #endif
-    intptr_t callExt( ModuleAPI::Destination destination, int callNum, int numArgs, intptr_t *args );
-    intptr_t call( ModuleAPI::Destination destination, int callNum );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg9 );
-    intptr_t call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9 );
+    QVariant callExt( ModuleAPI::Destination destination, int callNum, const QVariantList &args = QVariantList());
 
 signals:
 
@@ -170,23 +98,146 @@ public slots:
 };
 
 //
-// inlines for Mod_Trap::call
+// externals
 //
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum ) { return this->callExt( destination, callNum, 0, NULL ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0 ) { intptr_t args[1] = { arg0 }; return this->callExt( destination, callNum, 1, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1 ) { intptr_t args[2] = { arg0, arg1 }; return this->callExt( destination, callNum, 2, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2 ) { intptr_t args[3] = { arg0, arg1, arg2 }; return this->callExt( destination, callNum, 3, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3 ) { intptr_t args[4] = { arg0, arg1, arg2, arg3 }; return this->callExt( destination, callNum, 4, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4 ) { intptr_t args[5] = { arg0, arg1, arg2, arg3, arg4 }; return this->callExt( destination, callNum, 5, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5 ) { intptr_t args[6] = { arg0, arg1, arg2, arg3, arg4, arg5 }; return this->callExt( destination, callNum, 6, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 ) { intptr_t args[7] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6 }; return this->callExt( destination, callNum, 7, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7 ) { intptr_t args[8] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 }; return this->callExt( destination, callNum, 8, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8 ) { intptr_t args[9] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 }; return this->callExt( destination, callNum, 9, args ); }
-inline intptr_t Mod_Trap::call( ModuleAPI::Destination destination, int callNum, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9 ) { intptr_t args[10] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 }; return this->callExt( destination, callNum, 10, args ); }
+extern class Mod_Trap mt;
+
+//
+// class::Mod_Common
+//
+class Mod_Common : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "Common function wrapper class" )
+
+public:
+    void print( const QString &msg ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComPrint, msg ); }
+    void error( int type, const QString &msg ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComError, type, msg ); }
+    int milliseconds() { return mt.call( ModuleAPI::Platform, ModuleAPI::ComMilliseconds ).toInt(); }
+};
+
+//
+// class::Mod_Filesystem
+//
+class Mod_Filesystem : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "Filesystem wrapper class" )
+
+public:
+    int open( int mode, const QString &path, fileHandle_t *fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsOpen, mode, path, qVariantFromValue( fHandle ), static_cast<int>( flags )).toInt(); }
+    void close( const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { mt.call( ModuleAPI::Platform, ModuleAPI::FsClose, fHandle, static_cast<int>( flags )); }
+    void close( const QString &filename, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { mt.call( ModuleAPI::Platform, ModuleAPI::FsCloseByName, filename, static_cast<int>( flags )); }
+    bool exists( const QString &path, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsExists, path, static_cast<int>( flags )).toBool(); }
+    int read( byte *buffer, int len, const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsRead, qVariantFromValue( buffer ), len, fHandle, static_cast<int>( flags )).toInt(); }
+    int write( const QByteArray buffer, const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsWrite, buffer, fHandle, static_cast<int>( flags )).toInt(); }
+    bool seek( const fileHandle_t fHandle, int offset, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags, Sys_Filesystem::SeekModes mode = Sys_Filesystem::Set ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsSeek, fHandle, offset, static_cast<int>( flags ), static_cast<int>( mode )).toBool(); }
+    void touch( const QString &filename, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { mt.call( ModuleAPI::Platform, ModuleAPI::FsTouch, filename, static_cast<int>( flags )); }
+    QByteArray readFile( const QString &filename, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsReadFile, filename, static_cast<int>( flags )).toByteArray(); }
+    void print( const fileHandle_t fHandle, const QString &msg, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { mt.call( ModuleAPI::Platform, ModuleAPI::FsPrint, fHandle, msg, static_cast<int>( flags )); }
+    bool extract( const QString &filename ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsExtract, filename ).toBool(); }
+    QStringList listFiles( const QString &directory, const QRegExp &filter = QRegExp(), Sys_Filesystem::ListModes mode = Sys_Filesystem::ListAll );
+};
+
+//
+// class::Mod_Cmd
+//
+class Mod_Cmd : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "Command subystem wrapper class" )
+
+public:
+    void add( const QString &cmdName, cmdCommand_t cmd, const QString &description = QString::null ) { mt.call( ModuleAPI::Platform, ModuleAPI::CmdAdd, cmdName, qVariantFromValue( cmd ), description ); }
+    void remove( const QString &cmdName ) { mt.call( ModuleAPI::Platform, ModuleAPI::CmdRemove, cmdName ); }
+    void execute( const QString &cmd ) { mt.call( ModuleAPI::Platform, ModuleAPI::CmdExecute, cmd ); }
+};
+
+//
+// class::Mod_Cvar
+//
+class Mod_Cvar : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "Cvar subystem wrapper class" )
+
+private:
+    // cvars
+    QList <mCvar*>cvarList;
+
+public:
+    mCvar *create( const QString &name, const QString &string, pCvar::Flags = pCvar::NoFlags, const QString &desc = QString::null );
+    bool set( const QString &name, const QString &string, bool force = false ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarSet, name, string, force ).toBool(); }
+    QString get( const QString &name ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarGet, name ).toString(); }
+    void reset( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::CvarReset, name ); }
+    void update( const QString &cvarName, const QString &string );
+    void clear();
+    mCvar *find( const QString &name ) const;
+};
+
+//
+// class::Mod_App
+//
+class Mod_App : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "App common function wrapper" )
+
+public:
+    void shutdown() { mt.call( ModuleAPI::Platform, ModuleAPI::AppShutdown ); }
+};
+
+//
+// class::Mod_Gui
+//
+class Mod_Gui : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "Platform gui wrapper class" )
+
+public:
+    void raise() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRaise ); }
+    void hide() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiHide ); }
+    void createSystemTray() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiCreateSystray ); }
+    void removeSystemTray() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSystray ); }
+    void removeAction( ModuleAPI::ToolBarActions id ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveAction, static_cast<ModuleAPI::ToolBarActions>( id )); }
+    void addToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddToolBar, qVariantFromValue( reinterpret_cast<void*>( toolBarPtr ))); }
+    void removeToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveToolBar, qVariantFromValue( reinterpret_cast<void*>( toolBarPtr ))); }
+    void removeMainToolBar() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveMainToolBar ); }
+    void addTab( QWidget *widget, const QString &name, const QString &icon ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddTab, qVariantFromValue( widget ), name, icon ); }
+    void removeTab( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveTab, name ); }
+    void setActiveTab( const QString &name ) {  mt.call( ModuleAPI::Platform, ModuleAPI::GuiSetActiveTab, name ); }
+    void setConsoleState( int state ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiSetConsoleState, static_cast<int>( state )); }
+    void addSettingsTab( QWidget *widget, const QString &name, const QString &icon = QString()) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddSettingsTab, qVariantFromValue( widget ), name, icon ); }
+    void removeSettingsTab( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSettingsTab, name ); }
+    void showTabWidget() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiShowTabWidget ); }
+    void hideTabWidget() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiHideTabWidget ); }
+};
+
+//
+// class::Mod_Renderer
+//
+#ifdef RENDERER_ENABLED
+class Mod_Renderer : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "Renderer wrapper class" )
+
+public:
+    mtrHandle_t rLoadMaterial( const QString &filename ) { return static_cast<mtrHandle_t>( mt.call( ModuleAPI::Renderer, RendererAPI::LoadMaterial, filename ).toInt()); }
+    void drawMaterial( float x, float y, float w, float h, mtrHandle_t handle ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, x, y, w, h, static_cast<int>( handle )); }
+    void setColour( float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::SetColour, r, g, b, a ); }
+    void setColour( const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->setColour( colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
+    void drawText( float x, float y, QFont *font, const QString &text, float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawText, x, y, qVariantFromValue( font ), text, r, g, b, a ); }
+    void drawText( float x, float y, QFont *font, const QString &text, const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->drawText( x, y, font, text, colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
+    void reload() { mt.call( ModuleAPI::Renderer, RendererAPI::Reload ); }
+};
+#endif
 
 //
 // externals
 //
-extern class Mod_Trap mt;
+extern class Mod_Common com;
+extern class Mod_Filesystem fs;
+extern class Mod_Cmd cmd;
+extern class Mod_Cvar cv;
+extern class Mod_App app;
+extern class Mod_Gui gui;
+#ifdef RENDERER_ENABLED
+extern class Mod_Renderer r;
+#endif
 
 #endif // MOD_TRAP_H

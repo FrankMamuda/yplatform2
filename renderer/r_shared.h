@@ -48,7 +48,7 @@ namespace Renderer {
     static const QString PlatformLogo ( ":/common/platform" );
     static const QString Title        ( QObject::trUtf8( "Nu Renderer" ));
     static const QString Copyright    ( QObject::trUtf8( "Copyright (c) 2011, Edd 'Double Dee' Psycho." ));
-    static const QString Version      ( QObject::trUtf8( "v0.98.47 (beta)" ));
+    static const QString Version      ( QObject::trUtf8( "v0.98.48 (beta)" ));
     typedef float Vec2D[2];
     typedef float Vec4D[4];
 }
@@ -57,7 +57,7 @@ namespace Renderer {
 #if id386 && !defined ( __GNUC__ )
 long myftol( float f );
 #else
-#define myftol( x )(( int )( x ))
+#define myftol( x )( static_cast<int>( x ))
 #endif
 
 // define clamp to edge

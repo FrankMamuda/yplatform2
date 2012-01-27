@@ -63,7 +63,7 @@ void R_GlimpWidget::resizeGL( int w, int h ) {
     glScissor( 0, 0, w, h );
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
-    glOrtho( 0, w, h, 0, 0, 1 );
+    glOrtho( 0.0f, w, h, 0.0f, 0.0f, 1.0f );
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
 }
@@ -75,7 +75,7 @@ closeEvent
 */
 void R_GlimpWidget::closeEvent( QCloseEvent *e ) {
     if ( glImp.hasInitialized())
-        mt.guiRaise();
+        gui.raise();
 
     e->accept();
 }
@@ -163,7 +163,7 @@ void R_GlimpWidget::mouseMoveEvent( QMouseEvent *e ) {
     y = e->y() / v;
 
     // applet updates
-    mt.mouseMotion((int)x, (int)y );
+    mt.mouseMotion( static_cast<int>( x ), static_cast<int>( y ));
     e->accept();
 }
 

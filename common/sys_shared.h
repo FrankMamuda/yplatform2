@@ -36,8 +36,8 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 namespace Sys {
     static const QString Title       ( QObject::trUtf8( "YPlatform2" ));
-    static const QString Copyright   ( QObject::trUtf8( "Copyright (c) 2009-2011, Edd 'Double Dee' Psycho." ));
-    static const QString Version     ( QObject::trUtf8( "YCommons: v2.9" ));
+    static const QString Copyright   ( QObject::trUtf8( "Copyright (c) 2009-2012, Edd 'Double Dee' Psycho." ));
+    static const QString Version     ( QObject::trUtf8( "YCommons: v2.9.1" ));
 
     // colours
     static const QChar ColourEscape  ( '^' );
@@ -54,9 +54,13 @@ namespace Sys {
 
 // byte
 typedef unsigned char byte;
+Q_DECLARE_METATYPE( byte )
+Q_DECLARE_METATYPE( byte* )
 
-// fs file
+// fs file handle
 typedef int fileHandle_t;
+Q_DECLARE_METATYPE( fileHandle_t )
+Q_DECLARE_METATYPE( fileHandle_t* )
 
 //
 // platform-specific

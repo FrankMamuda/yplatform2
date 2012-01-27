@@ -67,7 +67,8 @@ class pEntry : public QObject {
     Q_PROPERTY( unsigned long length READ length WRITE setLength )
     Q_PROPERTY( unsigned long lengthInPackage READ lengthInPackage WRITE setLengthInPackage )
     Q_PROPERTY( unsigned long pos READ pos WRITE setPos RESET resetPos )
-    Q_PROPERTY( unsigned long remaining READ remaining WRITE setRemaining RESET resetRemaining )
+    Q_PROPERTY( unsigned long remainingCompressed READ remainingCompressed WRITE setRemainingCompressed RESET resetRemainingCompressed )
+    Q_PROPERTY( unsigned long remainingUncompressed READ remainingUncompressed WRITE setRemainingUncompressed RESET resetRemainingUncompressed )
     Q_PROPERTY( pPackage *parent READ parent WRITE setParent )
 
 public:
@@ -89,7 +90,8 @@ public:
     unsigned long length() const { return this->m_length; }
     unsigned long lengthInPackage() const { return this->m_lengthInPackage; }
     unsigned long pos() const { return this->m_pos; }
-    unsigned long remaining() const { return this->m_remaining; }
+    unsigned long remainingCompressed() const { return this->m_remainingCompressed; }
+    unsigned long remainingUncompressed() const { return this->m_remainingUncompressed; }
     pPackage *parent() { return this->m_parent; }
 
 public slots:
@@ -109,8 +111,10 @@ public slots:
     void setLengthInPackage( unsigned long lengthInPackage ) { this->m_lengthInPackage = lengthInPackage; }
     void setPos( unsigned long pos ) { this->m_pos = pos; }
     void resetPos() { this->m_pos = 0; }
-    void setRemaining( unsigned long remaining ) { this->m_remaining = remaining; }
-    void resetRemaining() { this->m_remaining = m_lengthInPackage; }
+    void setRemainingCompressed( unsigned long remaining ) { this->m_remainingCompressed = remaining; }
+    void setRemainingUncompressed( unsigned long remaining ) { this->m_remainingUncompressed = remaining; }
+    void resetRemainingCompressed() { this->m_remainingCompressed = m_lengthInPackage; }
+    void resetRemainingUncompressed() { this->m_remainingUncompressed = m_length; }
     void setParent( pPackage *parent ) { this->m_parent = parent; }
 
 private:
@@ -126,7 +130,8 @@ private:
     unsigned long m_length;
     unsigned long m_lengthInPackage;
     unsigned long m_pos;
-    unsigned long m_remaining;
+    unsigned long m_remainingCompressed;
+    unsigned long m_remainingUncompressed;
     pPackage *m_parent;
 };
 

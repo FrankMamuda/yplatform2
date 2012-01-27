@@ -47,7 +47,7 @@ class Sys_Cvar : public QObject {
 public:
     pCvar *find( const QString &name ) const;
     void saveConfig( const QString &filename );
-    bool command();
+    bool command( const QString &name, const QStringList &args );
     void parseConfig( const QString &filename, bool verbose = false );
     pCvar *create( const QString &name, const QString &string, pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null, bool mCvar = false );
 
@@ -55,13 +55,15 @@ public:
     bool hasInitialized() const { return this->m_initialized; }
 
 public slots:
-    void reset();
     void clear();
-    void set();
     void init();
     void shutdown();
-    void create();
-    void list();
+
+    // commands
+    void set( const QStringList & );
+    void reset( const QStringList & );
+    void list( const QStringList & );
+    void create( const QStringList & );
 
     // property setters
     void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }

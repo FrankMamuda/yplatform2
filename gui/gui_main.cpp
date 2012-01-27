@@ -40,11 +40,11 @@ pCvar *gui_toolBarIconSize;
 //
 // commands
 //
-createCommandPtr( com.gui(), createSystemTray )
-createCommandPtr( com.gui(), removeSystemTray )
-createCommandPtr( com.gui(), hideOrMinimize )
-createCommandPtr( com.gui(), setWindowFocus )
-createCommandPtr( com.gui(), show )
+createSimpleCommandPtr( com.gui(), createSystemTray )
+createSimpleCommandPtr( com.gui(), removeSystemTray )
+createSimpleCommandPtr( com.gui(), hideOrMinimize )
+createSimpleCommandPtr( com.gui(), setWindowFocus )
+createSimpleCommandPtr( com.gui(), show )
 
 /*
 ================
@@ -219,6 +219,10 @@ void Gui_Main::createTrayActions() {
     // restore
     this->restoreAction = new QAction( QIcon( ":/icons/restore" ), this->tr( "Restore" ), this );
     this->connect( this->restoreAction, SIGNAL( triggered()), this, SLOT( showNormal()));
+
+    // exit
+    this->exitAction = new QAction( QIcon( ":/icons/exit" ), this->tr( "Exit" ), this );
+    this->connect( this->exitAction, SIGNAL( triggered()), &m, SLOT( shutdown()));
 }
 
 /*
@@ -246,7 +250,6 @@ void Gui_Main::createSystemTray() {
     this->trayIconMenu->addAction( this->restoreAction );
     this->trayIconMenu->addSeparator();
     this->trayIconMenu->addAction( this->exitAction );
-
     this->trayIcon = new QSystemTrayIcon( QIcon( ":/icons/platform" ), this );
     this->trayIcon->setContextMenu( this->trayIconMenu );
 
@@ -374,71 +377,75 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                     if ( this->ui->consoleInput->text().isEmpty())
                         return true;
 
-                    foreach( QString str, this->cmdList ) {
-                        if ( str.startsWith( this->ui->consoleInput->text(), Qt::CaseInsensitive ))
-                            match << str;
-                    }
+                    // TODO: check against completion
+                    if ( this->ui->consoleInput->text().contains( ' ' )) {
+                    } else {
+                        foreach( QString str, this->cmdList ) {
+                            if ( str.startsWith( this->ui->consoleInput->text(), Qt::CaseInsensitive ))
+                                match << str;
+                        }
 
-                    // make sure we don't print same stuff all the time
-                    if ( !this->hasNewText()) {
-                        if ( match == this->lastMatch )
+                        // make sure we don't print same stuff all the time
+                        if ( !this->hasNewText()) {
+                            if ( match == this->lastMatch )
+                                return true;
+                        }
+
+                        // complete to shortest string
+                        if ( match.count() == 1 ) {
+                            // append extra space
+                            this->ui->consoleInput->setText( match.first() + " " );
+                        } else if ( match.count() > 1 ) {
+                            sMatch = 1;
+                            for ( y = 0; y < match.count(); y++ ) {
+                                if ( match.first().at(sMatch) == match.at(y).at(sMatch)) {
+                                    if ( y == match.count()-1 ) {
+                                        sMatch++;
+                                        y = 0;
+                                    }
+                                }
+                            }
+                            this->ui->consoleInput->setText( match.first().left( sMatch ));
+                        } else if ( !match.count()) {
                             return true;
-                    }
+                        }
 
-                    // complete to shortest string
-                    if ( match.count() == 1 ) {
-                        this->ui->consoleInput->setText( match.first() );
-                    } else if ( match.count() > 1 ) {
-                        sMatch = 1;
-                        for ( y = 0; y < match.count(); y++ ) {
-                            if ( match.first().at(sMatch) == match.at(y).at(sMatch)) {
-                                if ( y == match.count()-1 ) {
-                                    sMatch++;
-                                    y = 0;
+                        this->printImage( ":/icons/about", 16, 16 );
+                        com.print( this->tr( " ^5Available commands and cvars:\n" ));
+                        foreach ( QString str, match ) {
+                            // check commands
+                            pCmd *cmdPtr;
+                            cmdPtr = cmd.find( str );
+                            if ( cmdPtr != NULL ) {
+                                if ( !cmdPtr->description().isEmpty()) {
+                                    com.print( QString( " ^3\"%1\"^5 - ^3%2\n" ).arg( str, cmdPtr->description()));
+                                } else {
+                                    com.print( QString( " ^3\"%1\n" ).arg( str ));
+                                }
+                            }
+
+                            // check variables
+                            pCvar *cvarPtr = cv.find( str );
+
+                            // perform a variable print or set
+                            if ( cvarPtr != NULL ) {
+                                if ( !cvarPtr->description().isEmpty()) {
+                                    com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5 - ^3%3\n" ).arg(
+                                                   cvarPtr->name(),
+                                                   cvarPtr->string(),
+                                                   cvarPtr->description()
+                                                   ));
+                                } else {
+                                    com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"\n" ).arg(
+                                                   cvarPtr->name(),
+                                                   cvarPtr->string()));
                                 }
                             }
                         }
-                        this->ui->consoleInput->setText( match.first().left( sMatch ));
-                    } else if ( !match.count()) {
-                        return true;
+                        com.print( "\n" );
+                        this->lastMatch = match;
+                        this->setNewText( false );
                     }
-
-                    this->printImage( ":/icons/about", 16, 16 );
-                    com.print( this->tr( " ^5Available commands and cvars:\n" ));
-                    foreach ( QString str, match ) {
-                        // check commands
-                        pCmd *cmdPtr;
-                        cmdPtr = cmd.find( str );
-                        if ( cmdPtr != NULL ) {
-                            if ( !cmdPtr->description().isEmpty()) {
-                                com.print( QString( " ^3\"%1\"^5 - ^3%2\n" ).arg( str, cmdPtr->description()));
-                            } else {
-                                com.print( QString( " ^3\"%1\n" ).arg( str ));
-                            }
-                        }
-
-                        // check variables
-                        pCvar *cvarPtr = cv.find( str );
-
-                        // perform a variable print or set
-                        if ( cvarPtr != NULL ) {
-                            if ( !cvarPtr->description().isEmpty()) {
-                                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5 - ^3%3\n" ).arg(
-                                               cvarPtr->name(),
-                                               cvarPtr->string(),
-                                               cvarPtr->description()
-                                               ));
-                            } else {
-                                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"\n" ).arg(
-                                               cvarPtr->name(),
-                                               cvarPtr->string()));
-                            }
-                        }
-                    }
-
-                    com.print( "\n" );
-                    this->lastMatch = match;
-                    this->setNewText( false );
                     return true;
                 }
             }
@@ -560,16 +567,16 @@ QImage *Gui_Main::addImageResource( const QString &filename, int width, int heig
     }
 
     // generate image
-    byte *buffer;
-    long len = fs.readFile( filename, &buffer, Sys_Filesystem::Silent );
+    QByteArray buffer = fs.readFile( filename, Sys_Filesystem::Silent );
 
-    if ( len > 0 ) {
+    if ( !buffer.isEmpty()) {
         this->imageResources << new imageResourceDef_t;
         if ( width > 0 && height > 0 )
-            this->imageResources.last()->image = QImage::fromData( QByteArray( reinterpret_cast<const char*>( buffer ), len )).scaled( QSize( width, height ));
+            this->imageResources.last()->image = QImage::fromData( buffer ).scaled( QSize( width, height ));
         else
-            this->imageResources.last()->image = QImage::fromData( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
+            this->imageResources.last()->image = QImage::fromData( buffer );
 
+        buffer.clear();
         this->imageResources.last()->name = filename;
         this->ui->consoleScreen->document()->addResource( QTextDocument::ImageResource, QUrl( filename ), this->imageResources.last()->image );
         return &this->imageResources.last()->image;
@@ -740,17 +747,16 @@ void Gui_Main::loadHistory( const QString &filename ) {
     QDomDocument histFile;
 
     // read buffer
-    byte *buffer;
-    long len = fs.readFile( filename, &buffer, Sys_Filesystem::Silent );
+    QByteArray buffer = fs.readFile( filename, Sys_Filesystem::Silent );
 
     // failsafe
-    if ( len == -1 )
+    if ( buffer.isEmpty())
         return;
 
     //
     // parse document
     //
-    histFile.setContent( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
+    histFile.setContent( buffer );
     QDomNode histNode = histFile.firstChild();
     while ( !histNode.isNull()) {
         if ( histNode.isElement()) {
@@ -783,7 +789,7 @@ void Gui_Main::loadHistory( const QString &filename ) {
     }
 
     // clear buffer
-    fs.freeFile( filename );
+    buffer.clear();
 }
 
 /*
@@ -873,13 +879,13 @@ void Gui_Main::addTabExt( TabDestinations dest, QWidget *widget, const QString &
         if ( icon.startsWith( ":" )) {
             destWidget->addTab( widget, QIcon( icon ), name );
         } else {
-            byte *buffer;
-            long len = fs.readFile( icon, &buffer, Sys_Filesystem::Silent );
+            QByteArray buffer = fs.readFile( icon, Sys_Filesystem::Silent );
 
             // any icon?
-            if ( len > 0 ) {
+            if ( !buffer.isEmpty()) {
                 QPixmap pixMap;
-                pixMap.loadFromData( QByteArray ( reinterpret_cast<const char*>( buffer ), len ));
+                pixMap.loadFromData( buffer );
+                buffer.clear();
                 destWidget->addTab( widget, QIcon( pixMap ), name );
             } else
                 destWidget->addTab( widget, name );

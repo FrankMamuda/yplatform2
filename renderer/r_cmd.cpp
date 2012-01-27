@@ -31,7 +31,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // classes
 //
-class R_Cmd cmd;
+class R_Cmd rCmd;
 
 /*
 ================
@@ -50,7 +50,7 @@ void R_Cmd::bind( imgHandle_t handle ) {
 
     // this really should not happen, but just in case
     if ( !image ) {
-        mt.comError( Sys_Common::FatalError, this->tr( "R_Cmd::bind: called with NULL image\n" ));
+        com.error( Sys_Common::FatalError, this->tr( "R_Cmd::bind: called with NULL image\n" ));
         return;
     }
 
@@ -148,7 +148,7 @@ R_Cmd::SrcBlend::Modes R_Cmd::getSrcBlendMode( const QString &name ) {
         return SrcBlend::AlphaSaturate;
 
     // this should not happen
-    mt.comError( Sys_Common::SoftError, this->tr( "R_Material::getSrcBlendMode: unknown blend mode \'%1\', setting src blend 'one'\n" ).arg( name ));
+    com.error( Sys_Common::SoftError, this->tr( "R_Material::getSrcBlendMode: unknown blend mode \'%1\', setting src blend 'one'\n" ).arg( name ));
     return SrcBlend::One;
 }
 
@@ -177,7 +177,7 @@ R_Cmd::DstBlend::Modes R_Cmd::getDstBlendMode( const QString &name ) {
         return DstBlend::MinusColour;
 
     // this should not happen
-    mt.comError( Sys_Common::SoftError, this->tr( "R_Material::getDstBlendMode: unknown blend mode \'%1\', setting dst blend 'one'\n" ).arg( name ));
+    com.error( Sys_Common::SoftError, this->tr( "R_Material::getDstBlendMode: unknown blend mode \'%1\', setting dst blend 'one'\n" ).arg( name ));
     return DstBlend::One;
 }
 
@@ -232,7 +232,7 @@ void R_Cmd::setBlendMode( SrcBlend::Modes srcBlend, DstBlend::Modes dstBlend ) {
 
     default:
         srcFactor = SrcBlend::One;
-        mt.comError( Sys_Common::SoftError, this->tr( "R_Cmd::setBlendMode: invalid source blend mode\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "R_Cmd::setBlendMode: invalid source blend mode\n" ));
         break;
     }
 
@@ -271,7 +271,7 @@ void R_Cmd::setBlendMode( SrcBlend::Modes srcBlend, DstBlend::Modes dstBlend ) {
 
     default:
         dstFactor = DstBlend::One;
-        mt.comError( Sys_Common::SoftError, this->tr( "R_Cmd::setBlendMode: invalid destination blend mode\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "R_Cmd::setBlendMode: invalid destination blend mode\n" ));
         break;
     }
 
@@ -348,17 +348,17 @@ void R_Cmd::calcRotateTexCoords( R_MaterialStage *stagePtr ) {
 
     // perform calclations
     degrees = -stagePtr->textureMod()->rotateSpeed * m.time();
-    index = ( int )( degrees * ( Renderer::FuncTableSize / 360.0f ));
-    sinValue = m.funcTable[GenFunc::Sine][index & (Renderer::FuncTableSize-1)];
-    cosValue = m.funcTable[GenFunc::Sine][( index + Renderer::FuncTableSize / 4 ) & (Renderer::FuncTableSize-1)];
+    index = static_cast<int>( degrees * ( Renderer::FuncTableSize / 360.0f ));
+    sinValue = m.funcTable[GenFunc::Sine][index & ( Renderer::FuncTableSize - 1 )];
+    cosValue = m.funcTable[GenFunc::Sine][( index + Renderer::FuncTableSize / 4 ) & ( Renderer::FuncTableSize - 1 )];
 
     // set as transformation matrix
     stagePtr->textureMod()->matrix[0][0] = cosValue;
     stagePtr->textureMod()->matrix[1][0] = -sinValue;
-    stagePtr->textureMod()->translate[0] = 0.5 - 0.5 * cosValue + 0.5 * sinValue;
+    stagePtr->textureMod()->translate[0] = 0.5f - 0.5f * cosValue + 0.5f * sinValue;
     stagePtr->textureMod()->matrix[0][1] = sinValue;
     stagePtr->textureMod()->matrix[1][1] = cosValue;
-    stagePtr->textureMod()->translate[1] = 0.5 - 0.5 * sinValue - 0.5 * cosValue;
+    stagePtr->textureMod()->translate[1] = 0.5f - 0.5f * sinValue - 0.5f * cosValue;
 
     // execute transformation
     this->calcTransformTexCoords( stagePtr );
@@ -407,8 +407,8 @@ void R_Cmd::calcTurbulentTexCoords( R_MaterialStage *stagePtr ) {
         s = this->texCoords[y][0];
         t = this->texCoords[y][1];
 
-        this->create2DVector( s + m.funcTable[GenFunc::Sine][(static_cast<int>((( this->coords[y][0]) * 1.0 / 128 * 0.125 + value ) * Renderer::FuncTableSize )) & ( Renderer::FuncTableSize - 1 )] * stagePtr->textureMod()->func()->amplitude(),
-                              t + m.funcTable[GenFunc::Sine][(static_cast<int>(( this->coords[y][1] * 1.0 / 128 * 0.125 + value ) * Renderer::FuncTableSize )) & ( Renderer::FuncTableSize - 1 )] * stagePtr->textureMod()->func()->amplitude(),
+        this->create2DVector( s + m.funcTable[GenFunc::Sine][( static_cast<int>((( this->coords[y][0]) * 1.0f / 128 * 0.125f + value ) * Renderer::FuncTableSize )) & ( Renderer::FuncTableSize - 1 )] * stagePtr->textureMod()->func()->amplitude(),
+                              t + m.funcTable[GenFunc::Sine][( static_cast<int>(( this->coords[y][1] * 1.0f / 128 * 0.125f + value ) * Renderer::FuncTableSize )) & ( Renderer::FuncTableSize - 1 )] * stagePtr->textureMod()->func()->amplitude(),
                               turbCoords[y] );
     }
 
@@ -439,9 +439,9 @@ void R_Cmd::calcStretchTexCoords( R_MaterialStage *stagePtr ) {
 
     // set as transformation matrix
     stagePtr->textureMod()->matrix[0][0] = value;
-    stagePtr->textureMod()->matrix[1][0] = 0;
+    stagePtr->textureMod()->matrix[1][0] = 0.0f;
     stagePtr->textureMod()->translate[0] = 0.5f - 0.5f * value;
-    stagePtr->textureMod()->matrix[0][1] = 0;
+    stagePtr->textureMod()->matrix[0][1] = 0.0f;
     stagePtr->textureMod()->matrix[1][1] = value;
     stagePtr->textureMod()->translate[1] = 0.5f - 0.5f * value;
 
@@ -516,7 +516,7 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
     // no problem, search for an image
     if ( mtrPtr->stageList.isEmpty()) {
         // draw default image and return
-        this->drawImage( x, y, w, h, 0, 0, 1, 1, m.loadImage( mtrPtr->name()));
+        this->drawImage( x, y, w, h, m.loadImage( mtrPtr->name()));
         return;
     }
 
@@ -569,7 +569,7 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
             break;
 
         default:
-            mt.comError( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid textureMod '%1'\n" ).arg( stagePtr->textureMod()->type()));
+            com.error( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid textureMod '%1'\n" ).arg( stagePtr->textureMod()->type()));
             return;
         }
 
@@ -587,7 +587,7 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
             break;
 
         default:
-            mt.comError( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid alphaGen '%1'\n" ).arg( stagePtr->alphaGen()->type()));
+            com.error( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid alphaGen '%1'\n" ).arg( stagePtr->alphaGen()->type()));
             return;
         }
 
@@ -603,12 +603,12 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
             break;
 
         default:
-            mt.comError( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid colourGen '%1'\n" ).arg( stagePtr->colourGen()->type()));
+            com.error( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid colourGen '%1'\n" ).arg( stagePtr->colourGen()->type()));
             return;
         }
 
         // enable blending
-        this->setBlendMode(( R_Cmd::SrcBlend::Modes )stagePtr->srcBlend(), ( R_Cmd::DstBlend::Modes )stagePtr->dstBlend());
+        this->setBlendMode( static_cast<R_Cmd::SrcBlend::Modes>( stagePtr->srcBlend()), static_cast<R_Cmd::DstBlend::Modes>( stagePtr->dstBlend()));
 
         // handle animations
         if ( stagePtr->animation()->count() > 1 ) {
@@ -675,4 +675,3 @@ void R_Cmd::setColour( const Renderer::Vec4D colour, bool directly ) {
     if ( directly )
         glColor4f( colour[0], colour[1], colour[2], colour[3] );
 }
-

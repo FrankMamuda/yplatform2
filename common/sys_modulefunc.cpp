@@ -48,8 +48,8 @@ pModule::pModule( const QString &moduleName ) {
 platformSyscalls
 =================
 */
-intptr_t platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int numArgs, intptr_t *args ) {
-    return mod.platformSyscalls( callNum, numArgs, args );
+QVariant platformSyscalls( ModuleAPI::PlatformAPICalls callNum, const QVariantList &args ) {
+    return mod.platformSyscalls( callNum, args );
 }
 
 /*
@@ -57,8 +57,8 @@ intptr_t platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int numArgs, int
 rendererSyscalls
 =================
 */
-intptr_t rendererSyscalls( RendererAPI::RendererAPICalls callNum, int numArgs, intptr_t *args ) {
-    return mod.rendererSyscalls( callNum, numArgs, args );
+QVariant rendererSyscalls( RendererAPI::RendererAPICalls callNum, const QVariantList &args ) {
+    return mod.rendererSyscalls( callNum, args );
 }
 
 /*
@@ -74,7 +74,12 @@ void pModule::unload() {
             this->call( ModuleAPI::Shutdown );
 
         // FIXME: still failing to properly unload such modules as renderer
+#ifdef Q_OS_WIN
+        if ( this->type() != Renderer )
+            this->handle.unload();
+#else
         this->handle.unload();
+#endif
 
         memset( &this->modMain, 0, sizeof( modMainDef ));
         memset( &this->entry, 0, sizeof( modEntryDef ));
@@ -126,9 +131,9 @@ void pModule::loadHandle() {
             // produce call to the module
             unsigned int version = 0;
             if ( this->type() == Renderer )
-                version = this->call( RendererAPI::ModAPI );
+                version = this->call( RendererAPI::ModAPI ).toInt();
             else
-                version = this->call( ModuleAPI::ModAPI );
+                version = this->call( ModuleAPI::ModAPI ).toInt();
 
             if ( this->type() == Module ) {
                 if ( version > ModuleAPI::Version ) {
@@ -147,9 +152,9 @@ void pModule::loadHandle() {
             // perform initialization
             bool mInit;
             if ( this->type() == Renderer ) {
-                mInit = this->call( RendererAPI::Init );
+                mInit = this->call( RendererAPI::Init ).toBool();
             } else
-                mInit = this->call( ModuleAPI::Init );
+                mInit = this->call( ModuleAPI::Init ).toBool();
 
             if ( mInit ) {
                 // success
@@ -198,7 +203,7 @@ void pModule::load() {
                     fs.extract( filename );
             }
         } else {
-            this->setErrorMessage( this->tr( "Could not find module \"%1\"\n" ).arg( modName ));
+            this->setErrorMessage( this->tr( "Could not find module by filename \"%1\"\n" ).arg( filename ));
             return;
         }
     }
