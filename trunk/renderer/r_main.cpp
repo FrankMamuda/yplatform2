@@ -42,60 +42,63 @@ extern mCvar *r_adjustScreen;
 //
 // commands
 //
-createCommand( m, listImages )
-createCommand( m, listMaterials )
+createSimpleCommand( m, listImages )
+createSimpleCommand( m, listMaterials )
 
 /*
 ===================
 init
 ===================
 */
-void R_Main::init() {
+void R_Main::init( bool reload ) {
     int y;
 
-    // init cvars
-    r_screenMode = mt.cvarCreate( "r_screenMode", QString( "%1" ).arg( Renderer::DefaultScreenMode ), pCvar::Archive, "renderer screen dimensions" );
-    r_adjustScreen = mt.cvarCreate( "r_adjustScreen", "1", pCvar::Archive, "adjust screen to virtual coordinates" );
+    if ( !reload ) {
+        // init cvars
+        r_screenMode = cv.create( "r_screenMode", QString( "%1" ).arg( Renderer::DefaultScreenMode ), pCvar::Archive, "renderer screen dimensions" );
+        r_adjustScreen = cv.create( "r_adjustScreen", "1", pCvar::Archive, "adjust screen to virtual coordinates" );
 
-    // create screen
-    glImp.init();
+        // create screen
+        glImp.init();
 
-    // add supported extensions
-    this->extensionList << ".jpg" << ".tga" << ".png";
+        // add supported extensions
+        this->extensionList << ".jpg" << ".tga" << ".png";
+
+        // add commands
+        cmd.add( "r_listImages", listImagesCmd, this->tr( "list loaded images" ));
+        cmd.add( "r_listMaterials", listMaterialsCmd, this->tr( "list loaded materials" ));
+
+        // init function tables
+        for ( y = 0; y < Renderer::FuncTableSize; y++ ) {
+            this->funcTable[GenFunc::None][y] = 0.0f;
+            this->funcTable[GenFunc::Sine][y] = sin( degreesToRadians( y * 360.0f / ( static_cast<float>( Renderer::FuncTableSize - 1 ))));
+            this->funcTable[GenFunc::Square][y] = ( y < Renderer::FuncTableSize / 2 ) ? 1.0f : -1.0f;
+            this->funcTable[GenFunc::SawTooth][y] = static_cast<float>( y ) / Renderer::FuncTableSize;
+            this->funcTable[GenFunc::InverseSawtooth][y] = 1.0f - this->funcTable[GenFunc::SawTooth][y];
+
+            if ( y < Renderer::FuncTableSize / 2 ) {
+                if ( y < Renderer::FuncTableSize / 4 )
+                    this->funcTable[GenFunc::Triangle][y] = static_cast<float>( y ) / ( Renderer::FuncTableSize / 4 );
+                else
+                    this->funcTable[GenFunc::Triangle][y] = 1.0f - this->funcTable[GenFunc::Triangle][y - Renderer::FuncTableSize / 4];
+            } else
+                this->funcTable[GenFunc::Triangle][y] = -this->funcTable[GenFunc::Triangle][y - Renderer::FuncTableSize / 2];
+        }
+
+        // add settings widget
+        this->settingsWidget = new R_Settings();
+        gui.addSettingsTab( this->settingsWidget, "Renderer" /*, ":/common/platform"*/ );
+
+    }
 
     // load default image
     m.defaultImage = this->loadImage( Renderer::DefaultImage );
-
-    // add commands
-    mt.cmdAdd( "r_listImages", listImagesCmd, this->tr( "list loaded images" ));
-    mt.cmdAdd( "r_listMaterials", listMaterialsCmd, this->tr( "list loaded materials" ));
 
     // load materials
     mLib.init();
 
     // load platform logo
     m.platformLogo = this->loadMaterial( Renderer::PlatformLogo );
-
-    // init function tables
-    for ( y = 0; y < Renderer::FuncTableSize; y++ ) {
-        this->funcTable[GenFunc::None][y] = 0.0f;
-        this->funcTable[GenFunc::Sine][y] = sin( degreesToRadians( y * 360.0f / ( static_cast<float>( Renderer::FuncTableSize - 1 ))));
-        this->funcTable[GenFunc::Square][y] = ( y < Renderer::FuncTableSize / 2 ) ? 1.0f : -1.0f;
-        this->funcTable[GenFunc::SawTooth][y] = static_cast<float>( y ) / Renderer::FuncTableSize;
-        this->funcTable[GenFunc::InverseSawtooth][y] = 1.0f - this->funcTable[GenFunc::SawTooth][y];
-
-        if ( y < Renderer::FuncTableSize / 2 ) {
-            if ( y < Renderer::FuncTableSize / 4 )
-                this->funcTable[GenFunc::Triangle][y] = static_cast<float>( y ) / ( Renderer::FuncTableSize / 4 );
-            else
-                this->funcTable[GenFunc::Triangle][y] = 1.0f - this->funcTable[GenFunc::Triangle][y - Renderer::FuncTableSize / 4];
-        } else
-            this->funcTable[GenFunc::Triangle][y] = -this->funcTable[GenFunc::Triangle][y - Renderer::FuncTableSize / 2];
-    }
-
-    // add settings widget
-    this->settingsWidget = new R_Settings();
-    mt.guiAddSettingsTab( this->settingsWidget, "Renderer" /*, ":/common/platform"*/ );
 
     // all done
     this->setInitialized();
@@ -116,9 +119,9 @@ listImages
 ===================
 */
 void R_Main::listImages() {
-    mt.comPrint( this->tr( "Image list:\n" ));
+    com.print( this->tr( "Image list:\n" ));
     foreach ( R_Image *img, this->imageList ) {
-        mt.comPrint( this->tr( " %1: w %2 h %3 tex %4\n" ).arg( img->name()).arg( img->width()).arg( img->height()).arg(( unsigned int )img->texture ));
+        com.print( this->tr( " %1: w %2 h %3 tex %4\n" ).arg( img->name()).arg( img->width()).arg( img->height()).arg(( unsigned int )img->texture ));
     }
 }
 
@@ -128,9 +131,9 @@ listMaterials
 ===================
 */
 void R_Main::listMaterials() {
-    mt.comPrint( this->tr( "Material list:\n" ));
+    com.print( this->tr( "Material list:\n" ));
     foreach ( R_Material *mtr, this->mtrList ) {
-        mt.comPrint( this->tr( " %1: stages %2\n" ).arg( mtr->name()).arg( mtr->stageList.count()));
+        com.print( this->tr( " %1: stages %2\n" ).arg( mtr->name()).arg( mtr->stageList.count()));
     }
 }
 
@@ -144,7 +147,7 @@ imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode
 
     // abort on empty name
     if ( filename.isEmpty()) {
-        mt.comError( Sys_Common::SoftError, this->tr( "R_Main::loadImage: called with empty name\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "R_Main::loadImage: called with empty name\n" ));
         return -1;
     }
 
@@ -174,12 +177,12 @@ imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode
     // giving up, set default image
     if ( !imgPtr->isValid()) {
         // did not find a valid texture, revert to default
-        mt.comPrint( this->tr( "^3WARNING: R_Main::loadImage: could not find image \'%1\', setting default\n" ).arg( filename ));
+        com.print( this->tr( "^3WARNING: R_Main::loadImage: could not find image \'%1\', setting default\n" ).arg( filename ));
         delete imgPtr;
 
         // ..if we have a default (should not happen since default img is in internal assets)
         if ( !QString::compare( filename, Renderer::DefaultImage )) {
-            mt.comError( Sys_Common::FatalError, this->tr( "R_Main::loadImage: cannot load default image\n" ));
+            com.error( Sys_Common::FatalError, this->tr( "R_Main::loadImage: cannot load default image\n" ));
             m.shutdown();
             return -1;
         }
@@ -202,7 +205,7 @@ mtrHandle_t R_Main::loadMaterial( const QString &mtrName ) {
 
     // abort on empty name
     if ( mtrName.isEmpty()) {
-        mt.comError( Sys_Common::SoftError, this->tr( "R_Main::loadMaterial: called with empty name\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "R_Main::loadMaterial: called with empty name\n" ));
         return -1;
     }
 
@@ -229,7 +232,7 @@ void R_Main::beginFrame() {
     glLoadIdentity();
 
     // set time
-    this->setTime( mt.comMilliseconds() * 0.001f );
+    this->setTime( com.milliseconds() * 0.001f );
 
     // update mtr scripts
     mLib.update();
@@ -252,7 +255,7 @@ void R_Main::endFrame() {
 shutdown
 ===================
 */
-void R_Main::shutdown() {
+void R_Main::shutdown( bool reload ) {
     // stop evaluating material libraries
     mLib.shutdown();
 
@@ -274,15 +277,17 @@ void R_Main::shutdown() {
         delete mtrPtr;
     this->mtrList.clear();
 
-    // destroy screen
-    glImp.shutdown();
+    if ( !reload ) {
+        // destroy screen
+        glImp.shutdown();
 
-    // remove commands
-    mt.cmdRemove( "r_listImages" );
-    mt.cmdRemove( "r_listMaterials" );
+        // remove commands
+        cmd.remove( "r_listImages" );
+        cmd.remove( "r_listMaterials" );
 
-    // remove settings widget
-    mt.guiRemoveSettingsTab( "Renderer" );
+        // remove settings widget
+        gui.removeSettingsTab( "Renderer" );
+    }
 
     // we are down
     this->setInitialized( false );

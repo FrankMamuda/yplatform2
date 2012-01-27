@@ -76,14 +76,16 @@ namespace Filesystem {
 //
 class pFile : public QObject {
     Q_OBJECT
+#ifndef MODULE_LIBRARY
     Q_CLASSINFO( "description", "Filesystem file info" )
     Q_PROPERTY( QString name READ name WRITE setName )
     Q_PROPERTY( fileHandle_t handle READ handle WRITE setHandle )
-    Q_ENUMS( PathType )
     Q_PROPERTY( PathType type READ pathType WRITE setPathType )
-    Q_ENUMS( OpenModes )
     Q_PROPERTY( OpenModes mode READ mode WRITE setOpenMode )
     Q_PROPERTY( int index READ pathIndex WRITE setPathIndex )
+#endif
+    Q_ENUMS( OpenModes )
+    Q_ENUMS( PathType )
 
 public:
     // enums
@@ -97,7 +99,8 @@ public:
         Directory = 0,
         Package
     };
-
+    
+#ifndef MODULE_LIBRARY
     // property getters
     fileHandle_t    handle() const { return this->m_handle; }
     PathType        pathType() const { return this->m_type; }
@@ -124,11 +127,13 @@ private:
     QString         m_name;
     OpenModes       m_mode;
     int             m_index;
+#endif
 };
 
 //
 // class:pSearchPath
 //
+#ifndef MODULE_LIBRARY
 class pSearchPath : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Filesystem search path" )
@@ -158,61 +163,32 @@ private:
     pFile::PathType m_type;
     QString m_id;
 };
-
-//
-// class:pFileBuffer
-//
-class pFileBuffer : public QObject {
-    Q_OBJECT
-    Q_CLASSINFO( "description", "Buffers for filesystem" )
-    Q_DISABLE_COPY( pFileBuffer )
-    Q_PROPERTY( QString filename READ filename WRITE setFilename )
-    Q_PROPERTY( byte *buffer READ data WRITE setBuffer RESET deleteBuffer )
-    Q_PROPERTY( fileHandle_t handle READ fileHandle WRITE setFileHandle )
-
-public:
-    pFileBuffer ( QString filename, byte *buffer, fileHandle_t handle ) {
-        this->setFilename( filename );
-        this->setBuffer( buffer );
-        this->setFileHandle( handle );
-    }
-    QString filename() const { return this->m_filename; }
-    byte *data() const { return this->m_buffer; }
-    fileHandle_t fileHandle() const { return this->m_handle; }
-
-public slots:
-    void setFilename( const QString &filename ) { this->m_filename = filename; }
-    void setBuffer( byte *buffer ) { this->m_buffer = buffer; }
-    void deleteBuffer() { delete[] this->m_buffer; }
-    void setFileHandle( const fileHandle_t handle ) { this->m_handle = handle; }
-
-private:
-    QString m_filename;
-    byte *m_buffer;
-    fileHandle_t m_handle;
-};
+#endif
 
 //
 // class:Sys_Filesystem
 //
 class Sys_Filesystem : public QObject {
     Q_OBJECT
+#ifndef MODULE_LIBRARY
     Q_CLASSINFO( "description", "Filesystem" )
+    Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
+#endif
     Q_FLAGS( OpenFlags OpenFlag )
     Q_ENUMS( ListModes )
-    Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
-
+    
 public:
     enum OpenFlag {
-        NoFlags    = 0,
-        Absolute   = 1,
-        DirsOnly   = 2,
-        PacksOnly  = 4,
-        Force      = 8,
-        Silent     = 16,
-        Linked     = 32
+        NoFlags    = 0x00,
+        Absolute   = 0x01,
+        DirsOnly   = 0x02,
+        PacksOnly  = 0x04,
+        Force      = 0x08,
+        Silent     = 0x10,
+        Linked     = 0x20
     };
     Q_DECLARE_FLAGS ( OpenFlags, OpenFlag )
+
     enum SeekModes {
         Set = 0,
         Current,
@@ -223,25 +199,28 @@ public:
         ListDirs,
         ListFiles
     };
+    
+#ifndef MODULE_LIBRARY
     bool hasInitialized() const { return this->m_initialized; }
     QList <pSearchPath*> searchPaths;
     long length( fileHandle_t ) const;
     long open( pFile::OpenModes mode, const QString &filename, fileHandle_t &fHandle, OpenFlags flags = NoFlags );
     long read( byte *buffer, unsigned long len, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
     long write( const byte *buffer, unsigned long len, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
+    long write( const QByteArray buffer, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
     void close( const fileHandle_t fHandle, OpenFlags flags = NoFlags );
     void close( const QString &filename, OpenFlags flags = NoFlags );
     void print( const fileHandle_t fHandle, const QString &msg, OpenFlags flags = NoFlags );
     bool seek( const fileHandle_t fHandle, long offset, OpenFlags flags = NoFlags, SeekModes seekMode = Set );
-    long readFile( const QString &filename, byte **buffer, OpenFlags flags = NoFlags );
+    QByteArray readFile( const QString &filename, OpenFlags flags = NoFlags );
     void touch( const QString &filename, OpenFlags flags = NoFlags );
     void defaultExtension( QString &filename, const QString &extension );
+    QString defaultExtension( const QString &filename, const QString &extension ) const;
     bool extract( const QString &filename );
     bool exists( QString &path, OpenFlags &flags, int &searchPathIndex );
     bool exists( const QString &path, OpenFlags &flags, int &searchPathIndex );
     bool exists( const QString &path, OpenFlags flags, int &searchPathIndex );
     bool exists( const QString &path, OpenFlags flags = NoFlags );
-    void freeFile( const QString &filename );
     QStringList list( const QString &directory, const QRegExp &filter = QRegExp(), ListModes mode = ListAll );
     pFile *fileForHandle( fileHandle_t handle ) const;
 
@@ -258,7 +237,6 @@ private:
     QList <pFile*> fileList;
     QString buildPath( const QString &filename, const QString &basePath, bool *ok );
     bool existsExt( QString &path, OpenFlags &flags, int &searchPathIndex );
-    QList <pFileBuffer*> fileBuffers;
     QStringList listDirectory( const QString &searchDir, const QString &path, ListModes mode );
     // win32 link handling
 #ifdef Q_OS_WIN
@@ -270,9 +248,15 @@ public slots:
     void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
     void init();
     void shutdown();
-    void touch();
-    void list();
+
+    // commands
+    void touch( const QStringList & );
+    void list(  const QStringList & );
+#endif
 };
+
+// declare flags
+Q_DECLARE_OPERATORS_FOR_FLAGS( Sys_Filesystem::OpenFlags )
 
 //
 // externals
@@ -284,9 +268,10 @@ extern class Sys_Filesystem fs;
 //
 // inlines for fileExists
 //
+#ifndef MODULE_LIBRARY
 inline bool Sys_Filesystem::exists( QString &path, OpenFlags &flags, int &searchPathIndex ) { return this->existsExt( path, flags, searchPathIndex ); }
 inline bool Sys_Filesystem::exists( const QString &path, OpenFlags &flags, int &searchPathIndex ) { QString filename = path; return this->existsExt( filename, flags, searchPathIndex ); }
 inline bool Sys_Filesystem::exists( const QString &path, OpenFlags flags, int &searchPathIndex ) { QString filename = path; return this->existsExt( filename, flags, searchPathIndex ); }
 inline bool Sys_Filesystem::exists( const QString &path, OpenFlags flags ) { QString filename = path; int index; return this->existsExt( filename, flags, index ); }
-
+#endif
 #endif // SYS_FILESYSTEM_H

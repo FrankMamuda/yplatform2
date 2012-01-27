@@ -11,6 +11,9 @@ TEMPLATE = lib
 
 DEFINES += MODULE_LIBRARY
 
+INCLUDEPATH += ../../common
+INCLUDEPATH += ../
+
 SOURCES += mod_main.cpp \
     ../mod_trap.cpp \
     ../mod_cvarfunc.cpp

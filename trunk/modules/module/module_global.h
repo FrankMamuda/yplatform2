@@ -27,6 +27,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include <QtCore/qglobal.h>
 #include <QtGui>
 
+// define this if you need renderer calls
+//#define RENDERER_ENABLED
+
 //
 // defines
 //

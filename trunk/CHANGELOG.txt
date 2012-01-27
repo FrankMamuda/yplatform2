@@ -3,5 +3,20 @@ r14:
     -cvar string handling update
     -module handling fixes
 
-TODO:
-    validate cvarstrings, on save convert exotic chars to XML safe strings and vice versa
+r15:
+    -fixes (workaround) for module win32 code
+    -more verbose module loading (errorMsgs)
+    -introduced new command subsystem (complete rewrite)
+    -introduced new module commmunication code
+    -filesystem now also uses qbytearrays
+     (full support dropped, don't ask why)
+    -fixes in package handling code
+    -cvar validation with regexps
+    -removed byteswap code (use qt for that)
+    -seems stable enough
+    -much more (can't remember)
+
+TODOs
+    -cmd completion (filename, etc.)
+    -revert long->int in fs (ck ioquake3 code)
+

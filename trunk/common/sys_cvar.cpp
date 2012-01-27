@@ -53,6 +53,52 @@ createCommand( cv, create )
 
 /*
 ============
+init
+============
+*/
+void Sys_Cvar::init() {
+    // add commands
+    cmd.add( "cv_set", setCmd, this->tr( "set console variable value" ));
+    cmd.add( "cv_reset", resetCmd, this->tr( "reset console variable value to default" ));
+    cmd.add( "cv_list", listCmd, this->tr( "list all registered console variables" ));
+    cmd.add( "cv_create", createCmd, this->tr( "create a new console variable" ));
+
+    // we are up and running
+    this->setInitialized();
+
+    // create cvar name validator
+    QRegExp rx( "[A-z0-9_\\-]+" );
+    this->validator = new QRegExpValidator( rx, this );
+}
+
+/*
+============
+shutdown
+============
+*/
+void Sys_Cvar::shutdown() {
+    // failsafe
+    if ( !this->hasInitialized())
+        return;
+
+    // announce
+    com.print( this->tr( "^2Sys_Cvar: ^5shutting down cvar subsystem\n" ));
+
+    // remove commands
+    cmd.remove( "cv_set" );
+    cmd.remove( "cv_reset" );
+    cmd.remove( "cv_list" );
+    cmd.remove( "cv_create" );
+
+    // remove validator
+    delete this->validator;
+
+    // cleanup
+    this->clear();
+}
+
+/*
+============
 validate
 ============
 */
@@ -106,28 +152,29 @@ void Sys_Cvar::clear() {
 
 /*
 ============
-shutdown
+set
 ============
 */
-void Sys_Cvar::shutdown() {
-    // failsafe
-    if ( !this->hasInitialized())
+void Sys_Cvar::set( const QStringList &args ) {
+    pCvar *cvarPtr;
+
+    // check args
+    if ( args.count() < 2 ) {
+        com.print( this->tr( "^3usage: ^2cv_set ^3[^2variable^3] [^2value^3] (^5flags^3)\n" ));
         return;
+    }
 
-    // announce
-    com.print( this->tr( "^2Sys_Cvar: ^5shutting down cvar subsystem\n" ));
+    // find cvar
+    cvarPtr = this->find( args.first());
 
-    // remove commands
-    cmd.remove( "cv_set" );
-    cmd.remove( "cv_reset" );
-    cmd.remove( "cv_list" );
-    cmd.remove( "cv_create" );
+    // set value (and flags if any)
+    if ( cvarPtr != NULL ) {
+        cvarPtr->set( args.at( 1 ));
 
-    // remove validator
-    delete this->validator;
-
-    // cleanup
-    this->clear();
+        if ( args.count() == 3 )
+            cvarPtr->flags |= static_cast<pCvar::Flags>( args.at( 2 ).toInt());
+    } else
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::set: cvar \"%1\" does not exist, use ^2cv_create ^3to create one\n" ).arg( args.first()));
 }
 
 /*
@@ -135,60 +182,19 @@ void Sys_Cvar::shutdown() {
 reset
 ============
 */
-void Sys_Cvar::reset() {
-    int     args;
+void Sys_Cvar::reset( const QStringList &args ) {
     pCvar   *cvarPtr;
 
-    args = cmd.argc();
-
-    if ( args < 2 ) {
-        com.print( this->tr( "^3usage: cv_reset [variable] [value]\n" ));
+    if ( args.isEmpty()) {
+        com.print( this->tr( "^3usage: ^2cv_reset ^3[^2variable^3]\n" ));
         return;
     }
-    cvarPtr = this->find( cmd.argv(1));
+    cvarPtr = this->find( args.first());
 
     if ( cvarPtr != NULL ) {
         cvarPtr->reset();
     } else
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::reset: could not find cvar \"%1\"\n" ).arg( cmd.argv( 1 )));
-}
-
-/*
-============
-set
-============
-*/
-void Sys_Cvar::set() {
-    int     numArgs;
-    QString string( "" );
-    QString name;
-    int     y;
-    pCvar   *cvarPtr;
-    pCvar::Flags flags = pCvar::NoFlags;
-
-    numArgs = cmd.argc();
-    if ( numArgs < 3 ) {
-        com.print( this->tr( "^3usage: cv_set [variable] [value] (flags)\n" ));
-        return;
-    }
-    name = cmd.argv(1);
-    cvarPtr = this->find( name );
-
-    for ( y = 2; y < numArgs; y++ ) {
-        string.append( cmd.argv(y));
-
-        if ( y < numArgs - 1 )
-            string.append( " " );
-    }
-
-    if ( numArgs == 4 )
-        flags = static_cast<pCvar::Flags>( cmd.argv(3).toInt());
-
-    if ( cvarPtr != NULL ) {
-        cvarPtr->set( string );
-        cvarPtr->flags |= flags;
-    } else
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::set: cvar \"%1\" does not exist, try creating one\n" ).arg( name ));
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::reset: could not find cvar \"%1\"\n" ).arg( args.first()));
 }
 
 /*
@@ -196,49 +202,67 @@ void Sys_Cvar::set() {
 create
 ============
 */
-void Sys_Cvar::create() {
-    int         numArgs;
-    pCvar::Flags flags = pCvar::NoFlags;
-    pCvar       *cvar;
-
-    numArgs = cmd.argc();
-
-    if ( numArgs < 3 ) {
-        com.print( "^3" + this->tr( "^3usage: cv_create [variable] [value] (flags)\n" ));
+void Sys_Cvar::create( const QStringList &args ) {
+    // check args
+    if ( args.count() < 2 ) {
+        com.print( this->tr( "^3usage: ^2cv_create ^3[^2variable^3] [^2value^3] (^5flags^3)\n" ));
         return;
     }
-    cvar = this->find( cmd.argv(1));
-    if ( numArgs == 4 ) {
-        flags = static_cast<pCvar::Flags>( cmd.argv(3).toInt());
 
-        if ( flags < pCvar::NoFlags /*|| flags > Password*/ ) {
-            com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::create: invalid flags\n" ));
-            return;
-        }
+    // find cvar, create one if non-existant
+    if ( this->find( args.first()) == NULL ) {
+        if ( args.count() == 3 )
+            this->create( args.first(), args.at( 1 ), static_cast<pCvar::Flags>( args.at( 2 ).toInt()));
+        else
+            this->create( args.first(), args.at( 1 ));
     }
-
-    if ( cvar == NULL )
-        cvar = this->create( cmd.argv(1), cmd.argv(2), flags );
 }
 
 /*
 ============
-init
+list
 ============
 */
-void Sys_Cvar::init() {
-    // add commands
-    cmd.add( "cv_set", setCmd, this->tr( "set console variable value" ));
-    cmd.add( "cv_reset", resetCmd, this->tr( "reset console variable value to default" ));
-    cmd.add( "cv_list", listCmd, this->tr( "list all registered console variables" ));
-    cmd.add( "cv_create", createCmd, this->tr( "create a new console variable" ));
+void Sys_Cvar::list( const QStringList &args ) {
+    // announce
+    if ( !args.isEmpty()) {
+        int numFiltered = 0;
 
-    // we are up and running
-    this->setInitialized();
+        // get total filtered count
+        foreach ( pCvar *cvarPtr, this->cvarList ) {
+            if ( !args.isEmpty() && !cvarPtr->name().startsWith( args.first()))
+                continue;
+            numFiltered++;
+        }
 
-    // create cvar name validator
-    QRegExp rx( "[A-z0-9_\\-]+" );
-    this->validator = new QRegExpValidator( rx, this );
+        if ( !numFiltered )
+            com.print( this->tr( "^1Sys_Cvar::list: could not match any available cvars\n" ));
+        else
+            com.print( this->tr( "^2Sys_Cvar::list: ^5matched ^3%1 ^5of ^3%2 ^5available cvars:\n" ).arg( numFiltered ).arg( this->cvarList.count()));
+    } else
+        com.print( this->tr( "^2Sys_Cvar::list: ^3%1 ^5available cvars:\n" ).arg( this->cvarList.count()));
+
+    foreach ( pCvar *cvarPtr, this->cvarList ) {
+        if ( !args.isEmpty() && !cvarPtr->name().startsWith( args.first()))
+            continue;
+
+        com.print( QString( "  ^5'%1': ^2'%2' " ).arg( cvarPtr->name(), cvarPtr->string()));
+
+        // append flags
+        if ( cvarPtr->flags.testFlag( pCvar::ReadOnly ))
+            com.print( "^3R" );
+
+        if ( cvarPtr->flags.testFlag( pCvar::Archive ))
+            com.print( "^3A" );
+
+        if ( cvarPtr->flags.testFlag( pCvar::Latched ))
+            com.print( "^3L" );
+#if 0
+        if ( cvarPtr->flags.testFlag( pCvar::Password ))
+            com.print( "^3P" );
+#endif
+        com.print( "\n" );
+    }
 }
 
 /*
@@ -272,56 +296,19 @@ pCvar *Sys_Cvar::create( const QString &name, const QString &string, pCvar::Flag
 
 /*
 ============
-list
-============
-*/
-void Sys_Cvar::list() {
-    bool match = false;
-
-    if ( cmd.argc() > 1 )
-        match = true;
-
-    // announce
-    com.print( this->tr( "^2Sys_Cvar::list: ^5registered ^3%1 ^5cvars:\n" ).arg( this->cvarList.count()));
-    foreach ( pCvar *cvarPtr, this->cvarList ) {
-        if ( match && !cvarPtr->name().startsWith( cmd.argv( 1 )))
-            continue;
-
-        com.print( QString( "  ^5'%1': ^2'%2' " ).arg( cvarPtr->name(), cvarPtr->string()));
-
-        // append flags
-        if ( cvarPtr->flags.testFlag( pCvar::ReadOnly ))
-            com.print( "^3R" );
-
-        if ( cvarPtr->flags.testFlag( pCvar::Archive ))
-            com.print( "^3A" );
-
-        if ( cvarPtr->flags.testFlag( pCvar::Latched ))
-            com.print( "^3L" );
-#if 0
-        if ( cvarPtr->flags.testFlag( pCvar::Password ))
-            com.print( "^3P" );
-#endif
-        com.print( "\n" );
-    }
-}
-
-/*
-============
 command
 ============
 */
-bool Sys_Cvar::command() {
+bool Sys_Cvar::command( const QString &name, const QStringList &args ) {
     pCvar  *cvarPtr;
 
-    // check variables
-    cvarPtr = this->find( cmd.argv(0));
-
+    // find cvar
+    cvarPtr = this->find( name );
     if ( !cvarPtr )
         return false;
 
-    // perform a variable print or set
-    if ( cmd.argc() == 1 ) {
+    // print out current value if no args, otherwise set new value
+    if ( args.isEmpty()) {
         com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5, default: ^3\"%3\"\n" ).arg(
                       cvarPtr->name(),
                       cvarPtr->string(),
@@ -329,12 +316,10 @@ bool Sys_Cvar::command() {
 
         if ( !cvarPtr->latchString().isEmpty())
             com.print( this->tr( " ^3latched: \"%1\"\n" ).arg( cvarPtr->latchString()));
+    } else
+        cvarPtr->set( args.first(), false );
 
-        return true;
-    }
-
-    // set the value if forcing is not required
-    cvarPtr->set( cmd.argv(1), false );
+    // all ok
     return true;
 }
 
@@ -347,11 +332,10 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
     QDomDocument configFile;
 
     // read buffer
-    byte *buffer;
-    long len = fs.readFile( filename, &buffer, Sys_Filesystem::Silent );
+    QByteArray buffer = fs.readFile( filename, Sys_Filesystem::Silent );
 
     // failsafe
-    if ( len == -1 ) {
+    if ( buffer.isNull()) {
         if ( !QString::compare( filename, Cvar::DefaultConfigFile )) {
             com.print( this->tr( "^2Sys_Cvar::parseConfig: ^3configuration file does not exist, creating \"%1\"\n" ).arg( filename ));
             fs.touch( filename, Sys_Filesystem::Silent );
@@ -364,7 +348,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
     }
 
     // failsafe
-    if ( len == 0 ) {
+    if ( buffer.isEmpty()) {
         if ( verbose )
             com.error( Sys_Common::SoftError, this->tr( "Sys_Cvar::parseConfig: configuration file \"%1\" is empty\n" ).arg( filename ));
 
@@ -374,7 +358,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
     //
     // parse document
     //
-    configFile.setContent( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
+    configFile.setContent( buffer );
     QDomNode configNode = configFile.firstChild();
     while ( !configNode.isNull()) {
         if ( configNode.isElement()) {
@@ -444,7 +428,7 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
     }
 
     // clear buffer
-    fs.freeFile( filename );
+    buffer.clear();
 }
 
 /*

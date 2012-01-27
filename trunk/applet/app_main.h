@@ -43,13 +43,16 @@ class App_Main : public QObject {
 
 public:
     int startup( int, char*[] );
-#ifndef YP2_FINAL_RELEASE
-    void fatalError();
-#endif
+
 
 public slots:
     void update();
+
+    // commands
     void shutdown();
+#ifndef YP2_FINAL_RELEASE
+    void fatalError();
+#endif
 
 private:
     void parseArgs( int, char*[] );

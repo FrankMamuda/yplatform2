@@ -68,10 +68,10 @@ public:
 signals:
 
 public slots:
-    void init();
+    void init( bool reload = false );
     void beginFrame();
     void endFrame();
-    void shutdown();
+    void shutdown( bool reload = false );
     void listImages();
     void listMaterials();
 

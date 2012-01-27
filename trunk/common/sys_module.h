@@ -61,8 +61,6 @@ class Sys_Module : public QObject {
 public slots:
     void init();
     void shutdown();
-    void load();
-    void unload();
     void update();
     void updateCvar( const QString &cvar, const QString &stringValue );
     void toggleWidget();
@@ -71,6 +69,10 @@ public slots:
     void populateListWidget();
     void createWidget();
     void destroyWidget();
+
+    // commands
+    void load( const QStringList & );
+    void unload( const QStringList & );
 
 private:
     QList<pModule*>modList;
@@ -89,8 +91,8 @@ private:
     QPushButton *closeButton;
 
 public:
-    intptr_t platformSyscalls( ModuleAPI::PlatformAPICalls, int, intptr_t * );
-    intptr_t rendererSyscalls( RendererAPI::RendererAPICalls, int, intptr_t * );
+    QVariant platformSyscalls( ModuleAPI::PlatformAPICalls callNum, const QVariantList &args );
+    QVariant rendererSyscalls( RendererAPI::RendererAPICalls, const QVariantList &args );
 
 private slots:
     void listWidgetAction();

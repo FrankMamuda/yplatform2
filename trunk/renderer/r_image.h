@@ -29,11 +29,10 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // namespaces
 //
+#ifdef Q_OS_WIN
 namespace Renderer {
     static const int TargaHeaderLength = 18;
 }
-
-#ifdef Q_OS_WIN
 #define BUILTIN_TARGA_LOADER
 #endif
 

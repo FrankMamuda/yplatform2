@@ -27,6 +27,11 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../modules/mod_public.h"
 #include "r_shared.h"
 
+// fixes drawtext issue
+#if defined( DrawText )
+#undef DrawText
+#endif
+
 // current api version
 namespace RendererAPI {
     static const unsigned int Version = 5;
@@ -50,7 +55,8 @@ namespace RendererAPI {
         SetColour,
         Raise,
         Hide,
-        State
+        State,
+        Reload
     };
 }
 

@@ -48,13 +48,11 @@ extern "C" RENDERERSHARED_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, i
 modMain
 ================
 */
-extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPICalls callNum, int numArgs, intptr_t *args ) {
-    Q_UNUSED( numArgs );
-
+extern "C" RENDERERSHARED_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls callNum, const QVariantList &args ) {
     switch ( callNum ) {
     case RendererAPI::ModAPI:
         // return api version
-        return static_cast<intptr_t>( RendererAPI::Version );
+        return static_cast<int>( RendererAPI::Version );
 
     case RendererAPI::Init:
         // perform initialization
@@ -67,10 +65,7 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
             return false;
 
         // console variable auto updater
-        foreach ( mCvar *cvarPtr, mt.cvars ) {
-            if ( !QString::compare( cvarPtr->name(), QString::fromLatin1( reinterpret_cast<const char*>( args[0] ))))
-                cvarPtr->update( QString::fromLatin1( reinterpret_cast<const char*>( args[1] )));
-        }
+        cv.update( args.at( 0 ).toString(), args.at( 1 ).toString());
         break;
 
     case RendererAPI::Shutdown:
@@ -81,8 +76,7 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         m.shutdown();
 
         // clear cvars
-        foreach ( mCvar *cvarPtr, mt.cvars )
-            delete cvarPtr;
+        cv.clear();
         break;
 
     case RendererAPI::BeginFrame:
@@ -93,13 +87,13 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         m.beginFrame();
 
         // draw platform logo
-        cmd.setColour( Renderer::ColourWhite );
+        rCmd.setColour( Renderer::ColourWhite );
         if ( r_adjustScreen->integer())
-            cmd.drawMaterial( Renderer::HorizontalScreenModes[Renderer::DefaultScreenMode]/2-256/2,
+            rCmd.drawMaterial( Renderer::HorizontalScreenModes[Renderer::DefaultScreenMode]/2-256/2,
                               Renderer::VerticalScreenModes[Renderer::DefaultScreenMode]/2-256/2,
                               256, 256, m.platformLogo );
         else
-            cmd.drawMaterial( Renderer::HorizontalScreenModes[glImp.getScreenMode()]/2-256/2,
+            rCmd.drawMaterial( Renderer::HorizontalScreenModes[glImp.getScreenMode()]/2-256/2,
                               Renderer::VerticalScreenModes[glImp.getScreenMode()]/2-256/2,
                               256, 256, m.platformLogo );
         break;
@@ -109,7 +103,7 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
             return false;
 
         // reset colour to null
-        cmd.setColour();
+        rCmd.setColour();
 
         // end frame
         m.endFrame();
@@ -119,14 +113,14 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         if ( !m.hasInitialized())
             return false;
 
-        return static_cast<intptr_t>( m.loadMaterial( QString::fromLatin1( reinterpret_cast<const char*>( args[0] ))));
+        return static_cast<int>( m.loadMaterial( args.first().toString()));
 
     case RendererAPI::DrawMaterial:
         if ( !m.hasInitialized())
             return false;
 
-        cmd.drawMaterial( mt.getFloat( args[0] ), mt.getFloat( args[1] ), mt.getFloat( args[2] ), mt.getFloat( args[3] ),
-                          static_cast<mtrHandle_t>( args[4] ));
+        rCmd.drawMaterial( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), args.at( 2 ).toFloat(), args.at( 3 ).toFloat(),
+                          static_cast<mtrHandle_t>( args.at( 4 ).toInt()));
         break;
 
     case RendererAPI::DrawText:
@@ -134,14 +128,14 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
             return false;
 
         // save colour, set new font colour
-        cmd.saveColour();
-        cmd.setColour( mt.getFloat( args[4] ), mt.getFloat( args[5] ), mt.getFloat( args[6] ), mt.getFloat( args[7] ), true );
+        rCmd.saveColour();
+        rCmd.setColour( args.at( 4 ).toFloat(), args.at( 5 ).toFloat(), args.at( 6 ).toFloat(), args.at( 7 ).toFloat(), true );
 
         // draw Qt font
-        glImp.drawText( mt.getFloat( args[0] ), mt.getFloat( args[1] ), *( reinterpret_cast<QFont*>( args[2] )), QString::fromLatin1( reinterpret_cast<const char*>( args[3] )));
+        glImp.drawText( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), *( reinterpret_cast<QFont*>( args.at( 2 ).value<void*>())), args.at( 3 ).toString());
 
         // restore colour
-        cmd.restoreColour();
+        rCmd.restoreColour();
 
         break;
 
@@ -149,7 +143,7 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
         if ( !m.hasInitialized())
             return false;
 
-        cmd.setColour( mt.getFloat( args[0] ), mt.getFloat( args[1] ), mt.getFloat( args[2] ), mt.getFloat( args[3] ));
+        rCmd.setColour( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), args.at( 2 ).toFloat(), args.at( 3 ).toFloat());
         break;
 
     case RendererAPI::Raise:
@@ -171,9 +165,15 @@ extern "C" RENDERERSHARED_EXPORT intptr_t rendererMain( RendererAPI::RendererAPI
             return RendererAPI::Hidden;
 
         if ( glImp.widget->isVisible())
-            return static_cast<intptr_t>( RendererAPI::Raised );
+            return static_cast<int>( RendererAPI::Raised );
         else
-            return static_cast<intptr_t>( RendererAPI::Hidden );
+            return static_cast<int>( RendererAPI::Hidden );
+
+
+    case RendererAPI::Reload:
+        m.shutdown( true );
+        m.init( true );
+        break;
     }
 
     return true;

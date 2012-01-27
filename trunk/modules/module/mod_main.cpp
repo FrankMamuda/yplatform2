@@ -38,7 +38,7 @@ Mod_Main::Mod_Main() {
 modMain
 ================
 */
-extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callNum, int numArgs, intptr_t *args ) {
+extern "C" MODULESHARED_EXPORT QVariant modMain( ModuleAPI::ModuleAPICalls callNum, const QVariantList &args ) {
     switch ( callNum ) {
     case ModuleAPI::ModAPI:
         // return api version
@@ -46,8 +46,7 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
 
     case ModuleAPI::Init:
         // perform initialization
-        mt.comPrint( "Hello world\n" );
-
+        com.print( "Hello world\n" );
         break;
 
     case ModuleAPI::Update:
@@ -55,36 +54,30 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
         break;
 
     case ModuleAPI::UpdateCvar:
-        if ( numArgs < 2 ) {
-            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: updateCvar [cvarName] [string]\n" ));
+        if ( args.count() != 2 ) {
+            com.error( Sys_Common::SoftError, QObject::trUtf8( "modMain: updateCvar [cvarName] [string]\n" ));
             return false;
         }
 
-        // console variable auto updater
-        foreach ( mCvar *cvarPtr, mt.cvars ) {
-            if ( !QString::compare( cvarPtr->name(), ( const char *)args[0] ))
-                cvarPtr->update(( const char *)args[1] );
-        }
+        // console variable auto updater        
+        cv.update( args.at( 0 ).toString(), args.at( 1 ).toString());
         break;
 
     case ModuleAPI::Shutdown:
         // perform shutdown
-        mt.comPrint( "Goodbye cruel world\n" );
+        com.print( "Goodbye cruel world\n" );
 
         // clear cvars
-        foreach ( mCvar *cvarPtr, mt.cvars )
-            delete cvarPtr;
-
+        cv.clear();
         break;
 
-
     case ModuleAPI::KeyEvent:
-        if ( numArgs < 2 ) {
-            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: keyEvent [type] [key]\n" ));
+        if ( args.count() != 2 ) {
+            com.error( Sys_Common::SoftError, QObject::trUtf8( "modMain: keyEvent [type] [key]\n" ));
             return false;
         }
 
-        switch (( ModuleAPI::KeyEventType )args[0] ) {
+        switch ( static_cast<ModuleAPI::KeyEventType>( args.first().toInt())) {
         case ModuleAPI::KeyPress:
             // do smth with this data
             break;
@@ -95,18 +88,18 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
 
         default:
         case ModuleAPI::DoubleClick:
-            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: invalid keyEvent type '%1'\n" ).arg(( ModuleAPI::KeyEventType )args[0] ));
+            com.error( Sys_Common::SoftError, QObject::trUtf8( "modMain: invalid keyEvent type '%1'\n" ).arg( static_cast<ModuleAPI::KeyEventType>( args.first().toInt())));
             return false;
         }
         break;
 
     case ModuleAPI::MouseEvent:
-        if ( numArgs < 2 ) {
-            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: mouseEvent [type] [key]\n" ));
+        if ( args.count() != 2 ) {
+            com.error( Sys_Common::SoftError, QObject::trUtf8( "modMain: mouseEvent [type] [key]\n" ));
             return false;
         }
 
-        switch (( ModuleAPI::KeyEventType )args[0] ) {
+        switch ( static_cast<ModuleAPI::KeyEventType>( args.first().toInt())) {
         case ModuleAPI::KeyPress:
             // do smth with this data
             break;
@@ -120,14 +113,14 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
             break;
 
         default:
-            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: invalid keyEvent type '%1'\n" ).arg(( ModuleAPI::KeyEventType )args[0] ));
+            com.error( Sys_Common::SoftError, QObject::trUtf8( "modMain: invalid keyEvent type '%1'\n" ).arg( static_cast<ModuleAPI::KeyEventType>( args.first().toInt())));
             return false;
         }
         break;
 
     case ModuleAPI::MouseMotion:
-        if ( numArgs < 2 ) {
-            mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: mouseMotion [x] [y]\n" ));
+        if ( args.count() != 2 ) {
+            com.error( Sys_Common::SoftError, QObject::trUtf8( "modMain: mouseMotion [x] [y]\n" ));
             return false;
         }
         // do smth with this data
@@ -138,7 +131,7 @@ extern "C" MODULESHARED_EXPORT intptr_t modMain( ModuleAPI::ModuleAPICalls callN
         break;
 
     default:
-        mt.comError( Sys_Common::SoftError, QObject::trUtf8( "modMain: unknown callNum %1\n" ).arg( callNum ));
+        com.error( Sys_Common::SoftError, QObject::trUtf8( "modMain: unknown callNum %1\n" ).arg( callNum ));
         return false;
     }
 

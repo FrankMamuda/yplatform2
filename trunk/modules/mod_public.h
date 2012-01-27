@@ -63,7 +63,6 @@ namespace ModuleAPI {
         FsSeek,
         FsTouch,
         FsReadFile,
-        FsFreeFile,
         FsPrint,
         FsExtract,
         FsList,
@@ -71,8 +70,6 @@ namespace ModuleAPI {
         // command subsystem
         CmdAdd,
         CmdRemove,
-        CmdArgc,
-        CmdArgv,
         CmdExecute,
 
         // cvars
@@ -119,7 +116,7 @@ namespace ModuleAPI {
         Soundsystem*/
     };
     // api version (to avoid mismatch)
-    const static unsigned int Version = 6;
+    const static unsigned int Version = 7;
 }
 
 #endif // MOD_PUBLIC_H

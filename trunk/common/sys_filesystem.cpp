@@ -105,6 +105,47 @@ void Sys_Filesystem::init() {
 
 /*
 ============
+shutdown
+============
+*/
+void Sys_Filesystem::shutdown() {
+    // failsafe
+    if ( !this->hasInitialized())
+        return;
+
+    // announce
+    com.print( this->tr( "^2Sys_Filesystem: ^5shutting down filesystem\n" ));
+
+    // delete searchPath content
+    if ( fs_debug->integer())
+        com.print( this->tr( "^6Sys_Filesystem::shutdown: clearing searchPaths (%1)\n" ).arg( this->searchPaths.count()));
+
+    foreach ( pSearchPath *sp, this->searchPaths )
+        delete sp;
+    this->searchPaths.clear();
+
+    // close all open files and clear the list
+    if ( fs_debug->integer())
+        com.print( this->tr( "^6Sys_Filesystem::shutdown: clearing files (%1)\n" ).arg( this->fileList.count()));
+
+    foreach ( pFile *filePtr, this->fileList ) {
+        if ( filePtr->mode() >= pFile::Read ) {
+            if ( filePtr->pathType() == pFile::Directory )
+                filePtr->fHandle.close();
+            else
+                filePtr->pHandle->close();
+        }
+        delete filePtr;
+    }
+    this->fileList.clear();
+
+    // remove commmands
+    cmd.remove( "fs_touch" );
+    cmd.remove( "fs_list" );
+}
+
+/*
+============
 loadPackages
 ============
 */
@@ -303,7 +344,6 @@ openInReadMode
 long Sys_Filesystem::openInReadMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags ) {
     pSearchPath *sp;
     pFile *filePtr;
-    Q_UNUSED( flags );
 
     // assign next available handle
     fHandle = this->numFileHandles++;
@@ -359,7 +399,6 @@ openInWriteMode
 */
 void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHandle, OpenFlags flags ) {
     pFile *filePtr;
-    Q_UNUSED( flags );
 
     // failsafe
     if ( filename.startsWith( ":/" )) {
@@ -397,18 +436,19 @@ void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHa
     QDir tmpDir;
     if ( flags.testFlag( Absolute )) {
         filePtr->fHandle.setFileName( filename );
-        tmpDir.setPath( QDir( filename ).dirName());
+        tmpDir = QFileInfo( filePtr->fHandle ).absoluteDir();
     } else {
         filePtr->fHandle.setFileName( QString( filename ).prepend( this->searchPaths.at( searchPathIndex )->path()));
         tmpDir.setPath( this->searchPaths.at( searchPathIndex )->path());
     }
-    if ( !tmpDir.exists()) {
-        if ( !( flags.testFlag( Silent )))
-            com.print( this->tr( "^2Sys_Filesystem::openInWriteMode: ^3creating non-existant path \"%1\"\n" ).arg( this->searchPaths.at( searchPathIndex )->path()));
 
-        if ( flags.testFlag( Absolute ))
-            tmpDir.mkpath( QDir( filename ).dirName());
-        else
+    if ( !tmpDir.exists()) {
+        if ( flags.testFlag( Absolute )) {
+            if ( !( flags.testFlag( Silent )))
+                com.print( this->tr( "^2Sys_Filesystem::openInWriteMode: ^3creating non-existant path \"%1\"\n" ).arg( tmpDir.absolutePath()));
+
+            tmpDir.mkpath( tmpDir.absolutePath());
+        } else
             tmpDir.mkpath( this->searchPaths.at( searchPathIndex )->path());
 
         if ( !tmpDir.exists()) {
@@ -435,7 +475,6 @@ openInAppendMode
 */
 long Sys_Filesystem::openInAppendMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags ) {
     pFile *filePtr;
-    Q_UNUSED( flags );
 
     // absolute path
     if ( flags.testFlag( Absolute )) {
@@ -721,6 +760,15 @@ long Sys_Filesystem::write( const byte *buffer, unsigned long len, fileHandle_t 
 
 /*
 ============
+write
+============
+*/
+long Sys_Filesystem::write( const QByteArray buffer, fileHandle_t fHandle, OpenFlags flags ) {
+    return this->write( reinterpret_cast<const byte*>( buffer.constData()), buffer.length(), fHandle, flags );
+}
+
+/*
+============
 seek
 ============
 */
@@ -777,18 +825,18 @@ bool Sys_Filesystem::seek( fileHandle_t fHandle, long offset, OpenFlags flags, S
 
                     // perform read until offset
                     while ( remaining ) {
-                        if ((unsigned)offset >= Filesystem::PackageSeekBuffer ) {
+                        if ( static_cast<unsigned int>( offset ) >= Filesystem::PackageSeekBuffer ) {
                             remaining -= Filesystem::PackageSeekBuffer;
-                            fs.read( buffer, Filesystem::PackageSeekBuffer, fHandle, flags );
+                            this->read( buffer, Filesystem::PackageSeekBuffer, fHandle, flags );
                             continue;
                         }
-                        fs.read( buffer, remaining, fHandle, flags );
+                        this->read( buffer, remaining, fHandle, flags );
                         break;
                     }
                     return true;
 
                 case Current:
-                    while ((unsigned)remaining > Filesystem::PackageSeekBuffer ) {
+                    while ( static_cast<unsigned int>( remaining ) > Filesystem::PackageSeekBuffer ) {
                         this->read( buffer, Filesystem::PackageSeekBuffer, fHandle );
                         remaining -= Filesystem::PackageSeekBuffer;
                     }
@@ -821,10 +869,11 @@ void Sys_Filesystem::print( const fileHandle_t fHandle, const QString &msg, Open
 readFile
 ============
 */
-long Sys_Filesystem::readFile( const QString &filename, byte **buffer, OpenFlags flags ) {
+QByteArray Sys_Filesystem::readFile( const QString &filename, OpenFlags flags ) {
     long len;
     fileHandle_t fHandle;
     byte *buf = NULL;
+    QByteArray buffer;
 
     // look for it in the filesystem
     len = this->open( pFile::Read, filename, fHandle, flags );
@@ -832,95 +881,20 @@ long Sys_Filesystem::readFile( const QString &filename, byte **buffer, OpenFlags
     if ( len <= 0 ) {
         if ( !( flags.testFlag( Silent )))
             com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::readFile: could not read file \"%1\"\n" ).arg( filename ));
-        return len;
+        return QByteArray();
     }
 
-    if ( !buffer ) {
-        if ( !( flags.testFlag( Silent )))
-            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::readFile: called with NULL buffer for \"%1\"\n" ).arg( filename ));
-        this->close( fHandle, flags );
-        return len;
-    }
-
-    // allocate in memory and read
-    buf = new byte[len+1];
-    *buffer = buf;
+    // allocate in memory, read and store as a byte array
+    buf = new byte[len];
     this->read( buf, len, fHandle, flags );
+    buffer = QByteArray( reinterpret_cast<const char*>( buf ), len );
 
-    // guarantee that it will have a trailing 0 for string operations
-    buf[len] = 0;
+    // clear temporary buffer, close file
+    delete []buf;
     this->close( fHandle, flags );
 
-    // dd, add to buffer list
-    this->fileBuffers << new pFileBuffer( filename, buf, fHandle );
-
-    // return length
-    return len;
-}
-
-/*
-============
-freeFile
-============
-*/
-void Sys_Filesystem::freeFile( const QString &filename ) {
-    foreach ( pFileBuffer *bPtr, this->fileBuffers ) {
-        if ( !QString::compare( bPtr->filename(), filename )) {
-            if ( fs_debug->integer())
-                com.print( this->tr( "^6Sys_Filesystem::freeFile: clearing buffer for file \"%1\"\n" ).arg( filename ));
-            bPtr->deleteBuffer();
-            this->fileBuffers.removeOne( bPtr );
-        }
-    }
-}
-
-/*
-============
-shutdown
-============
-*/
-void Sys_Filesystem::shutdown() {
-    // failsafe
-    if ( !this->hasInitialized())
-        return;
-
-    // announce
-    com.print( this->tr( "^2Sys_Filesystem: ^5shutting down filesystem\n" ));
-
-    // clear all file buffers still open
-    if ( fs_debug->integer())
-        com.print( this->tr( "^6Sys_Filesystem::shutdown: clearing file buffers (%1)\n" ).arg( this->fileBuffers.count()));
-
-    foreach ( pFileBuffer *bPtr, this->fileBuffers )
-        bPtr->deleteBuffer();
-    this->fileBuffers.clear();
-
-    // delete searchPath content
-    if ( fs_debug->integer())
-        com.print( this->tr( "^6Sys_Filesystem::shutdown: clearing searchPaths (%1)\n" ).arg( this->searchPaths.count()));
-
-    foreach ( pSearchPath *sp, this->searchPaths )
-        delete sp;
-    this->searchPaths.clear();
-
-    // close all open files and clear the list
-    if ( fs_debug->integer())
-        com.print( this->tr( "^6Sys_Filesystem::shutdown: clearing files (%1)\n" ).arg( this->fileList.count()));
-
-    foreach ( pFile *filePtr, this->fileList ) {
-        if ( filePtr->mode() >= pFile::Read ) {
-            if ( filePtr->pathType() == pFile::Directory )
-                filePtr->fHandle.close();
-            else
-                filePtr->pHandle->close();
-        }
-        delete filePtr;
-    }
-    this->fileList.clear();
-
-    // remove commmands
-    cmd.remove( "fs_touch" );
-    cmd.remove( "fs_list" );
+    // return buffer
+    return buffer;
 }
 
 /*
@@ -929,9 +903,9 @@ touch
 ============
 */
 void Sys_Filesystem::touch( const QString &filename, OpenFlags flags ) {
-    int handle;
-    fs.openInWriteMode( filename, handle, flags );
-    fs.close( handle, flags );
+    fileHandle_t handle;
+    this->openInWriteMode( filename, handle, flags );
+    this->close( handle, flags );
 }
 
 /*
@@ -939,12 +913,12 @@ void Sys_Filesystem::touch( const QString &filename, OpenFlags flags ) {
 touch
 ============
 */
-void Sys_Filesystem::touch() {
-    if ( cmd.argc() < 2 ) {
-        com.print( this->tr( "^3usage: fs_touch [filename]\n" ));
+void Sys_Filesystem::touch( const QStringList &args ) {
+    if ( args.isEmpty() < 2 ) {
+        com.print( this->tr( "^3usage: ^2fs_touch ^3[^2filename^3]\n" ));
         return;
     }
-    this->touch( cmd.argv(1));
+    this->touch( args.first());
 }
 
 /*
@@ -1006,6 +980,12 @@ QStringList Sys_Filesystem::list( const QString &directory, const QRegExp &filte
     QString searchDir;
     int curDepth = 0;
     int entryDepth;
+
+    // failsafe
+    if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::seek: filesystem not initialized\n" ));
+        return QStringList();
+    }
 
     searchDir = directory;
     if ( !searchDir.endsWith( "/" ))
@@ -1071,20 +1051,20 @@ QStringList Sys_Filesystem::list( const QString &directory, const QRegExp &filte
 list
 ============
 */
-void Sys_Filesystem::list() {
-    if ( cmd.argc() < 2 ) {
-        com.print( this->tr( "^3usage: fs_list [directory] (filter)\n" ));
+void Sys_Filesystem::list( const QStringList &args ) {
+    if ( args.isEmpty()) {
+        com.print( this->tr( "^3usage: ^2fs_list ^3[^2directory^3] (^2filter^3)\n" ));
         return;
     }
     QStringList filteredList;
 
-    if ( cmd.argc() == 3 )
-        filteredList = this->list( cmd.argv(1), QRegExp( cmd.argv(2)));
+    if ( args.count() == 2 )
+        filteredList = this->list( args.first(), QRegExp( args.at( 1 )));
     else
-        filteredList = this->list( cmd.argv(1));
+        filteredList = this->list( args.first());
 
     // announce
-    com.print( this->tr( "^3Directory \"%1\"\n" ).arg( cmd.argv(1)));
+    com.print( this->tr( "^3Directory of \"%1\"\n" ).arg( args.first()));
 
     // print out
     foreach ( QString str, filteredList )
@@ -1102,91 +1082,59 @@ void Sys_Filesystem::defaultExtension( QString &filename, const QString &extensi
 }
 
 /*
+============
+defaultExtenstion
+============
+*/
+QString Sys_Filesystem::defaultExtension( const QString &filename, const QString &extension ) const {
+    if ( !filename.endsWith( extension ))
+        return filename + extension;
+    else
+        return filename;
+}
+
+/*
 ================
 extract
-
- used for modules, ported form ET-GPL code
- using home pFile::Directory as priority
 ================
 */
 bool Sys_Filesystem::extract( const QString &filename ) {
-    long srcLength;
-    long destLength;
-    byte *srcData;
-    byte *destData;
-    bool needToCopy;
-    FILE *destHandle;
-    needToCopy = true;
-    QString homePath;
+    QByteArray pkgBuffer, localBuffer;
+    QString localFilename;
     bool ok;
 
     // read in compressed file
-    srcLength = fs.readFile( filename, &srcData, PacksOnly );
+    pkgBuffer = this->readFile( filename, PacksOnly );
 
-    // if its not in the package, we bail
-    if ( srcLength == -1 )
+    // if it's not in the package, we bail
+    if ( pkgBuffer.isNull()) {
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::extract: could not open packaged file\n" ));
         return false;
+    }
 
-    // read in local file in homePath
-    homePath = this->buildPath( filename, fs_homePath->string() + fs_basePath->string(), &ok );
+    // determine local path
+    localFilename = this->buildPath( filename, fs_homePath->string() + fs_basePath->string(), &ok );
     if ( !ok ) {
         com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::extract: could not resolve homePath\n" ));
         return false;
     }
+    localFilename.replace( "/", QDir::separator());
 
-    homePath.replace( "/", QDir::separator());
-    destHandle = fopen( homePath.toLatin1().constData(), "rb" );
+    // open local file
+    localBuffer = this->readFile( localFilename, ( Absolute | Silent ));
 
-    // if we have a local file, we need to compare the two
-    if ( destHandle ) {
-        fseek( destHandle, 0, SEEK_END );
-        destLength = ftell( destHandle );
-        fseek( destHandle, 0, SEEK_SET );
-
-        if ( destLength > 0 ) {
-            // allocate
-            destData = new byte[destLength];
-
-            // and read
-            size_t size = fread( destData, destLength, 1, destHandle );
-            Q_UNUSED( size );
-
-            // compare files
-            if ( destLength == srcLength ) {
-                int y;
-
-                for ( y = 0; y < destLength; y++ )
-                    if ( destData[y] != srcData[y] )
-                        break;
-
-                if ( y == destLength )
-                    needToCopy = false;
-            }
-
-            // clean up
-            delete[] destData;
-        }
-
-        fclose( destHandle );
-    }
-
-    // write file
-    if ( needToCopy ) {
-        com.print( this->tr( "^3Sys_FileSystem::extract: \"^5%1^3\" mismatch or is missing in homePath, copying from package\n" ).arg( filename ));
+    // compare the two
+    if ( localBuffer != pkgBuffer ) {
         fileHandle_t f;
 
-        this->open( pFile::Write, filename, f );
-        if ( !f ) {
-            com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::extract: failed to open \"%1\"\n" ).arg( filename ));
-            return false;
-        }
-
-        this->write( srcData, srcLength, f );
+        // files differ - copy over the packaged one
+        this->open( pFile::Write, localFilename, f, Absolute );
+        this->write( pkgBuffer, f );
         this->close( f );
     }
-
-    // clear buffer
-    fs.freeFile( filename );
+    
+    localBuffer.clear();
+    pkgBuffer.clear();
     return true;
 }
 

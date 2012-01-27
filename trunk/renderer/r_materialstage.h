@@ -235,14 +235,14 @@ private slots:
 
 public slots:
     void setBlendMode( const QString &, const QString & );
-    void setBlendMode( const QString & );
+    void setBlendMode( const QString & = QString( "blend" ));
     void setTexture( const QString &texture ) { this->m_texture = texture; }
     void setTexture( const QString &, const QString & );
     void setTexture( const QString &, const QString &, const QString & );
-    void setTexture( int texture ) { this->imageList[0] = (imgHandle_t)texture; }
+    void setTexture( int texture ) { this->imageList[0] = static_cast<imgHandle_t>( texture ); }
     void setTexture( int texture, const QString & );
     void setTexture( int texture, const QString &, const QString & );
-    void setCoords( float s1, float t1, float s2, float t2 );
+    void setCoords( float s1 = 0.0f, float t1  = 0.0f, float s2  = 1.0f, float t2 = 1.0f );
     void setTextureMod( const QString &name, const QVariant & = QVariant(), const QVariant & = QVariant(), const QVariant & = QVariant(), const QVariant & = QVariant(), const QVariant & = QVariant());
     void setAnimation( const QString &tx0, const QString &tx1, float speed );
     void setAnimation( const QString &tx0, const QString &tx1, const QString &tx2, float speed );

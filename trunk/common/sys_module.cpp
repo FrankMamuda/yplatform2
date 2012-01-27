@@ -53,24 +53,24 @@ parseManifest
 pModule *Sys_Module::parseManifest( const QString &filename ) {
     QDomDocument manifest;
     pModule *modPtr = NULL;
-    long len;
     bool foundModule = false;
 
     // just allocate a new pointer with the current filename
     modPtr = new pModule( filename );
 
     // read buffer
-    byte *buffer;
-    len = fs.readFile( filename, &buffer, Sys_Filesystem::Silent );
+    QByteArray buffer = fs.readFile( filename, Sys_Filesystem::Silent );
 
     // failsafe
-    if ( len <= 0 ) {
+    if ( buffer.isNull()) {
         modPtr->setErrorMessage( this->tr( "Invalid manifest" ));
         return modPtr;
     }
 
+    //
     // parse document
-    manifest.setContent( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
+    //
+    manifest.setContent( buffer );
     QDomNode moduleNode = manifest.firstChild();
     while ( !moduleNode.isNull()) {
         if ( moduleNode.isElement()) {
@@ -142,7 +142,7 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
         modPtr->setErrorMessage( this->tr( "Missing module entry in manifest" ));
 
     // clear buffer
-    fs.freeFile( filename );
+    buffer.clear();
 
     // return the new module
     return modPtr;
@@ -153,34 +153,35 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
 load
 ============
 */
-void Sys_Module::load() {
+void Sys_Module::load( const QStringList &args ) {
     bool found = false;
 
-    if ( cmd.argc() < 2 ) {
-        com.print( this->tr( "^3usage: mod_load [module name]\n" ));
+    if ( args.isEmpty()) {
+        com.print( this->tr( "^3usage: ^2mod_load ^3[^2module name^3]\n" ));
         return;
     }
 
-    // find module
-    QString mName = cmd.argv( 1 );
-
     // loading actual modules, not manifest filenames
-    QList<QListWidgetItem*>list = this->modListWidget->findItems( mName, Qt::MatchExactly );
+    QList<QListWidgetItem*>list = this->modListWidget->findItems( args.first(), Qt::MatchExactly );
     foreach ( QListWidgetItem *item, list ) {
         foreach ( pModule *modPtr, this->preCachedList ) {
-            if ( !QString::compare( mName, modPtr->name())) {
+            if ( !QString::compare( args.first(), modPtr->name())) {
                 if ( !modPtr->isLoaded()) {
                     this->toggleFromList( item );
                     found = true;
                     break;
-                } else
+                } else {
                     com.print( this->tr( "^3Sys_Module::load: module \"%1\" has already been loaded\n" ).arg( modPtr->name()));
+                    this->itemLoadError( this->tr( "Module \"%1\" has already been loaded\n" ).arg( modPtr->name()));
+                }
             }
         }
     }
 
-    if ( !found )
-        com.print( this->tr( "^3Sys_Module::load: could not find module \"%1\"\n" ).arg( mName ));
+    if ( !found ) {
+        com.print( this->tr( "^3Sys_Module::load: could not find module \"%1\"\n" ).arg( args.first()));
+        this->itemLoadError( this->tr( "Could not find module \"%1\"\n" ).arg( args.first()));
+    }
 }
 
 /*
@@ -188,20 +189,17 @@ void Sys_Module::load() {
 unload
 ============
 */
-void Sys_Module::unload() {
-    if ( cmd.argc() < 2 ) {
-        com.print( this->tr( "^3usage: mod_unload [module name]\n" ));
+void Sys_Module::unload( const QStringList &args ) {
+    if ( args.isEmpty()) {
+        com.print( this->tr( "^3usage: ^2mod_unload ^3[^2module name^3]\n" ));
         return;
     }
 
-    // find module
-    QString mName = cmd.argv( 1 );
-
     // unloading actual modules, not manifest filenames
-    QList<QListWidgetItem*>list = this->modListWidget->findItems( mName, Qt::MatchExactly );
+    QList<QListWidgetItem*>list = this->modListWidget->findItems( args.first(), Qt::MatchExactly );
     foreach ( QListWidgetItem *item, list ) {
         foreach ( pModule *modPtr, this->preCachedList ) {
-            if ( !QString::compare( mName, modPtr->name() )) {
+            if ( !QString::compare( args.first(), modPtr->name() )) {
                 if ( modPtr->isLoaded())
                     this->toggleFromList( item );
                 else
@@ -283,242 +281,203 @@ void Sys_Module::shutdown() {
 platformSyscalls
 =================
 */
-intptr_t Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int numArgs, intptr_t *args ) {
+QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, const QVariantList &args ) {
+    pCvar *cvarPtr;
+
     switch ( callNum ) {
 
     //
     // commons
     //
     case ModuleAPI::ComPrint:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: ComPrint [message]\n" ));
             return false;
         }
 
-        com.print( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
-        break;
+        com.print( args.first().toString());
+        return true;
 
     case ModuleAPI::ComError:
-        if ( numArgs < 2 )  {
+        if ( args.count() != 2 )  {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: ComError [type] [message]\n" ));
             return false;
         }
 
-        com.error( static_cast<Sys_Common::ErrorTypes>( args[0] ), QString::fromLatin1( reinterpret_cast<const char*>( args[1] )));
-        break;
+        com.error( static_cast<Sys_Common::ErrorTypes>( args.first().toInt()), args.at( 1 ).toString());
+        return true;
 
     case ModuleAPI::ComMilliseconds:
-        return static_cast<intptr_t>( com.milliseconds());
+        return com.milliseconds();
 
         //
         // filesystem
         //
     case ModuleAPI::FsOpen:
-        if ( numArgs < 4 ) {
-            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsOpen [mode] [filename] (&handle) (flags)\n" ));
+        if ( args.count() != 4 ) {
+            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsOpen [mode] [filename] [&handle] (flags)\n" ));
             return false;
         }
-        return static_cast<intptr_t>( fs.open( static_cast<pFile::OpenModes>( args[0] ), QString::fromLatin1( reinterpret_cast<const char*>( args[1] )), *( reinterpret_cast<fileHandle_t*>( args[2] )), static_cast<Sys_Filesystem::OpenFlags>( args[3] )));
+        return static_cast<int>( fs.open( static_cast<pFile::OpenModes>( args.at( 0 ).toInt()), args.at( 1 ).toString(),
+                                          *( args.at( 2 ).value<fileHandle_t*>()), static_cast<Sys_Filesystem::OpenFlags>( args.at( 3 ).toInt())));
 
     case ModuleAPI::FsClose:
-        if ( numArgs < 2 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsClose [handle] (flags)\n" ));
             return false;
         }
 
-        fs.close( static_cast<fileHandle_t>( args[0] ), static_cast<Sys_Filesystem::OpenFlags>( args[1] ));
-        break;
+        fs.close( static_cast<fileHandle_t>( args.at( 0 ).toInt()), static_cast<Sys_Filesystem::OpenFlags>( args.at( 1 ).toInt()));
+        return true;
 
     case ModuleAPI::FsCloseByName:
-        if ( numArgs < 2 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsCloseByName [filename] (flags)\n" ));
             return false;
         }
 
-        fs.close( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )), static_cast<Sys_Filesystem::OpenFlags>( args[1] ));
-        break;
+        fs.close( args.first().toString(), static_cast<Sys_Filesystem::OpenFlags>( args.at( 1 ).toInt()));
+        return true;
 
     case ModuleAPI::FsExists:
-        if ( numArgs < 2 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsExists [path] (flags)\n" ));
             return false;
         }
-        return static_cast<intptr_t>( fs.exists( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )), static_cast<Sys_Filesystem::OpenFlags>( args[1] )));
+        return fs.exists( args.first().toString(), static_cast<Sys_Filesystem::OpenFlags>( args.at( 1 ).toInt()));
 
     case ModuleAPI::FsRead:
-        if ( numArgs < 4 ) {
+        if ( args.count() != 4 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsRead [&buffer] [len] [handle] (flags)\n" ));
             return false;
         }
-
-        return static_cast<intptr_t>( fs.read( *( reinterpret_cast<byte**>( args[0] )), static_cast<int>( args[1] ), static_cast<fileHandle_t>( args[2] ), static_cast<Sys_Filesystem::OpenFlags>( args[3] )));
+        return static_cast<int>( fs.read( args.at( 0 ).value<byte*>(), args.at( 1 ).toInt(), static_cast<fileHandle_t>( args.at( 2 ).toInt()), static_cast<Sys_Filesystem::OpenFlags>( args.at( 3 ).toInt())));
 
     case ModuleAPI::FsWrite:
         // we cannot allow inappropriate calls to fs write! -> fatal error
-        if ( numArgs < 4 ) {
-            com.error( Sys_Common::FatalError, this->tr( "platformSyscalls: FsWrite [buffer] [len] [handle] (flags)\n" ));
+        if ( args.count() != 3 ) {
+            com.error( Sys_Common::FatalError, this->tr( "platformSyscalls: FsWrite [buffer] [handle] (flags)\n" ));
             return false;
         }
 
-        return static_cast<intptr_t>( fs.write( reinterpret_cast<const byte*>( args[0] ), static_cast<int>( args[1] ), static_cast<fileHandle_t>( args[2] ), static_cast<Sys_Filesystem::OpenFlags>( args[3] )));
+        return static_cast<int>( fs.write( args.first().toByteArray(), static_cast<fileHandle_t>( args.at( 1 ).toInt()), static_cast<Sys_Filesystem::OpenFlags>( args.at( 2 ).toInt())));
 
     case ModuleAPI::FsSeek:
-        if ( numArgs < 4 ) {
+        if ( args.count() != 4 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsSeek [handle] [offset] (flags) (seek mode)\n" ));
             return false;
         }
 
-        return static_cast<intptr_t>( fs.seek( static_cast<fileHandle_t>( args[0] ), static_cast<long>( args[1] ), static_cast<Sys_Filesystem::OpenFlags>( args[2] ), static_cast<Sys_Filesystem::SeekModes>( args[3] )));
+        return fs.seek( static_cast<fileHandle_t>( args.first().toInt()), args.at( 1 ).toInt(), static_cast<Sys_Filesystem::OpenFlags>( args.at( 2 ).toInt()), static_cast<Sys_Filesystem::SeekModes>( args.at( 3 ).toInt()));
 
     case ModuleAPI::FsTouch:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsTouch [filename] (flags)\n" ));
             return false;
         }
 
-        fs.touch( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )), static_cast<Sys_Filesystem::OpenFlags>( args[1] ));
-        break;
+        fs.touch( args.first().toString(), static_cast<Sys_Filesystem::OpenFlags>( args.at( 1 ).toInt()));
+        return true;
 
     case ModuleAPI::FsReadFile:
-        if ( numArgs < 3 ) {
-            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsReadFile [filename] [&buffer] (flags)\n" ));
+        if ( args.count() != 2 ) {
+            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsReadFile [filename] (flags)\n" ));
             return false;
         }
-
-        return static_cast<intptr_t>( fs.readFile( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )), reinterpret_cast<byte**>( args[1] ), static_cast<Sys_Filesystem::OpenFlags>( args[2] )));
+        return fs.readFile( args.first().toString(), static_cast<Sys_Filesystem::OpenFlags>( args.at( 1 ).toInt()));
 
     case ModuleAPI::FsPrint:
-        if ( numArgs < 3 ) {
+        if ( args.count() != 3 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsPrint [handle] [msg] (flags)\n" ));
             return false;
         }
-
-        fs.print( static_cast<fileHandle_t>( args[0] ), QString::fromLatin1( reinterpret_cast<const char*>( args[1] )), static_cast<Sys_Filesystem::OpenFlags>( args[2] ));
-        break;
-
-    case ModuleAPI::FsFreeFile:
-        if ( numArgs < 1 ) {
-            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsFreeFile [filename]\n" ));
-            return false;
-        }
-
-        fs.freeFile( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
-        break;
+        fs.print( static_cast<fileHandle_t>( args.first().toInt()), args.at( 1 ).toString(), static_cast<Sys_Filesystem::OpenFlags>( args.at( 2 ).toInt()));
+        return true;
 
     case ModuleAPI::FsExtract:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsExtract [filename]\n" ));
             return false;
         }
-
-        return static_cast<intptr_t>( fs.extract( QString::fromLatin1( reinterpret_cast<const char*>( args[0] ))));
+        return fs.extract( args.first().toString());
 
     case ModuleAPI::FsList:
-    {
-        if ( numArgs < 3 ) {
-            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsList [directory] [buffer] [len] (filter) (mode)\n" ));
+        if ( args.count() != 3 ) {
+            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: FsList [directory] (filter) (mode)\n" ));
             return false;
         }
-
-        // beware: don't use semicolon in dirname... but why should you in the first place?
-        QString fileList = fs.list( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )), *( reinterpret_cast<const QRegExp*>( args[3] )), static_cast<Sys_Filesystem::ListModes>( args[4] )).join( ";" );
-        qstrncpy( reinterpret_cast<char*>( args[1] ), fileList.toLatin1().constData(), static_cast<unsigned int>( args[2] ));
-        return true;
-    }
-        break;
+        return fs.list( args.first().toString(), args.at( 1 ).toRegExp(), static_cast<Sys_Filesystem::ListModes>( args.at( 2 ).toInt()));
 
         //
         // command subsystem
         //
     case ModuleAPI::CmdAdd:
-        if ( numArgs < 3 ) {
+        if ( args.count() != 3 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CmdAdd [cmdName] [cmd] (description)\n" ));
             return false;
         }
-
-        cmd.add( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )), reinterpret_cast<cmdCommand_t>( args[1] ), QString::fromLatin1( reinterpret_cast<const char*>( args[2] )));
-        break;
-
-    case ModuleAPI::CmdRemove:
-        if ( numArgs < 1 ) {
-            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CmdRemove [cmdName]\n" ));
-            return false;
-        }
-
-        cmd.remove( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
-        break;
-
-    case ModuleAPI::CmdArgc:
-        return static_cast<intptr_t>( cmd.argc());
-
-    case ModuleAPI::CmdArgv:
-        if ( numArgs < 3 ) {
-            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CmdArgv [argId] [buffer] [len]\n" ));
-            return false;
-        }
-        qstrncpy( reinterpret_cast<char*>( args[1] ), cmd.argv( static_cast<int>( args[0] )).toLatin1().constData(), static_cast<int>( args[2] ));
+        cmd.add( args.first().toString(), args.at( 1 ).value<cmdCommand_t>(), args.at( 2 ).toString());
         return true;
 
 
+    case ModuleAPI::CmdRemove:
+        if ( args.count() != 1 ) {
+            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CmdRemove [cmdName]\n" ));
+            return false;
+        }
+        cmd.remove( args.first().toString());
+        return true;
+
     case ModuleAPI::CmdExecute:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CmdExecute [command string]\n" ));
             return false;
         }
-
-        return cmd.execute( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
+        cmd.execute( args.first().toString());
+        return true;
 
         //
         // cvar subsystem
         //
     case ModuleAPI::CvarCreate:
-        if ( numArgs < 4 ) {
+        if ( args.count() != 4 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CvarCreate [name] [string] (flags) (description)\n" ));
             return false;
         }
-        if ( cv.create( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )), QString::fromLatin1( reinterpret_cast<const char*>( args[1] )), static_cast<pCvar::Flags>( args[2] ), QString::fromLatin1( reinterpret_cast<const char*>( args[3] )), true ) != NULL )
+        if ( cv.create( args.first().toString(), args.at( 1 ).toString(), static_cast<pCvar::Flags>( args.at( 2 ).toInt()), args.at( 3 ).toString(), true ) != NULL )
             return true;
-        else
-            return false;
+
+        return false;
 
     case ModuleAPI::CvarSet:
-    {
-        if ( numArgs < 3 ) {
+        if ( args.count() != 3 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CvarSet [name] [value] (force)\n" ));
             return false;
         }
-        pCvar *cvarPtr = cv.find( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
+        cvarPtr = cv.find( args.first().toString());
         if ( cvarPtr != NULL ) {
-            cvarPtr->set( QString::fromLatin1( reinterpret_cast<const char*>( args[1] )), static_cast<bool>( args[2] ));
+            cvarPtr->set( args.at( 1 ).toString(), args.at( 2 ).toBool());
             return true;
-        } else
-            return false;
-    }
-        break;
+        }
+        return false;
 
     case ModuleAPI::CvarGet:
-    {
-        if ( numArgs < 3 ) {
-            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CvarGet [name] [buffer] [len]\n" ));
+        if ( args.count() != 1 ) {
+            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CvarGet [name]\n" ));
             return false;
         }
-        pCvar *cvarPtr = cv.find(( const char * )args[0] );
-        if ( cvarPtr != NULL ) {
-            qstrncpy( reinterpret_cast<char*>( args[1] ), cvarPtr->string().toLatin1().constData(), static_cast<int>( args[2] ));
-            return true;
-        } else
-            return false;
-    }
-        break;
+        cvarPtr = cv.find( args.first().toString());
+        if ( cvarPtr != NULL )
+            return cvarPtr->string();
+        return QObject::trUtf8( "undefined" );
 
     case ModuleAPI::CvarReset:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CvarReset [name]\n" ));
             return false;
         }
-
-        cmd.execute( QString( "cv_reset %1" ).arg( QString::fromLatin1( reinterpret_cast<const char*>( args[0] ))));
-        break;
+        cmd.execute( QString( "cv_reset %1" ).arg( args.first().toString()));
+        return true;
 
         //
         // applet
@@ -526,161 +485,157 @@ intptr_t Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int 
     case ModuleAPI::AppShutdown:
         // shut down, no questions asked
         m.shutdown();
-        break;
+        return true;
 
         //
         // gui
         //
     case ModuleAPI::GuiRaise:
         com.gui()->show();
-        break;
+        return true;
 
     case ModuleAPI::GuiHide:
         com.gui()->hide();
-        break;
+        return true;
 
     case ModuleAPI::GuiCreateSystray:
         com.gui()->createSystemTray();
-        break;
+        return true;
 
     case ModuleAPI::GuiRemoveSystray:
         com.gui()->removeSystemTray();
-        break;
+        return true;
 
     case ModuleAPI::GuiRemoveAction:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiRemoveAction [name]\n" ));
             return false;
         }
-        com.gui()->removeAction( static_cast<ModuleAPI::ToolBarActions>( args[0] ));
-        break;
+        com.gui()->removeAction( static_cast<ModuleAPI::ToolBarActions>( args.first().toInt()));
+        return true;
 
     case ModuleAPI::GuiAddToolBar:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiAddToolbar [toolBarPtr]\n" ));
             return false;
         }
-        com.gui()->addToolBar( reinterpret_cast<QToolBar*>( args[0] ));
-        break;
+        com.gui()->addToolBar( reinterpret_cast<QToolBar*>( args.at( 0 ).value<void*>()));
+        return true;
 
     case ModuleAPI::GuiRemoveToolBar:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiRemoveToolBar [toolBarPtr]\n" ));
             return false;
         }
-        com.gui()->removeToolBar( reinterpret_cast<QToolBar*>( args[0] ));
-        break;
+        com.gui()->removeToolBar( reinterpret_cast<QToolBar*>( args.at( 0 ).value<void*>()));
+        return true;
 
     case ModuleAPI::GuiRemoveMainToolBar:
         com.gui()->removeMainToolBar();
-        break;
+        return true;
 
     case ModuleAPI::GuiAddTab:
-        if ( numArgs < 2 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiAddTab [widgetPtr] [name] (icon)\n" ));
             return false;
         }
-        com.gui()->addTabExt( Gui_Main::MainWindow, reinterpret_cast<QWidget*>( args[0] ), QString::fromLatin1( reinterpret_cast<const char*>( args[1] )), QString::fromLatin1( reinterpret_cast<const char*>( args[2] )));
-        break;
+        com.gui()->addTabExt( Gui_Main::MainWindow, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
+        return true;
 
     case ModuleAPI::GuiRemoveTab:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiRemoveTab [name]\n" ));
             return false;
         }
-        com.gui()->removeTabExt( Gui_Main::MainWindow, QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
-        break;
+        com.gui()->removeTabExt( Gui_Main::MainWindow, args.first().toString());
+        return true;
 
     case ModuleAPI::GuiSetActiveTab:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiSetActiveTab [name]\n" ));
             return false;
         }
-        com.gui()->setActiveTab( QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
-        break;
+        com.gui()->setActiveTab( args.first().toString());
+        return true;
 
     case ModuleAPI::GuiSetConsoleState:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiSetConsoleState [state]\n" ));
             return false;
         }
-        com.gui()->setConsoleState( static_cast<ModuleAPI::ConsoleState>( args[0] ));
-        break;
+        com.gui()->setConsoleState( static_cast<ModuleAPI::ConsoleState>( args.first().toInt()));
+        return true;
 
     case ModuleAPI::GuiAddSettingsTab:
-        if ( numArgs < 2 ) {
+        if ( args.count() != 3 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiAddSettingsTab [widgetPtr] [name] (icon)\n" ));
             return false;
         }
-        com.gui()->addTabExt( Gui_Main::Settings, reinterpret_cast<QWidget*>( args[0] ), QString::fromLatin1( reinterpret_cast<const char*>( args[1] )), QString::fromLatin1( reinterpret_cast<const char*>( args[2] )));
-        break;
+        com.gui()->addTabExt( Gui_Main::Settings, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
+        return true;
 
     case ModuleAPI::GuiRemoveSettingsTab:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: GuiRemoveSettingsTab [name]\n" ));
             return false;
         }
-        com.gui()->removeTabExt( Gui_Main::Settings, QString::fromLatin1( reinterpret_cast<const char*>( args[0] )));
-        break;
+        com.gui()->removeTabExt( Gui_Main::Settings, args.first().toString());
+        return true;
 
     case ModuleAPI::GuiShowTabWidget:
         com.gui()->showTabWidget();
-        break;
+        return true;
 
     case ModuleAPI::GuiHideTabWidget:
         com.gui()->hideTabWidget();
-        break;
+        return true;
 
         //
         // renderer
         //
     case ModuleAPI::RendererKeyEvent:
-        if ( numArgs < 2 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: RendererKeyEvent [type] [key]\n" ));
             return false;
         }
-
         foreach ( pModule *modPtr, this->modList ) {
             if ( modPtr->type() != pModule::Renderer )
-                modPtr->call( ModuleAPI::KeyEvent, args[0], args[1] );
+                modPtr->call( ModuleAPI::KeyEvent, args.at( 0 ), args.at( 1 ));
         }
-        break;
+        return true;
 
     case ModuleAPI::RendererMouseEvent:
-        if ( numArgs < 2 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: RendererMouseEvent [type] [key]\n" ));
             return false;
         }
-
         foreach ( pModule *modPtr, this->modList ) {
             if ( modPtr->type() != pModule::Renderer )
-                modPtr->call( ModuleAPI::MouseEvent, args[0], args[1] );
+                modPtr->call( ModuleAPI::MouseEvent, args.at( 0 ), args.at( 1 ));
         }
-        break;
+        return true;
 
     case ModuleAPI::RendererMouseMotion:
-        if ( numArgs < 2 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: RendererMouseMotion [x] [y]\n" ));
             return false;
         }
-
         foreach ( pModule *modPtr, this->modList ) {
             if ( modPtr->type() != pModule::Renderer )
-                modPtr->call( ModuleAPI::MouseMotion, args[0], args[1] );
+                modPtr->call( ModuleAPI::MouseMotion, args.at( 0 ), args.at( 1 ));
         }
-        break;
+        return true;
 
     case ModuleAPI::RendererWheelEvent:
-        if ( numArgs < 1 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: RendererWheelEvent [delta]\n" ));
             return false;
         }
-
         foreach ( pModule *modPtr, this->modList ) {
             if ( modPtr->type() != pModule::Renderer )
-                modPtr->call( ModuleAPI::WheelEvent, args[0] );
+                modPtr->call( ModuleAPI::WheelEvent, args.at( 0 ));
         }
-        break;
+        return true;
 
     default:
         // we cannot accept calls from a faulty module - might damage filesystem or else
@@ -688,7 +643,7 @@ intptr_t Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int 
         com.error( Sys_Common::FatalError, this->tr( "platformSyscalls: unknown callNum '%1'\n" ).arg( callNum ));
         return false;
     }
-    return true;
+    return false;
 }
 
 /*
@@ -696,45 +651,47 @@ intptr_t Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, int 
 rendererSyscalls
 =================
 */
-intptr_t Sys_Module::rendererSyscalls( RendererAPI::RendererAPICalls callNum, int numArgs, intptr_t *args ) {
+QVariant Sys_Module::rendererSyscalls( RendererAPI::RendererAPICalls callNum, const QVariantList &args ) {
     // yes, we support multiple renderers
     foreach ( pModule *modPtr, this->modList ) {
         if ( modPtr->type() == pModule::Renderer ) {
             switch ( callNum ) {
             case RendererAPI::LoadMaterial:
-                if ( numArgs < 1 ) {
+                if ( args.count() != 1 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererLoadMaterial [name]\n" ));
                     return false;
                 }
-                return modPtr->call( RendererAPI::LoadMaterial, args[0] );
+                return modPtr->call( RendererAPI::LoadMaterial, args.at( 0 ));
 
             case RendererAPI::DrawMaterial:
-                if ( numArgs < 5 ) {
+                if ( args.count() != 5 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererDrawMaterial [position] [size] [handle]\n" ));
                     return false;
                 }
-                return modPtr->call( RendererAPI::DrawMaterial, args[0], args[1], args[2], args[3], args[4] );
+                return modPtr->call( RendererAPI::DrawMaterial, args.at( 0 ), args.at( 1 ), args.at( 2 ), args.at( 3 ), args.at( 4 ));
 
             case RendererAPI::DrawText:
-                if ( numArgs < 4 ) {
+                if ( args.count() != 4 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererLoadFont [x] [y] [fontPtr] [string] (colour)\n" ));
                     return false;
                 }
-                return modPtr->call( RendererAPI::DrawText, args[0], args[1], args[2], args[3],
-                                    args[4], args[5], args[6], args[7] );
+                return modPtr->call( RendererAPI::DrawText, args.at( 0 ), args.at( 1 ), args.at( 2 ), args.at( 3 ), args.at( 4 ), args.at( 5 ), args.at( 6 ), args.at( 7 ));
 
             case RendererAPI::SetColour:
-                if ( numArgs < 4 ) {
+                if ( args.count() != 4 ) {
                     com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererSetColour [red] [green] [blue] [alpha]\n" ));
                     return false;
                 }
-                return modPtr->call( RendererAPI::SetColour, args[0], args[1], args[2], args[3] );
+                return modPtr->call( RendererAPI::SetColour, args.at( 0 ), args.at( 1 ), args.at( 2 ), args.at( 3 ));
 
             case RendererAPI::Raise:
                 return modPtr->call( RendererAPI::Raise );
 
             case RendererAPI::Hide:
                 return modPtr->call( RendererAPI::Hide );
+
+            case RendererAPI::Reload:
+                return modPtr->call( RendererAPI::Reload );
 
             default:
                 // abort
@@ -755,9 +712,9 @@ updateCvar
 void Sys_Module::updateCvar( const QString &cvar, const QString &stringValue ) {
     foreach ( pModule *modPtr, this->modList ) {
         if ( modPtr->type() == pModule::Renderer )
-            modPtr->call( RendererAPI::UpdateCvar, reinterpret_cast<intptr_t>( cvar.toLatin1().constData()), reinterpret_cast<intptr_t>( stringValue.toLatin1().constData()));
+            modPtr->call( RendererAPI::UpdateCvar, cvar, stringValue );
         else
-            modPtr->call( ModuleAPI::UpdateCvar, reinterpret_cast<intptr_t>( cvar.toLatin1().constData()), reinterpret_cast<intptr_t>( stringValue.toLatin1().constData()));
+            modPtr->call( ModuleAPI::UpdateCvar, cvar, stringValue );
     }
 }
 
@@ -849,15 +806,15 @@ void Sys_Module::populateListWidget() {
                 if ( modPtr->icon().startsWith( ":" )) {
                     tempIcon = QIcon( modPtr->icon() );
                 } else {
-                    byte *buffer;
-                    long len = fs.readFile( modPtr->icon(), &buffer, Sys_Filesystem::Silent );
+                    QByteArray buffer = fs.readFile( fs.defaultExtension( modPtr->icon(), ".png" ), Sys_Filesystem::Silent );
 
                     // any icon?
-                    if ( len > 0 ) {
+                    if ( !buffer.isEmpty()) {
                         QPixmap pixMap;
-                        pixMap.loadFromData( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
+                        pixMap.loadFromData( buffer );
                         tempIcon = QIcon( pixMap );
                     }
+                    buffer.clear();
                 }
             }
 
@@ -1017,7 +974,7 @@ void Sys_Module::toggleFromList( QListWidgetItem *item ) {
                     break;
                 } else if ( modPtr->isLoaded() && modPtr->type() == pModule::Renderer ) {
                     // just hide the renderer, we cannot reload it
-                    RendererAPI::WindowState state = static_cast<RendererAPI::WindowState>( modPtr->call( RendererAPI::State ));
+                    RendererAPI::WindowState state = static_cast<RendererAPI::WindowState>( modPtr->call( RendererAPI::State ).toInt());
                     if ( state == RendererAPI::Raised ) {
                         // change font in list
                         QFont font = item->font();

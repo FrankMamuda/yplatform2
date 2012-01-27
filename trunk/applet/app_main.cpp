@@ -37,9 +37,9 @@ class App_Main m;
 //
 // commands
 //
-createCommand( m, shutdown )
+createSimpleCommand( m, shutdown )
 #ifndef YP2_FINAL_RELEASE
-createCommand( m, fatalError )
+createSimpleCommand( m, fatalError )
 #endif
 
 /*
@@ -60,7 +60,6 @@ void App_Main::shutdown() {
         cmd.remove( "fatalError" );
 #endif
         cv.saveConfig( Cvar::DefaultConfigFile );
-        //com.gui->shutdown();
         cmd.shutdown();
         pkg.shutdown();
         fs.shutdown();

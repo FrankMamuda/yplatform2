@@ -41,28 +41,23 @@ loadMtrLib
 ===================
 */
 void R_MtrLib::loadMtrLib( const QString &filename ) {
-    byte *buffer;
+    QByteArray buffer;
     QString mtrLib;
 
     // load mtr file
-    if ( !mt.fsReadFile( filename, &buffer )) {
-        mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: could not read mtrLib \'%1\'\n" ).arg( filename ));
+    buffer = fs.readFile( filename );
+    if ( buffer.isEmpty()) {
+        com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: could not read mtrLib \'%1\'\n" ).arg( filename ));
         return;
-    } else {
-        if ( buffer == NULL ) {
-            mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: NULL buffer for mtrLib \'%1\'\n" ).arg( filename ));
-            return;
-        }
-        mtrLib = QString( reinterpret_cast<const char*>( buffer ));
-        mt.fsFreeFile( filename );
     }
+    mtrLib = QString( reinterpret_cast<const char*>( buffer.data()));
 
     // create new context
     this->engine.pushContext();
 
     // do static check
     if ( !this->engine.canEvaluate( mtrLib )) {
-        mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: cannot evaluate mtrLib \'%1\'\n" ).arg( filename ));
+        com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: cannot evaluate mtrLib \'%1\'\n" ).arg( filename ));
         return;
     }
     this->engine.evaluate( mtrLib );
@@ -71,7 +66,7 @@ void R_MtrLib::loadMtrLib( const QString &filename ) {
     if ( this->engine.hasUncaughtException()) {
         QScriptValue exception = this->engine.uncaughtException();
         this->catchError();
-        mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib (\'%1\'): exception: \'%2\'\n" ).arg( filename ).arg( exception.toString()));
+        com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib (\'%1\'): exception: \'%2\'\n" ).arg( filename ).arg( exception.toString()));
         return;
     }
 
@@ -95,10 +90,10 @@ void R_MtrLib::update() {
         this->updateFunc.call( this->object );
         if ( engine.hasUncaughtException()) {
             QScriptValue exception = engine.uncaughtException();
-            mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: could not call update(), exception \'%1\'\n" ).arg( exception.toString()));
+            com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: could not call update(), exception \'%1\'\n" ).arg( exception.toString()));
             return;
         }
-   }
+    }
 }
 
 /*
@@ -116,7 +111,7 @@ QScriptValue scriptPrint( QScriptContext *context, QScriptEngine *engine ) {
 
         msg.append( context->argument( y ).toString());
     }
-    mt.comPrint( msg );
+    com.print( msg );
     return engine->undefinedValue();
 }
 
@@ -243,7 +238,7 @@ R_Image::ClampModes R_MtrLib::getClampMode( const QString &mode ) {
     } else if ( !QString::compare( mode, "clampToEdge", Qt::CaseInsensitive ) || !QString::compare( mode, "edge", Qt::CaseInsensitive )) {
         return R_Image::ClampToEdge;
     } else {
-        mt.comError( Sys_Common::SoftError, this->tr( "R_MtrLib::setClampMode: unknown clamp mode \"%1\", setting \"repeat\"\n" ).arg( mode ));
+        com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::setClampMode: unknown clamp mode \"%1\", setting \"repeat\"\n" ).arg( mode ));
         return R_Image::Repeat;
     }
 }
@@ -255,7 +250,7 @@ scriptMsec
 */
 QScriptValue scriptMsec( QScriptContext *context, QScriptEngine *engine ) {
     Q_UNUSED( context )
-    return engine->toScriptValue( mt.comMilliseconds());
+    return engine->toScriptValue( com.milliseconds());
 }
 
 /*
@@ -277,24 +272,23 @@ QScriptValue scriptCvar( QScriptContext *context, QScriptEngine *engine ) {
         context->throwError( QObject::trUtf8( "'cvar' called with multiple arguments\n" ));
         return engine->undefinedValue();
     } else if ( context->argumentCount() == 1 ) {
-        cvarPtr = mt.cvarCreate( context->argument( 0 ).toString(), "", pCvar::NoFlags );
+        cvarPtr = cv.create( context->argument( 0 ).toString(), "", pCvar::NoFlags );
     } else if ( context->argumentCount() == 2 ) {
-        cvarPtr = mt.cvarCreate( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::NoFlags );
+        cvarPtr = cv.create( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::NoFlags );
     } else if ( context->argumentCount() == 3 ) {
         if ( context->argument( 2 ).toBool())
-            cvarPtr = mt.cvarCreate( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::Archive );
+            cvarPtr = cv.create( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::Archive );
         else
-            cvarPtr = mt.cvarCreate( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::NoFlags );
+            cvarPtr = cv.create( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::NoFlags );
     } else if ( context->argumentCount() == 0 ) {
         context->throwError( QObject::trUtf8( "'cvar' called without arguments\n" ));
         return engine->undefinedValue();
     }
 
     // find cvar
-    foreach ( cvarPtr, mt.cvars ) {
-        if ( !QString::compare( context->argument( 0 ).toString(), cvarPtr->name()))
-            return engine->newQObject( cvarPtr, QScriptEngine::ScriptOwnership );
-    }
+    cvarPtr = cv.find( context->argument( 0 ).toString());
+    if ( cvarPtr != NULL )
+        return engine->newQObject( cvarPtr, QScriptEngine::ScriptOwnership );
 
     // should we export all platform cvars to module?
     return engine->undefinedValue();
@@ -313,7 +307,7 @@ void R_MtrLib::init() {
     int numMtrLibFiles;
 
     // announce
-    mt.comPrint( this->tr( "^2R_MtrLib::init: ^5loading material libraries\n" ));
+    com.print( this->tr( "^2R_MtrLib::init: ^5loading material libraries\n" ));
 
     // create scripting engine
     this->object = engine.newQObject( this );
@@ -334,15 +328,15 @@ void R_MtrLib::init() {
     // scan for material libraries, build filelist
     QRegExp filter( QString( "*.js" ));
     filter.setPatternSyntax( QRegExp::Wildcard );
-    QStringList fileList = mt.fsListFiles( "materials/", &filter, Sys_Filesystem::ListFiles );
+    QStringList fileList = fs.listFiles( "materials/", filter, Sys_Filesystem::ListFiles );
 
     // also add internal material libraries
-    fileList << mt.fsListFiles( ":/materials/", &filter, Sys_Filesystem::ListFiles );
+    fileList << fs.listFiles( ":/materials/", filter, Sys_Filesystem::ListFiles );
     numMtrLibFiles = fileList.count();
 
     // nothing at all?
     if ( !numMtrLibFiles ) {
-        mt.comPrint( this->tr( "^3WARNING: R_Material::init: no material libraries found\n" ));
+        com.print( this->tr( "^3WARNING: R_Material::init: no material libraries found\n" ));
         return;
     }
 
