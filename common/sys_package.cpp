@@ -22,7 +22,7 @@ freely, subject to the following restrictions:
 ===========================================================================
 C++ rewrite for YPlatform2:
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

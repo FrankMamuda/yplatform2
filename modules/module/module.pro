@@ -9,7 +9,7 @@ win32:INCLUDEPATH += ../../includes
 TARGET = module
 TEMPLATE = lib
 
-DEFINES += MODULE_LIBRARY
+DEFINES += MODULE_BUILD
 
 INCLUDEPATH += ../../common
 INCLUDEPATH += ../
