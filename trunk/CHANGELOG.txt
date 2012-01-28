@@ -16,7 +16,10 @@ r15:
     -seems stable enough
     -much more (can't remember)
 
+r16:
+    -few fixes here and there
+
 TODOs
     -cmd completion (filename, etc.)
     -revert long->int in fs (ck ioquake3 code)
-
+    -remove double quotes for cmd args

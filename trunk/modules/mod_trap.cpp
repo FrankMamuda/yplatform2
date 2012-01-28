@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ class Mod_Cvar cv;
 class Mod_App app;
 class Mod_Gui gui;
 #ifdef RENDERER_ENABLED
-extern class Mod_Renderer r;
+class Mod_Renderer r;
 #endif
 
 /*

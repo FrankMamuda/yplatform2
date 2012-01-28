@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 class pCvar : public QObject {
     Q_OBJECT
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
     Q_CLASSINFO( "description", "Console variable" )
     Q_DISABLE_COPY( pCvar )
     Q_PROPERTY( QString name READ name WRITE setName )
@@ -52,7 +52,7 @@ public:
     };
     Q_DECLARE_FLAGS( Flags, Flag )
     
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
     Flags flags;
     
     // constructors/destructors

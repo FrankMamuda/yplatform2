@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -215,7 +215,7 @@ update
 ============
 */
 void Sys_Module::update() {
-    // begin frame on each renderer window first
+    // begin frame on each \er window first
     foreach ( pModule *modPtr, this->modList ) {
         if ( modPtr->type() == pModule::Renderer )
             modPtr->call( RendererAPI::BeginFrame );
@@ -671,8 +671,8 @@ QVariant Sys_Module::rendererSyscalls( RendererAPI::RendererAPICalls callNum, co
                 return modPtr->call( RendererAPI::DrawMaterial, args.at( 0 ), args.at( 1 ), args.at( 2 ), args.at( 3 ), args.at( 4 ));
 
             case RendererAPI::DrawText:
-                if ( args.count() != 4 ) {
-                    com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: RendererLoadFont [x] [y] [fontPtr] [string] (colour)\n" ));
+                if ( args.count() != 8 ) {
+                    com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: DrawText [x] [y] [fontPtr] [string] (colour)\n" ));
                     return false;
                 }
                 return modPtr->call( RendererAPI::DrawText, args.at( 0 ), args.at( 1 ), args.at( 2 ), args.at( 3 ), args.at( 4 ), args.at( 5 ), args.at( 6 ), args.at( 7 ));

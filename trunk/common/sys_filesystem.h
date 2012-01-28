@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // includes
 //
 #include "sys_shared.h"
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
 #include "sys_package.h"
 #endif
 #ifdef Q_OS_WIN
@@ -54,7 +54,7 @@ namespace Filesystem {
 
     // basedir
     static const QString BaseDirectory( "base" );
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
     static const unsigned int PackageSeekBuffer = 65536;
 
     // searchPath IDs for easier handling
@@ -76,7 +76,7 @@ namespace Filesystem {
 //
 class pFile : public QObject {
     Q_OBJECT
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
     Q_CLASSINFO( "description", "Filesystem file info" )
     Q_PROPERTY( QString name READ name WRITE setName )
     Q_PROPERTY( fileHandle_t handle READ handle WRITE setHandle )
@@ -100,7 +100,7 @@ public:
         Package
     };
     
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
     // property getters
     fileHandle_t    handle() const { return this->m_handle; }
     PathType        pathType() const { return this->m_type; }
@@ -133,7 +133,7 @@ private:
 //
 // class:pSearchPath
 //
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
 class pSearchPath : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Filesystem search path" )
@@ -170,7 +170,7 @@ private:
 //
 class Sys_Filesystem : public QObject {
     Q_OBJECT
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
     Q_CLASSINFO( "description", "Filesystem" )
     Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
 #endif
@@ -200,7 +200,7 @@ public:
         ListFiles
     };
     
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
     bool hasInitialized() const { return this->m_initialized; }
     QList <pSearchPath*> searchPaths;
     long length( fileHandle_t ) const;
@@ -261,14 +261,14 @@ Q_DECLARE_OPERATORS_FOR_FLAGS( Sys_Filesystem::OpenFlags )
 //
 // externals
 //
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
 extern class Sys_Filesystem fs;
 #endif
 
 //
 // inlines for fileExists
 //
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
 inline bool Sys_Filesystem::exists( QString &path, OpenFlags &flags, int &searchPathIndex ) { return this->existsExt( path, flags, searchPathIndex ); }
 inline bool Sys_Filesystem::exists( const QString &path, OpenFlags &flags, int &searchPathIndex ) { QString filename = path; return this->existsExt( filename, flags, searchPathIndex ); }
 inline bool Sys_Filesystem::exists( const QString &path, OpenFlags flags, int &searchPathIndex ) { QString filename = path; return this->existsExt( filename, flags, searchPathIndex ); }

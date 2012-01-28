@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -144,7 +144,7 @@ modEntry
 ================
 */
 extern "C" MODULESHARED_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
-    mt.setPlatformCalls(( platformSyscallDef )syscallPtr );
+    mt.setPlatformCalls( reinterpret_cast<platformSyscallDef>( syscallPtr ));
 }
 
 /*
@@ -153,5 +153,5 @@ modRendererEntry
 ================
 */
 extern "C" MODULESHARED_EXPORT void modRendererEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
-    mt.setRendererCalls(( platformSyscallDef )syscallPtr );
+    mt.setRendererCalls( reinterpret_cast<platformSyscallDef>( syscallPtr ));
 }

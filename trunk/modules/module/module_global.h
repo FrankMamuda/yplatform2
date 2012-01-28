@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // defines
 //
-#if defined( MODULE_LIBRARY )
+#if defined( MODULE_BUILD )
 #  define MODULESHARED_EXPORT Q_DECL_EXPORT
 #else
 #  define MODULESHARED_EXPORT Q_DECL_IMPORT

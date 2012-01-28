@@ -127,15 +127,19 @@ extern "C" RENDERERSHARED_EXPORT QVariant rendererMain( RendererAPI::RendererAPI
         if ( !m.hasInitialized())
             return false;
 
+        //com.print( QString( "text renderer side %1 %2\n" ).arg( args.at( 0 ).toFloat()).arg( args.at( 1 ).toFloat()));
+
+
+
         // save colour, set new font colour
         rCmd.saveColour();
         rCmd.setColour( args.at( 4 ).toFloat(), args.at( 5 ).toFloat(), args.at( 6 ).toFloat(), args.at( 7 ).toFloat(), true );
 
         // draw Qt font
-        glImp.drawText( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), *( reinterpret_cast<QFont*>( args.at( 2 ).value<void*>())), args.at( 3 ).toString());
+        glImp.drawText( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), args.at( 2 ).value<QFont>(), args.at( 3 ).toString());
 
         // restore colour
-        rCmd.restoreColour();
+        rCmd.restoreColour();//*/
 
         break;
 

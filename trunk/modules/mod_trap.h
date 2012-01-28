@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -217,12 +217,12 @@ class Mod_Renderer : public QObject {
     Q_CLASSINFO( "description", "Renderer wrapper class" )
 
 public:
-    mtrHandle_t rLoadMaterial( const QString &filename ) { return static_cast<mtrHandle_t>( mt.call( ModuleAPI::Renderer, RendererAPI::LoadMaterial, filename ).toInt()); }
+    mtrHandle_t loadMaterial( const QString &filename ) { return static_cast<mtrHandle_t>( mt.call( ModuleAPI::Renderer, RendererAPI::LoadMaterial, filename ).toInt()); }
     void drawMaterial( float x, float y, float w, float h, mtrHandle_t handle ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, x, y, w, h, static_cast<int>( handle )); }
     void setColour( float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::SetColour, r, g, b, a ); }
     void setColour( const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->setColour( colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
-    void drawText( float x, float y, QFont *font, const QString &text, float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawText, x, y, qVariantFromValue( font ), text, r, g, b, a ); }
-    void drawText( float x, float y, QFont *font, const QString &text, const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->drawText( x, y, font, text, colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
+    void drawText( float x, float y, QFont font, const QString &text, float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawText, x, y, qVariantFromValue( font ), text, r, g, b, a ); }
+    void drawText( float x, float y, QFont font, const QString &text, const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->drawText( x, y, font, text, colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
     void reload() { mt.call( ModuleAPI::Renderer, RendererAPI::Reload ); }
 };
 #endif

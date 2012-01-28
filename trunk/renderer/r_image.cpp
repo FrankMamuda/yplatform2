@@ -52,7 +52,7 @@ R_Image::R_Image( const QString &filename, ClampModes mode, QObject *parent ) : 
         if ( filename.endsWith( ".tga" )) {
             // win32 can't handle targas natively
             unsigned int w, h;
-            imageBuffer = this->loadTargaImage( filename, len, buffer, w, h );
+            imageBuffer = this->loadTargaImage( filename, buffer.length(), reinterpret_cast<byte*>( buffer.data()), w, h );
             this->setWidth( w );
             this->setHeight( h );
             targa = true;

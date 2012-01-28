@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2009-2011 Edd 'Double Dee' Psycho
+Copyright (C) 2009-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ public slots:
 //
 // externals
 //
-#ifndef MODULE_LIBRARY
+#ifndef MODULE_BUILD
 extern class Sys_Common com;
 #endif
 
