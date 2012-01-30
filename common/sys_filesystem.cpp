@@ -70,9 +70,12 @@ void Sys_Filesystem::init() {
     fs_ignoreLinks = cv.create( "fs_ignoreLinks", "0", pCvar::Archive );
 
     // add searchPaths
+    this->addSearchPath( ":/", Filesystem::InternalPathID );
     this->addSearchPath( fs_homePath->string().append( fs_basePath->string()), Filesystem::HomePathID );
     this->addSearchPath( fs_appPath->string().append( fs_basePath->string()), Filesystem::AppPathID );
-    this->addSearchPath( ":/", Filesystem::InternalPathID );
+#ifndef YP2_FINAL_RELEASE
+    this->addSearchPath( QDir( "../yplatform2" ).absolutePath().append( "/" ).append( fs_basePath->string()), Filesystem::ProjectPathID );
+#endif
 
     // reset handles
     // -1 and 0 is reserved
@@ -179,7 +182,7 @@ void Sys_Filesystem::loadPackages() {
 addSearchPath
 ============
 */
-void Sys_Filesystem::addSearchPath( const QString &path, const QString id ) {
+void Sys_Filesystem::addSearchPath( const QString &path, const QString &id ) {
     pSearchPath *searchPath = new pSearchPath();
     searchPath->setPath( path );
     searchPath->setId( id );
@@ -192,7 +195,7 @@ void Sys_Filesystem::addSearchPath( const QString &path, const QString id ) {
 addSearchPath
 ============
 */
-void Sys_Filesystem::addSearchPath( pPackage *package, const QString &filename, const QString id ) {
+void Sys_Filesystem::addSearchPath( pPackage *package, const QString &filename, const QString &id ) {
     pSearchPath *searchPath = new pSearchPath();
     searchPath->setPackage( package );
     searchPath->setPath( filename );
@@ -926,12 +929,16 @@ void Sys_Filesystem::touch( const QStringList &args ) {
 listDirectory
 ============
 */
-QStringList Sys_Filesystem::listDirectory( const QString &searchDir, const QString &path, ListModes mode ) {
+QStringList Sys_Filesystem::listDirectory( QString searchDir, const QString &path, ListModes mode ) {
     QStringList foundFiles;
     QDir dir;
 
     // this is how we get local files
-    dir = QDir( path );
+    if ( searchDir != path )
+        dir = QDir( path + searchDir );
+    else
+        dir = QDir( path );
+
     if ( mode == ListAll )
         dir.setFilter( QDir::NoDotAndDotDot | QDir::AllEntries );
     else if ( mode == ListFiles )
@@ -943,26 +950,17 @@ QStringList Sys_Filesystem::listDirectory( const QString &searchDir, const QStri
         return QStringList();
     }
     QFileInfoList entryList = dir.entryInfoList();
-
-    // make sure to prepend the dir
     foreach ( QFileInfo info, entryList ) {
-        if ( info.isDir()) {
-            if ( searchDir == "." )
-                foundFiles << info.fileName().append( "/" );
-            else {
-                if ( path.startsWith( ":/" ))
-                    foundFiles << info.fileName().prepend( "/" ).prepend( searchDir ).replace( "//", "/" );
-                else
-                    foundFiles << info.fileName().append( "/" ).prepend( searchDir );
-            }
+        if ( searchDir.startsWith( "/" )) {
+            if ( !info.isDir())
+                foundFiles << searchDir.remove( 0, 1 ) + info.fileName();
+            else
+                foundFiles << searchDir.remove( 0, 1 ) + info.fileName().append( "/" );
         } else {
-            if ( searchDir != "." ) {
-                if ( path.startsWith( ":/" ))
-                    foundFiles << info.fileName().prepend( "/" ).prepend( searchDir ).replace( "//", "/" );
-                else
-                    foundFiles << info.fileName().prepend( searchDir );
-            } else
-                foundFiles << info.fileName();
+            if ( !info.isDir())
+                foundFiles << searchDir + info.fileName();
+            else
+                foundFiles << searchDir + info.fileName().append( "/" );
         }
     }
     return foundFiles;
@@ -973,77 +971,68 @@ QStringList Sys_Filesystem::listDirectory( const QString &searchDir, const QStri
 list
 ============
 */
-QStringList Sys_Filesystem::list( const QString &directory, const QRegExp &filter, ListModes mode ) {
-    bool ok;
+QStringList Sys_Filesystem::list( QString searchDir, const QRegExp &filter, ListModes mode ) {
     QStringList foundFiles;
-    QString path;
-    QString searchDir;
     int curDepth = 0;
     int entryDepth;
 
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::seek: filesystem not initialized\n" ));
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::list: filesystem not initialized\n" ));
         return QStringList();
     }
 
-    searchDir = directory;
+    if ( searchDir.startsWith( "." )) {
+        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::list: Dot and DotDot paths not supported\n" ));
+        return QStringList();
+    }
+
     if ( !searchDir.endsWith( "/" ))
         searchDir.append( "/" );
 
-    // internal files take priority
-    if ( directory.startsWith( ":/" ))
-        foundFiles << this->listDirectory( directory, directory, mode );
+    foreach ( pSearchPath *sp, this->searchPaths ) {
+        // this is how we get the packaged ones
+        if ( sp->type() == pFile::Package ) {
+            foreach ( pEntry *pFilePtr, sp->package()->fileList ) {
+                if ( pFilePtr->name().startsWith( searchDir ) || searchDir == "/" ) {
+                    // filter subdirs
+                    if ( searchDir != "/" )
+                        curDepth = searchDir.count( "/" );
 
-    // build fs path
-    path = this->buildPath( searchDir, fs_homePath->string() + fs_basePath->string(), &ok );
-    if ( ok ) {
-        foundFiles << this->listDirectory( searchDir, path, mode );
+                    if ( pFilePtr->name().endsWith( "/" ))
+                        entryDepth = pFilePtr->name().count( "/" ) - 1;
+                    else
+                        entryDepth = pFilePtr->name().count( "/" );
 
-        foreach ( pSearchPath *sp, this->searchPaths ) {
-            // this is how we get the packaged ones
-            if ( sp->type() == pFile::Package ) {
-                foreach ( pEntry *pFilePtr, sp->package()->fileList ) {
-                    if ( directory == "." || pFilePtr->name().startsWith( searchDir )) {
-                        // filter subdirs
-                        if ( directory != "." )
-                            curDepth = searchDir.count( "/" );
-
-                        if ( pFilePtr->name().endsWith( "/" ))
-                            entryDepth = pFilePtr->name().count( "/" ) - 1;
-                        else
-                            entryDepth = pFilePtr->name().count( "/" );
-
-                        if ( entryDepth == curDepth ) {
-                            if ( mode == ListAll )
+                    if ( entryDepth == curDepth ) {
+                        if ( mode == ListAll )
+                            foundFiles << pFilePtr->name();
+                        else if ( mode == ListFiles ) {
+                            if ( !pFilePtr->name().endsWith( "/" ))
                                 foundFiles << pFilePtr->name();
-                            else if ( mode == ListFiles ) {
-                                if ( !pFilePtr->name().endsWith( "/" ))
-                                    foundFiles << pFilePtr->name();
-                            } else if ( mode == ListDirs ) {
-                                if ( pFilePtr->name().endsWith( "/" ))
-                                    foundFiles << pFilePtr->name();
-                            } else {
-                                com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::list: invalid list mode\n" ));
-                                return QStringList();
-                            }
+                        } else if ( mode == ListDirs ) {
+                            if ( pFilePtr->name().endsWith( "/" ))
+                                foundFiles << pFilePtr->name();
+                        } else {
+                            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::list: invalid list mode\n" ));
+                            return QStringList();
                         }
                     }
                 }
             }
+        } else if ( sp->type() == pFile::Directory ) {
+            // assuming nobody tampered with the list priority goes like this:
+            //   internal > home > app > (project)
+            foundFiles << this->listDirectory( searchDir, sp->path(), mode );
         }
+    }
 
-        // filter
-        foundFiles = foundFiles.filter( filter );
-        foundFiles.removeDuplicates();
+    // filter
+    foundFiles = foundFiles.filter( filter );
+    foundFiles.removeDuplicates();
 
-        // return our files
-        return foundFiles;
-    } else
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::list: invalid path\n" ));
-
-    // nothing
-    return QStringList();
+    // return our files
+    return foundFiles;
 }
 
 /*
@@ -1052,19 +1041,21 @@ list
 ============
 */
 void Sys_Filesystem::list( const QStringList &args ) {
-    if ( args.isEmpty()) {
-        com.print( this->tr( "^3usage: ^2fs_list ^3[^2directory^3] (^2filter^3)\n" ));
-        return;
-    }
     QStringList filteredList;
 
+    // in case of no args, just list base (root) directory
     if ( args.count() == 2 )
         filteredList = this->list( args.first(), QRegExp( args.at( 1 )));
-    else
+    else if ( args.count() == 1 )
         filteredList = this->list( args.first());
+    else
+        filteredList = this->list( "/" );
 
     // announce
-    com.print( this->tr( "^3Directory of \"%1\"\n" ).arg( args.first()));
+    if ( args.isEmpty())
+        com.print( this->tr( "^3Base directory\n" ));
+    else
+        com.print( this->tr( "^3Directory of \"%1\"\n" ).arg( args.first()));
 
     // print out
     foreach ( QString str, filteredList )
@@ -1233,7 +1224,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
                 // if we in fact do have more than just "X:", store any additional
                 // path information separately in info.path
                 if ( *( start + loc.basePath + 1 ) == ':' &&
-                        *( start + loc.basePath + 2 ) != 0 )
+                     *( start + loc.basePath + 2 ) != 0 )
                     info.path = ( start + loc.basePath + 2 );
             }
 

@@ -49,6 +49,7 @@ class R_Main : public QObject {
 
 public:
     QList <R_Image*>imageList;
+    QStringList missingList;
     QList <R_Material*>mtrList;
     QList <R_MaterialStage*>mtrStageList;
     imgHandle_t defaultImage;

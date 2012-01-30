@@ -254,7 +254,13 @@ bool Sys_Cmd::execute( const QString &buffer ) {
                 continue;
             }
 
-            args.append( rx.cap( 1 ));
+            // remove double quotes
+            QString arg( rx.cap( 1 ));
+            if ( arg.startsWith( "\"" ) || arg.endsWith( "\"" )) {
+                arg.remove( 0, 1 );
+                arg.remove( arg.length()-1, 1 );
+            }
+            args.append( arg );
             pos += rx.matchedLength();
         }
 

@@ -19,7 +19,11 @@ r15:
 r16:
     -few fixes here and there
 
+r17
+    -double quotes fix
+    -fs.list fixes
+
 TODOs
     -cmd completion (filename, etc.)
     -revert long->int in fs (ck ioquake3 code)
-    -remove double quotes for cmd args
+
