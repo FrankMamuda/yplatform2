@@ -191,9 +191,9 @@ int App_Main::startup( int argc, char *argv[] ) {
     this->timer->start( delay );
 
     // print info
-    com.gui()->printImage( ":/icons/settings", 24, 24 );
+    com.gui()->printImage( "icons/settings", 24, 24 );
     com.print( this->tr( " ^5Platform: ^3initialization complete\n" ), 12 );
-    com.gui()->printImage( ":/icons/about", 16, 16 );
+    com.gui()->printImage( "icons/about", 16, 16 );
     com.print( this->tr( "^5 Info: ^3to see full command list, execute \"^5cmd_list^3\", use ^5TAB^3 for completion\n" ));
 
     // check args after base system has init

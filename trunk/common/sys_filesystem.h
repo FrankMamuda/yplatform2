@@ -61,6 +61,9 @@ namespace Filesystem {
     static const QString HomePathID( "homePath" );
     static const QString AppPathID( "appPath" );
     static const QString InternalPathID( "internalPath" );
+#ifndef YP2_FINAL_RELEASE
+    static const QString ProjectPathID( "projectPath" );
+#endif
 
     // default home paths on different platforms
 #ifdef Q_OS_WIN
@@ -221,13 +224,13 @@ public:
     bool exists( const QString &path, OpenFlags &flags, int &searchPathIndex );
     bool exists( const QString &path, OpenFlags flags, int &searchPathIndex );
     bool exists( const QString &path, OpenFlags flags = NoFlags );
-    QStringList list( const QString &directory, const QRegExp &filter = QRegExp(), ListModes mode = ListAll );
+    QStringList list( QString directory, const QRegExp &filter = QRegExp(), ListModes mode = ListAll );
     pFile *fileForHandle( fileHandle_t handle ) const;
 
 private:
     bool m_initialized;
-    void addSearchPath( const QString &path, const QString id = QString::null );
-    void addSearchPath( pPackage *package, const QString &filename, const QString id = QString::null );
+    void addSearchPath( const QString &path, const QString &id = QString::null );
+    void addSearchPath( pPackage *package, const QString &filename, const QString &id = QString::null );
     void openInWriteMode( const QString &filename, fileHandle_t &fHandle, OpenFlags flags = NoFlags );
     long openInAppendMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags = NoFlags );
     long openInReadMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags = NoFlags );
@@ -237,7 +240,7 @@ private:
     QList <pFile*> fileList;
     QString buildPath( const QString &filename, const QString &basePath, bool *ok );
     bool existsExt( QString &path, OpenFlags &flags, int &searchPathIndex );
-    QStringList listDirectory( const QString &searchDir, const QString &path, ListModes mode );
+    QStringList listDirectory( QString searchDir, const QString &path, ListModes mode );
     // win32 link handling
 #ifdef Q_OS_WIN
     bool readLink( const QString &filename, lnkInfo_t &info, OpenFlags flags );

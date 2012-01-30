@@ -151,6 +151,12 @@ imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode
         return -1;
     }
 
+    // check if we have already marked it as missing
+    foreach ( QString missing, this->missingList ) {
+        if ( !QString::compare( filename, missing ))
+            return m.defaultImage;
+    }
+
     // check if it exists
     foreach ( R_Image *imgPtr, this->imageList ) {
         if ( !QString::compare( imgPtr->name(), QString( QFileInfo( filename ).path() + "/" + QFileInfo( filename ).baseName()))) {
@@ -167,8 +173,7 @@ imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode
     // this may happen if we have no extension or file simply does not exist
     if ( !imgPtr->isValid()) {
         foreach ( QString ext, this->extensionList ) {
-            delete imgPtr;
-            imgPtr = new R_Image( QFileInfo( filename ).path() + "/" + QFileInfo( filename ).baseName() + ext, mode, this );
+            imgPtr->reload( QFileInfo( filename ).path() + "/" + QFileInfo( filename ).baseName() + ext, mode );
             if ( imgPtr->isValid())
                 break;
         }
@@ -186,6 +191,7 @@ imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode
             m.shutdown();
             return -1;
         }
+        this->missingList << filename;
 
         // return default image
         return m.defaultImage;

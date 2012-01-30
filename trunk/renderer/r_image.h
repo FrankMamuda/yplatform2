@@ -58,6 +58,7 @@ public:
     };
 
     explicit R_Image( const QString &, ClampModes mode = Repeat, QObject * = 0 );
+    void reload( const QString &filename, ClampModes mode = Repeat );
     ~R_Image();
     GLuint texture;
     int width() const { return this->m_width; }

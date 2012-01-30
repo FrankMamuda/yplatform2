@@ -7,5 +7,9 @@ r15 (v0.98.48):
     -casting stuff
     -porting to the new platform API
 
-TODO: multiple update() cmds for each context
-      notify of missing assets only once otherwise it's annoying
+r17 (v0.98.49):
+    -image loading fixes
+    -notifyng on missing assets only once
+
+TODO:
+    multiple update() cmds for each context

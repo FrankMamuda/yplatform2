@@ -32,6 +32,24 @@ construct
 ===================
 */
 R_Image::R_Image( const QString &filename, ClampModes mode, QObject *parent ) : QObject( parent ) {
+    this->reload( filename, mode );
+}
+
+/*
+===================
+destruct
+===================
+*/
+R_Image::~R_Image() {
+    glDeleteTextures( 1, &this->texture );
+}
+
+/*
+===================
+reload
+===================
+*/
+void R_Image::reload( const QString &filename, ClampModes mode ) {
     QImage image;
     QByteArray buffer;
     byte *imageBuffer = NULL;
@@ -88,15 +106,6 @@ R_Image::R_Image( const QString &filename, ClampModes mode, QObject *parent ) : 
 
     // all ok
     this->validate();
-}
-
-/*
-===================
-destruct
-===================
-*/
-R_Image::~R_Image() {
-    glDeleteTextures( 1, &this->texture );
 }
 
 /*

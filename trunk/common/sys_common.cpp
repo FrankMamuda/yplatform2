@@ -52,7 +52,7 @@ error
 */
 void Sys_Common::error( ErrorTypes type, const QString &msg ) {
     if ( this->gui()->hasInitialized()) {
-        com.gui()->printImage( ":/icons/panic", 16, 16 );
+        com.gui()->printImage( "icons/panic", 16, 16 );
         com.gui()->print( " " );
     }
 
