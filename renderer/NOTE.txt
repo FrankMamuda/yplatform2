@@ -1,2 +1,0 @@
-Renderer will be here as soon as it is ready.
-Renderer code is already in beta, so it might not be that long.

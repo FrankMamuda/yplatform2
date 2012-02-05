@@ -442,18 +442,14 @@ void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHa
         tmpDir = QFileInfo( filePtr->fHandle ).absoluteDir();
     } else {
         filePtr->fHandle.setFileName( QString( filename ).prepend( this->searchPaths.at( searchPathIndex )->path()));
-        tmpDir.setPath( this->searchPaths.at( searchPathIndex )->path());
+        tmpDir.setPath( this->searchPaths.at( searchPathIndex )->path() + QFileInfo( filename ).path());
     }
 
     if ( !tmpDir.exists()) {
-        if ( flags.testFlag( Absolute )) {
-            if ( !( flags.testFlag( Silent )))
-                com.print( this->tr( "^2Sys_Filesystem::openInWriteMode: ^3creating non-existant path \"%1\"\n" ).arg( tmpDir.absolutePath()));
+        if ( !( flags.testFlag( Silent )))
+            com.print( this->tr( "^2Sys_Filesystem::openInWriteMode: ^3creating non-existant path \"%1\"\n" ).arg( tmpDir.absolutePath()));
 
-            tmpDir.mkpath( tmpDir.absolutePath());
-        } else
-            tmpDir.mkpath( this->searchPaths.at( searchPathIndex )->path());
-
+        tmpDir.mkpath( tmpDir.absolutePath());
         if ( !tmpDir.exists()) {
             com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInWriteMode: could not create path \"%1\"\n" ).arg( this->searchPaths.at( searchPathIndex )->path()));
             return;

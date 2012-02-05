@@ -59,7 +59,7 @@ class pCmd : public QObject {
 
 public:
     // constructor
-    pCmd ( const QString &command, cmdCommand_t &function, const QString &description  ) {
+    pCmd ( const QString &command, cmdCommand_t &function, const QString &description ) {
         this->setName( command );
         this->setFunction( function );
         this->setDescription( description );
@@ -94,18 +94,27 @@ class Sys_Cmd : public QObject {
     Q_OBJECT
     Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
     Q_CLASSINFO( "description", "Command subsystem v3" )
+    Q_ENUMS( Execution )
 
 public:
+    // execution modes
+    enum Execution {
+        Direct = 0,
+        Delayed
+    };
     void add( const QString &, cmdCommand_t, const QString & = QString::null );
     void remove( const QString & );
-    bool execute( const QString & );
+    bool execute( const QString &, Execution = Direct );
+    void executeDelayed();
     bool hasInitialized() const { return this->m_initialized; }
     QList<pCmd*> cmdList;
     pCmd *find( const QString & ) const;
+    bool tokenize( const QString &string, QString &command, QStringList &arguments );
 
 private:
     bool executeTokenized( const QString &, const QStringList & );
     bool m_initialized;
+    QStringList delayedBuffer;
 
 public slots:
     void init();
@@ -114,7 +123,8 @@ public slots:
 
     // commands
     void list( const QStringList & );
-    void echo( const QStringList & );
+    void print( const QStringList & );
+    void printImage( const QStringList & );
     void exec( const QStringList & );
 };
 

@@ -21,7 +21,8 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // includes
 //
-#include "../gui/gui_about.h"
+#include "gui_about.h"
+#include "gui_license.h"
 #include "ui_gui_about.h"
 #include "../common/sys_shared.h"
 #include "../common/sys_common.h"
@@ -71,9 +72,10 @@ void Gui_About::changeEvent( QEvent *e ) {
 
 /*
 ================
-aboutQtButton->clicked
+licenseButton->clicked
 ================
 */
-void Gui_About::on_aboutQtButton_clicked() {
-    QApplication::aboutQt();
+void Gui_About::on_licenseButton_clicked() {
+    Gui_License l;
+    l.exec();
 }

@@ -33,7 +33,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 namespace Cvar {
     class Sys_Cvar;
-    static const QString DefaultConfigFile( "platform.xml" );
+    static const QString DefaultConfigFile( "config/platform.xml" );
 }
 
 //

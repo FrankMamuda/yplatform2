@@ -73,15 +73,5 @@ milliseconds
 ================
 */
 int Sys_Common::milliseconds() {
-    int curtime;
-    struct timeval tp;
-    gettimeofday( &tp, NULL );
-
-    if ( !timeBase ) {
-        timeBase = tp.tv_sec;
-        return tp.tv_usec / 1000;
-    }
-
-    curtime = ( tp.tv_sec - timeBase ) * 1000 + tp.tv_usec / 1000;
-    return curtime;
+    return m.time.elapsed();
 }

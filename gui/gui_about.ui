@@ -31,7 +31,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QGridLayout" name="gridLayout_2">
+    <layout class="QGridLayout" name="descLayout">
      <item row="0" column="1">
       <widget class="QLabel" name="appDescription">
        <property name="font">
@@ -134,11 +134,11 @@ p, li { white-space: pre-wrap; }
     </widget>
    </item>
    <item>
-    <layout class="QGridLayout" name="gridLayout">
+    <layout class="QGridLayout" name="buttonLayout">
      <item row="0" column="0">
-      <widget class="QPushButton" name="aboutQtButton">
+      <widget class="QPushButton" name="licenseButton">
        <property name="text">
-        <string>About Qt</string>
+        <string>License</string>
        </property>
        <property name="icon">
         <iconset resource="../resources/res_icons.qrc">
