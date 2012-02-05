@@ -36,6 +36,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // cvars
 //
 pCvar *gui_toolBarIconSize;
+pCvar *gui_restoreSize;
+pCvar *gui_windowWidth;
+pCvar *gui_windowHeight;
 
 //
 // commands
@@ -44,6 +47,7 @@ createSimpleCommandPtr( com.gui(), createSystemTray )
 createSimpleCommandPtr( com.gui(), removeSystemTray )
 createSimpleCommandPtr( com.gui(), hideOrMinimize )
 createSimpleCommandPtr( com.gui(), setWindowFocus )
+createSimpleCommandPtr( com.gui(), clearConsole )
 createSimpleCommandPtr( com.gui(), show )
 
 /*
@@ -73,6 +77,16 @@ void Gui_Main::setWindowFocus() {
 
 /*
 ================
+clearConsole
+================
+*/
+void Gui_Main::clearConsole() {
+    this->ui->consoleScreen->clear();
+    this->ui->consoleScreen->setHtml( QString( fs.readFile( Ui::DefaultConsoleHTML ).data()));
+}
+
+/*
+================
 hideOrMinimize
 ================
 */
@@ -94,8 +108,15 @@ void Gui_Main::init() {
     this->loadHistory( Ui::DefaultHistoryFile );
 
     // visuals
+    gui_restoreSize = cv.create( "gui_restoreSize", "0", pCvar::Archive );
     gui_toolBarIconSize = cv.create( "gui_toolBarIconSize", QString( "%1" ).arg( Ui::DefaultToolbarIconSize ), pCvar::Archive );
+    gui_windowWidth = cv.create( "gui_windowWidth", QString( "%1" ).arg( this->width()), pCvar::Archive );
+    gui_windowHeight = cv.create( "gui_windowHeight", QString( "%1" ).arg( this->height()), pCvar::Archive );
     this->toolBarIconSizeModified();
+
+    // restore size
+    if ( gui_restoreSize->integer())
+        this->resize( gui_windowWidth->integer(), gui_windowHeight->integer());
 
     // dynamic check on toolBar icon size
     this->connect( gui_toolBarIconSize, SIGNAL( valueChanged( QString, QString )), this, SLOT( toolBarIconSizeModified()));
@@ -106,6 +127,7 @@ void Gui_Main::init() {
     cmd.add( "gui_raise", showCmd, this->tr( "raise main window" ));
     cmd.add( "gui_hide", hideOrMinimizeCmd, this->tr( "hide main window" ));
     cmd.add( "gui_setFocus", setWindowFocusCmd, this->tr( "set focus on main window" ));
+    cmd.add( "con_clear", clearConsoleCmd, this->tr( "clear console" ));
 
     // add console icon
     this->ui->tabWidget->setTabIcon( 0, QIcon( ":/icons/console" ));
@@ -137,6 +159,12 @@ shutdown
 ================
 */
 void Gui_Main::shutdown() {
+    // store size if needed
+    if ( gui_restoreSize->integer()) {
+        gui_windowWidth->set( this->width());
+        gui_windowHeight->set( this->height());
+    }
+
     // save history
     this->saveHistory( Ui::DefaultHistoryFile );
 
@@ -146,6 +174,7 @@ void Gui_Main::shutdown() {
     cmd.remove( "gui_raise" );
     cmd.remove( "gui_hide" );
     cmd.remove( "gui_setFocus" );
+    cmd.remove( "con_clear" );
 
     // remove tabs
     this->tabWidgetTabs[Gui_Main::MainWindow].clear();
@@ -320,13 +349,100 @@ void Gui_Main::changeEvent( QEvent *e ) {
 
 /*
 ================
+completeCommand
+================
+*/
+bool Gui_Main::completeCommand( const QString &string ) {
+    int match = 0;
+    QStringList matchedStrings;
+    int y;
+
+    // find matching commands
+    foreach( QString str, this->cmdList ) {
+        if ( str.startsWith( this->ui->consoleInput->text(), Qt::CaseInsensitive ))
+            matchedStrings << str;
+    }
+
+    // make sure we don't print same stuff all the time
+    if ( !this->hasNewText()) {
+        if ( matchedStrings == this->lastMatch )
+            return true;
+    }
+
+    // complete to shortest string
+    if ( matchedStrings.count() == 1 ) {
+        // append extra space (since it's the only match that will likely be follwed by an argument)
+        this->ui->consoleInput->setText( matchedStrings.first() + " " );
+    } else if ( matchedStrings.count() > 1 ) {
+        match = 1;
+        for ( y = 0; y < matchedStrings.count(); y++ ) {
+            // make sure we check string length
+            if ( matchedStrings.first().length() == match || matchedStrings.at( y ).length() == match )
+                break;
+
+            if ( matchedStrings.first().at( match ) == matchedStrings.at( y ).at( match )) {
+                if ( y == matchedStrings.count()-1 ) {
+                    match++;
+                    y = 0;
+                }
+            }
+        }
+        this->ui->consoleInput->setText( matchedStrings.first().left( match ));
+    } else if ( !matchedStrings.count()) {
+        return true;
+    }
+
+    // print out suggestions
+    this->printImage( "icons/about", 16, 16 );
+    com.print( this->tr( " ^5Available commands and cvars:\n" ));
+    foreach ( QString str, matchedStrings ) {
+        // check commands
+        pCmd *cmdPtr;
+        cmdPtr = cmd.find( str );
+        if ( cmdPtr != NULL ) {
+            if ( !cmdPtr->description().isEmpty()) {
+                com.print( QString( " ^3\"%1\"^5 - ^3%2\n" ).arg( str, cmdPtr->description()));
+            } else {
+                com.print( QString( " ^3\"%1\n" ).arg( str ));
+            }
+        }
+
+        // check variables
+        pCvar *cvarPtr = cv.find( str );
+
+        // perform a variable print or set
+        if ( cvarPtr != NULL ) {
+            if ( !cvarPtr->description().isEmpty()) {
+                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5 - ^3%3\n" ).arg(
+                               cvarPtr->name(),
+                               cvarPtr->string(),
+                               cvarPtr->description()
+                               ));
+            } else {
+                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"\n" ).arg(
+                               cvarPtr->name(),
+                               cvarPtr->string()));
+            }
+        }
+    }
+
+    // add extra newline
+    com.print( "\n" );
+
+    // store the matched strinds
+    this->lastMatch = matchedStrings;
+    this->setNewText( false );
+
+    // done
+    return true;
+}
+
+/*
+================
 eventFilter
 ================
 */
 bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
-    int sMatch = 0;
-    int y;
-
     if ( object == this->ui->consoleInput ) {
         if ( this->ui->consoleInput->hasFocus()) {
             if ( event->type() == QEvent::KeyPress ) {
@@ -371,82 +487,11 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
 
                     // complete command
                 } else if ( keyEvent->key() == Qt::Key_Tab ) {
-                    QStringList match;
-
                     // abort if no text at all
                     if ( this->ui->consoleInput->text().isEmpty())
                         return true;
 
-                    // TODO: check against completion
-                    if ( this->ui->consoleInput->text().contains( ' ' )) {
-                    } else {
-                        foreach( QString str, this->cmdList ) {
-                            if ( str.startsWith( this->ui->consoleInput->text(), Qt::CaseInsensitive ))
-                                match << str;
-                        }
-
-                        // make sure we don't print same stuff all the time
-                        if ( !this->hasNewText()) {
-                            if ( match == this->lastMatch )
-                                return true;
-                        }
-
-                        // complete to shortest string
-                        if ( match.count() == 1 ) {
-                            // append extra space
-                            this->ui->consoleInput->setText( match.first() + " " );
-                        } else if ( match.count() > 1 ) {
-                            sMatch = 1;
-                            for ( y = 0; y < match.count(); y++ ) {
-                                if ( match.first().at(sMatch) == match.at(y).at(sMatch)) {
-                                    if ( y == match.count()-1 ) {
-                                        sMatch++;
-                                        y = 0;
-                                    }
-                                }
-                            }
-                            this->ui->consoleInput->setText( match.first().left( sMatch ));
-                        } else if ( !match.count()) {
-                            return true;
-                        }
-
-                        this->printImage( ":/icons/about", 16, 16 );
-                        com.print( this->tr( " ^5Available commands and cvars:\n" ));
-                        foreach ( QString str, match ) {
-                            // check commands
-                            pCmd *cmdPtr;
-                            cmdPtr = cmd.find( str );
-                            if ( cmdPtr != NULL ) {
-                                if ( !cmdPtr->description().isEmpty()) {
-                                    com.print( QString( " ^3\"%1\"^5 - ^3%2\n" ).arg( str, cmdPtr->description()));
-                                } else {
-                                    com.print( QString( " ^3\"%1\n" ).arg( str ));
-                                }
-                            }
-
-                            // check variables
-                            pCvar *cvarPtr = cv.find( str );
-
-                            // perform a variable print or set
-                            if ( cvarPtr != NULL ) {
-                                if ( !cvarPtr->description().isEmpty()) {
-                                    com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5 - ^3%3\n" ).arg(
-                                                   cvarPtr->name(),
-                                                   cvarPtr->string(),
-                                                   cvarPtr->description()
-                                                   ));
-                                } else {
-                                    com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"\n" ).arg(
-                                                   cvarPtr->name(),
-                                                   cvarPtr->string()));
-                                }
-                            }
-                        }
-                        com.print( "\n" );
-                        this->lastMatch = match;
-                        this->setNewText( false );
-                    }
-                    return true;
+                    return completeCommand( this->ui->consoleInput->text());
                 }
             }
             return false;

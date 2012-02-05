@@ -23,6 +23,16 @@ r17
     -double quotes fix
     -fs.list fixes
 
+r18
+    -renamed some commands
+    -added sys_msec, con_clear, con_prinImage commands
+    -enabled command delaying (for modules)
+    -writing to non-existant dirs fixed
+    -last window size now can be restored
+    -fixes in cmd completion
+    -some other fixes and rewrites
+	-license info
+
 TODOs
     -cmd completion (filename, etc.)
     -revert long->int in fs (ck ioquake3 code)

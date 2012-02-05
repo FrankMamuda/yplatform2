@@ -433,7 +433,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CmdExecute [command string]\n" ));
             return false;
         }
-        cmd.execute( args.first().toString());
+        cmd.execute( args.first().toString(), Sys_Cmd::Delayed );
         return true;
 
         //

@@ -40,6 +40,7 @@ namespace Ui {
     static const int MaxConsoleHistory = 32;
     static const int DefaultToolbarIconSize = 48;
     static const QString DefaultHistoryFile( "history.xml" );
+    static const QString DefaultConsoleHTML( "platform/consoleText.html" );
 }
 
 typedef struct customTabDef_s {
@@ -94,6 +95,7 @@ private:
     QStringList lastMatch;
     QStringList history;
     QImage *addImageResource( const QString &filename, int w = 0, int h = 0 );
+    bool completeCommand( const QString &string );
 
     // actions
     QAction *settigsAction;
@@ -158,6 +160,7 @@ public slots:
     void setConsoleState( ModuleAPI::ConsoleState state );
     void addToCompleter( const QString &cmd );
     void removeFromCompleter( const QString &cmd );
+    void clearConsole();
 
     // property setters
     void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }

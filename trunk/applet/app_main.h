@@ -43,7 +43,8 @@ class App_Main : public QObject {
 
 public:
     int startup( int, char*[] );
-
+    App_Main() { time.start(); }
+    QTime time;
 
 public slots:
     void update();
@@ -53,6 +54,7 @@ public slots:
 #ifndef YP2_FINAL_RELEASE
     void fatalError();
 #endif
+    void milliseconds();
 
 private:
     void parseArgs( int, char*[] );

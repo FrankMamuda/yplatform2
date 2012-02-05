@@ -51,7 +51,7 @@ private:
     Ui::Gui_About *m_ui;
 
 private slots:
-    void on_aboutQtButton_clicked();
+    void on_licenseButton_clicked();
 };
 
 #endif // GUI_ABOUT_H

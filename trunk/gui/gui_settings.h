@@ -64,12 +64,15 @@ private slots:
     void saveCvars();
     void intializeCvars();
 
+    void on_restoreSize_stateChanged(int arg1);
+
 private:
     bool m_cvarsLocked;
     Ui::Gui_Settings *ui;
     bool s_fsDebug;
     bool s_modExtract;
     unsigned int s_guiIconSize;
+    bool s_restoreSize;
     bool s_ignoreLinks;
 };
 

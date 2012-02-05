@@ -30,7 +30,8 @@ HEADERS += \
     modules/mod_public.h \
     common/sys_package.h \
     common/sys_packagefunc.h \
-    gui/gui_settings.h
+    gui/gui_settings.h \
+    gui/gui_license.h
 
 win32:HEADERS += common/sys_link.h
 win32:RC_FILE = resources/platform/YPlatform2.rc
@@ -48,7 +49,8 @@ SOURCES += \
     gui/gui_about.cpp \
     common/sys_package.cpp \
     common/sys_packagefunc.cpp \
-    gui/gui_settings.cpp
+    gui/gui_settings.cpp \
+    gui/gui_license.cpp
 
 win32:INCLUDEPATH += includes
 
@@ -57,7 +59,8 @@ QT += xml
 FORMS += \
     gui/gui_main.ui \
     gui/gui_about.ui \
-    gui/gui_settings.ui
+    gui/gui_settings.ui \
+    gui/gui_license.ui
 
 OTHER_FILES += \
     CHANGELOG.txt
@@ -66,7 +69,3 @@ RESOURCES += \
     resources/res_icons.qrc
 
 TRANSLATIONS = i18n/YPlatform2_lv_LV.ts
-
-
-
-

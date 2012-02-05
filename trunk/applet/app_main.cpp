@@ -38,6 +38,7 @@ class App_Main m;
 // commands
 //
 createSimpleCommand( m, shutdown )
+createSimpleCommand( m, milliseconds )
 #ifndef YP2_FINAL_RELEASE
 createSimpleCommand( m, fatalError )
 #endif
@@ -57,8 +58,9 @@ void App_Main::shutdown() {
         mod.shutdown();
         cmd.remove( "exit" );
 #ifndef YP2_FINAL_RELEASE
-        cmd.remove( "fatalError" );
+        cmd.remove( "sys_fatalError" );
 #endif
+        cmd.remove( "sys_msec" );
         cv.saveConfig( Cvar::DefaultConfigFile );
         cmd.shutdown();
         pkg.shutdown();
@@ -67,6 +69,15 @@ void App_Main::shutdown() {
     }
 
     QApplication::quit();
+}
+
+/*
+================
+milliseconds
+================
+*/
+void App_Main::milliseconds() {
+    com.print( this->tr( "^5%1 ^2milliseconds have elapsed\n" ).arg( com.milliseconds()));
 }
 
 /*
@@ -109,12 +120,9 @@ void App_Main::parseArgs( int argc, char *argv[] ) {
         return;
 
     // reset counter
-    y = 0;
-    foreach ( QString str, argList ) {
-        if ( y != 0 )
-            cmd.execute( str );
-        y++;
-    }
+    argList.removeFirst();
+    foreach ( QString str, argList )
+        cmd.execute( str );
 }
 
 /*
@@ -123,6 +131,9 @@ update
 ================
 */
 void App_Main::update() {
+    // execute delayed command buffer
+    cmd.executeDelayed();
+
     if ( !com.hasCaughtError())
         mod.update();
 
@@ -180,9 +191,10 @@ int App_Main::startup( int argc, char *argv[] ) {
     com.gui()->init();
 
 #ifndef YP2_FINAL_RELEASE
-    cmd.add( "fatalError", fatalErrorCmd, this->tr( "let's have some fish" ));
+    cmd.add( "sys_fatalError", fatalErrorCmd, this->tr( "let's have some fish" ));
 #endif
     cmd.add( "exit", shutdownCmd, this->tr( "shutdown platform" ));
+    cmd.add( "sys_msec", millisecondsCmd, this->tr( "print out elapsed milliseconds" ));
 
     // set defaults for event handling & update subSystems
     delay = ( 1000 / Main::PlatformUpdateFrequency );

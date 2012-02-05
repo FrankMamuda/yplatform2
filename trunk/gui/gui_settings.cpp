@@ -34,6 +34,7 @@ extern pCvar *gui_toolBarIconSize;
 extern pCvar *fs_debug;
 extern pCvar *fs_ignoreLinks;
 extern pCvar *mod_extract;
+extern pCvar *gui_restoreSize;
 
 /*
 ================
@@ -81,6 +82,13 @@ void Gui_Settings::intializeCvars() {
     // set default values
     this->s_guiIconSize = gui_toolBarIconSize->integer();
     this->ui->iconSize->setValue( this->s_guiIconSize );
+
+    // set default values
+    this->s_restoreSize = gui_restoreSize->integer();
+    if ( this->s_restoreSize )
+        this->ui->restoreSize->setCheckState( Qt::Checked );
+    else
+        this->ui->restoreSize->setCheckState( Qt::Unchecked );
 
     // unlock cvars
     this->lockCvars( false );
@@ -144,6 +152,7 @@ void Gui_Settings::saveCvars() {
     mod_extract->set( this->s_modExtract );
     fs_debug->set( this->s_fsDebug );
     fs_ignoreLinks->set( this->s_ignoreLinks );
+    gui_restoreSize->set( this->s_restoreSize );
 }
 
 /*
@@ -201,4 +210,19 @@ void Gui_Settings::on_ignoreLinks_stateChanged( int state ) {
         this->s_ignoreLinks = true;
     else
         this->s_ignoreLinks = false;
+}
+
+/*
+================
+restoreSize->stateChanged
+================
+*/
+void Gui_Settings::on_restoreSize_stateChanged( int state ){
+    if ( this->cvarsLocked())
+        return;
+
+    if ( state == Qt::Checked )
+        this->s_restoreSize = true;
+    else
+        this->s_restoreSize = false;
 }

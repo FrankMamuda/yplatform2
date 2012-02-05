@@ -35,7 +35,8 @@ class Sys_Cmd cmd;
 // commands
 //
 createCommand( cmd, exec )
-createCommand( cmd, echo )
+createCommand( cmd, print )
+createCommand( cmd, printImage )
 createCommand( cmd, list )
 
 /*
@@ -45,9 +46,10 @@ init
 */
 void Sys_Cmd::init() {
     // add common commands
-    this->add( "exec", execCmd, this->tr( "exec xml configuration file(s)" ));
+    this->add( "cmd_exec", execCmd, this->tr( "exec xml configuration file(s)" ));
     this->add( "cmd_list", listCmd, this->tr( "list all available commands" ));
-    this->add( "echo", echoCmd, this->tr( "echo text to console" ));
+    this->add( "con_print", printCmd, this->tr( "print text to console" ));
+    this->add( "con_printImage", printImageCmd, this->tr( "print an image to console" ));
 
     // we are initialized
     this->setInitialized();
@@ -79,7 +81,7 @@ void Sys_Cmd::shutdown() {
 add
 ============
 */
-void Sys_Cmd::add( const QString &command, cmdCommand_t function, const QString &description  ) {
+void Sys_Cmd::add( const QString &command, cmdCommand_t function, const QString &description ) {
     // failsafe
     if ( this->find( command ) != NULL ) {
         com.print( this->tr( "^2Sys_Cmd::add: command ^3\"%1\" already exists\n" ).arg( command ));
@@ -112,11 +114,31 @@ void Sys_Cmd::remove( const QString &command ) {
 
 /*
 ============
-echo
+print
 ============
 */
-void Sys_Cmd::echo( const QStringList &args ) {
+void Sys_Cmd::print( const QStringList &args ) {
+    if ( args.count() < 1 ) {
+        com.print( this->tr( "^3usage: ^2con_print ^3[^2message^3] - print text to console\n" ));
+        return;
+    }
+
+    // just merge everything into a single message
     com.print( QString( "%1\n" ).arg( args.join( " " )));
+}
+
+/*
+============
+echoImage
+============
+*/
+void Sys_Cmd::printImage( const QStringList &args ) {
+    if ( args.count() != 3 ) {
+        com.print( this->tr( "^3usage: ^2con_printImage ^3[^2filename^3] ^3[^2width^3] ^3[^2height^3] - print an image to console\n" ));
+        return;
+    }
+
+    com.gui()->printImage( args.at( 0 ), args.at( 1 ).toInt(), args.at( 2 ).toInt());
 }
 
 /*
@@ -212,61 +234,91 @@ pCmd *Sys_Cmd::find( const QString &command ) const {
 
 /*
 ============
+tokenize
+============
+*/
+bool Sys_Cmd::tokenize( const QString &string, QString &command, QStringList &arguments ) {
+    int pos = 0, len;
+    QString capture;
+    QRegExp rx;
+
+    // make sure input is blank
+    command.clear();
+    arguments.clear();
+
+    // set capture pattern
+    rx.setPattern( "((?:[^\\s\"]+)|(?:\"(?:\\\\\"|[^\"])*\"))" );
+
+    // tokenize the string
+    while (( pos = rx.indexIn( string, pos )) != -1 ) {
+        capture = rx.cap( 1 );
+        len = rx.matchedLength();
+
+        // the first one should be the command
+        if ( command.isEmpty()) {
+            command = capture;
+            pos += len;
+            continue;
+        }
+
+        // then follow the arguments
+        // make sure we remove extra quotes
+        if ( capture.startsWith( "\"" ) || capture.endsWith( "\"" )) {
+            capture.remove( 0, 1 );
+            capture.remove( capture.length()-1, 1 );
+        }
+        arguments.append( capture );
+        pos += len;
+    }
+
+    if ( command.isEmpty())
+        return false;
+    else
+        return true;
+}
+
+/*
+============
 execute
 ============
 */
-bool Sys_Cmd::execute( const QString &buffer ) {
-    int pos = 0;
-    bool commandPending;
-    QString cmd;
-    QStringList args, lineSep;
+bool Sys_Cmd::execute( const QString &buffer, Execution mode ) {
+    int counter = 0;
+    QString command;
+    QStringList arguments, separated;
+
+    // delayed buffer
+    if ( mode == Delayed ) {
+        this->delayedBuffer << buffer;
+        return true;
+    }
 
     // separate multiline commands first
-    lineSep = buffer.split( '\n' );
+    separated = buffer.split( QRegExp( ";|\\n" ));
 
-    // parse each line separately, split commands by semicolon
-    foreach ( QString cmdString , lineSep ) {
-        // reset
-        commandPending = true;
-        args.clear();
-        cmd.clear();
-        pos = 0;
-
-        // tokenize the string and preserve quotes
-        QRegExp rx( "((?:[^\\s\"]+)|(?:\"(?:\\\\\"|[^\"])*\"))" );
-        while (( pos = rx.indexIn( cmdString, pos )) != -1 ) {
-            if ( rx.cap( 1 ).at( 0 ) == QChar( ';' )) {
-                commandPending = true;
-                pos += rx.matchedLength();
-
-                if ( !cmd.isEmpty()) {
-                    return this->executeTokenized( cmd, args );
-                    cmd.clear();
-                    args.clear();
-                }
-                continue;
-            }
-
-            if ( commandPending ) {
-                cmd = rx.cap( 1 );
-                pos += rx.matchedLength();
-                commandPending = false;
-                continue;
-            }
-
-            // remove double quotes
-            QString arg( rx.cap( 1 ));
-            if ( arg.startsWith( "\"" ) || arg.endsWith( "\"" )) {
-                arg.remove( 0, 1 );
-                arg.remove( arg.length()-1, 1 );
-            }
-            args.append( arg );
-            pos += rx.matchedLength();
-        }
-
-        // execute leftovers
-        if ( !cmd.isEmpty())
-            return this->executeTokenized( cmd, args );
+    // parse separated command strings
+    foreach ( QString string, separated ) {
+        // tokenize & execute command
+        if ( this->tokenize( string, command, arguments ))
+            counter += this->executeTokenized( command, arguments );
     }
-    return false;
+
+    if ( counter )
+        return true;
+    else
+        return false;
+}
+
+/*
+============
+executeDelayed
+============
+*/
+void Sys_Cmd::executeDelayed() {
+    if ( this->delayedBuffer.isEmpty())
+        return;
+
+    // just add extra newline
+    this->execute( this->delayedBuffer.join( "\n" ));
+    this->delayedBuffer.clear();
 }
