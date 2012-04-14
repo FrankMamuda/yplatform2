@@ -19,11 +19,11 @@ r15:
 r16:
     -few fixes here and there
 
-r17
+r17:
     -double quotes fix
     -fs.list fixes
 
-r18
+r18:
     -renamed some commands
     -added sys_msec, con_clear, con_prinImage commands
     -enabled command delaying (for modules)
@@ -31,9 +31,15 @@ r18
     -last window size now can be restored
     -fixes in cmd completion
     -some other fixes and rewrites
-	-license info
+    -license info
+
+r19:
+    -perliminary check of missing modules
+    -platform flags (such as loaded renderer, etc.)
+    -javascript cmds
+    -probably more (can't remember)
+
 
 TODOs
     -cmd completion (filename, etc.)
     -revert long->int in fs (ck ioquake3 code)
-

@@ -71,6 +71,7 @@ public slots:
     void resizeScreen();
     void update();
     void drawText( float x, float y, QFont font, const QString &text );
+    void setWindowTitle( const QString &title );
 
     // property setters
     void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }

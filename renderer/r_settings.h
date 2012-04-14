@@ -45,7 +45,7 @@ class R_Settings : public QWidget {
 public:
     explicit R_Settings( QWidget *parent = 0 );
     ~R_Settings();
-    bool cvarsLocked() const { return this->m_cvarsLocked; };
+    bool cvarsLocked() const { return this->m_cvarsLocked; }
 
 public slots:
     void saveCvars();
@@ -59,11 +59,13 @@ private:
     bool s_adjust;
     int s_mode;
     bool m_cvarsLocked;
+    bool s_hideOnESC;
 
 private slots:
-    void lockCvars( bool lock = true ) { this->m_cvarsLocked = lock; };
+    void lockCvars( bool lock = true ) { this->m_cvarsLocked = lock; }
     void on_adjustScreen_stateChanged( int );
     void on_screenMode_currentIndexChanged(int index);
+    void on_hideOnESC_stateChanged(int arg1);
 };
 
 #endif // R_SETTINGS_H

@@ -57,6 +57,8 @@ protected:
 class Sys_Module : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Module handling subsystem" )
+    Q_DECLARE_FLAGS ( PlatformFlags, ModuleAPI::Flags )
+    Q_PROPERTY( PlatformFlags flags READ flags WRITE setFlags )
 
 public slots:
     void init();
@@ -69,6 +71,7 @@ public slots:
     void populateListWidget();
     void createWidget();
     void destroyWidget();
+    void setFlags( PlatformFlags flags ) { this->m_flags = flags; }
 
     // commands
     void load( const QStringList & );
@@ -82,6 +85,7 @@ private:
     QListWidget *modListWidget;
     void toggleFromList( QListWidgetItem *item );
     void itemLoadError( const QString &errorMessage );
+    PlatformFlags m_flags;
 
     // widget items
     QGridLayout *mLayout;
@@ -93,6 +97,7 @@ private:
 public:
     QVariant platformSyscalls( ModuleAPI::PlatformAPICalls callNum, const QVariantList &args );
     QVariant rendererSyscalls( RendererAPI::RendererAPICalls, const QVariantList &args );
+    PlatformFlags flags() const { return this->m_flags; }
 
 private slots:
     void listWidgetAction();

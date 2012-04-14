@@ -169,10 +169,13 @@ extern "C" RENDERERSHARED_EXPORT QVariant rendererMain( RendererAPI::RendererAPI
         else
             return static_cast<int>( RendererAPI::Hidden );
 
-
     case RendererAPI::Reload:
         m.shutdown( true );
         m.init( true );
+        break;
+
+    case RendererAPI::SetWindowTitle:
+        glImp.setWindowTitle( args.at( 0 ).toString());
         break;
     }
 

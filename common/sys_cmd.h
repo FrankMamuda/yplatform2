@@ -54,7 +54,9 @@ class pCmd : public QObject {
     Q_CLASSINFO( "description", "Platform console command" )
     Q_PROPERTY( QString name READ name WRITE setName )
     Q_PROPERTY( QString description READ description WRITE setDescription )
+    Q_PROPERTY( bool scripted READ isScripted WRITE setScripted )
     Q_PROPERTY( cmdCommand_t function READ function WRITE setFunction )
+    Q_PROPERTY( QScriptValue scriptFunction READ scriptFunction WRITE setScriptFunction )
     Q_DISABLE_COPY( pCmd )
 
 public:
@@ -63,15 +65,26 @@ public:
         this->setName( command );
         this->setFunction( function );
         this->setDescription( description );
+        this->setScripted( false );
+    }
+    // constructor
+    // should be pointer??
+    pCmd ( const QString &command, QScriptValue &function, const QString &description ) {
+        this->setName( command );
+        this->setScriptFunction( function );
+        this->setDescription( description );
+        this->setScripted();
     }
 
     // property getters
     QString name() const { return this->m_name; }
     QString description() const { return this->m_description; }
     cmdCommand_t function() const { return this->m_function; }
+    QScriptValue scriptFunction() const { return this->m_scriptFunction; }
+    bool isScripted() const { return this->m_scripted; }
 
     // other funcs
-    void execute( const QStringList &args ) { this->m_function( args ); }
+    void execute( const QStringList &args );
     bool hasFunction() const { if ( this->m_function != NULL ) return true; return false; }
 
 public slots:
@@ -79,12 +92,16 @@ public slots:
     void setName( const QString &command ) { this->m_name = command; }
     void setDescription( const QString &description ) { this->m_description = description; }
     void setFunction( const cmdCommand_t &function ) { this->m_function = function; }
+    void setScriptFunction( const QScriptValue &function ) { this->m_scriptFunction = function; }
+    void setScripted( bool scripted = true ) { this->m_scripted = scripted; }
 
 private:
     // properties
     cmdCommand_t m_function;
+    QScriptValue m_scriptFunction;
     QString m_name;
     QString m_description;
+    bool m_scripted;
 };
 
 //
@@ -103,6 +120,7 @@ public:
         Delayed
     };
     void add( const QString &, cmdCommand_t, const QString & = QString::null );
+    void add( const QString &, QScriptValue, const QString & = QString::null );
     void remove( const QString & );
     bool execute( const QString &, Execution = Direct );
     void executeDelayed();

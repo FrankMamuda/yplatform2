@@ -1,0 +1,9 @@
+r19:
+    -initial release (along with the powerful scripting engine)
+    -WARNING: project is in ALPHA stage at best)
+
+TODO:
+    check for loaded scripts (cannot reload same script)
+    implement focusing
+    lots of other stuff to do
+    interface builder (+icon in toolbar)

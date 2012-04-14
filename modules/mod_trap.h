@@ -31,7 +31,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "mod_cvarfunc.h"
 #ifdef R_BUILD
 #include "renderer_global.h"
-#include <QtScript>
 #else
 #include "module_global.h"
 #ifdef RENDERER_ENABLED
@@ -109,7 +108,7 @@ class Mod_Common : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Common function wrapper class" )
 
-public:
+public slots:
     void print( const QString &msg ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComPrint, msg ); }
     void error( int type, const QString &msg ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComError, type, msg ); }
     int milliseconds() { return mt.call( ModuleAPI::Platform, ModuleAPI::ComMilliseconds ).toInt(); }
@@ -123,7 +122,7 @@ class Mod_Filesystem : public QObject {
     Q_CLASSINFO( "description", "Filesystem wrapper class" )
 
 public:
-    int open( int mode, const QString &path, fileHandle_t *fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsOpen, mode, path, qVariantFromValue( fHandle ), static_cast<int>( flags )).toInt(); }
+    int open( pFile::OpenModes mode, const QString &path, fileHandle_t *fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsOpen, mode, path, qVariantFromValue( fHandle ), static_cast<int>( flags )).toInt(); }
     void close( const fileHandle_t fHandle, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { mt.call( ModuleAPI::Platform, ModuleAPI::FsClose, fHandle, static_cast<int>( flags )); }
     void close( const QString &filename, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { mt.call( ModuleAPI::Platform, ModuleAPI::FsCloseByName, filename, static_cast<int>( flags )); }
     bool exists( const QString &path, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsExists, path, static_cast<int>( flags )).toBool(); }
@@ -135,6 +134,7 @@ public:
     void print( const fileHandle_t fHandle, const QString &msg, Sys_Filesystem::OpenFlags flags = Sys_Filesystem::NoFlags ) { mt.call( ModuleAPI::Platform, ModuleAPI::FsPrint, fHandle, msg, static_cast<int>( flags )); }
     bool extract( const QString &filename ) { return mt.call( ModuleAPI::Platform, ModuleAPI::FsExtract, filename ).toBool(); }
     QStringList listFiles( const QString &directory, const QRegExp &filter = QRegExp(), Sys_Filesystem::ListModes mode = Sys_Filesystem::ListAll );
+    QString defaultExtension( const QString &filename, const QString &extension ) const { if ( !filename.endsWith( extension )) return filename + extension; else return filename; }
 };
 
 //
@@ -146,6 +146,9 @@ class Mod_Cmd : public QObject {
 
 public:
     void add( const QString &cmdName, cmdCommand_t cmd, const QString &description = QString::null ) { mt.call( ModuleAPI::Platform, ModuleAPI::CmdAdd, cmdName, qVariantFromValue( cmd ), description ); }
+
+public slots:
+    void add( const QString &cmdName, QScriptValue cmd, const QString &description = QString::null ) { mt.call( ModuleAPI::Platform, ModuleAPI::CmdAddScripted, cmdName, qVariantFromValue( cmd ), description ); }
     void remove( const QString &cmdName ) { mt.call( ModuleAPI::Platform, ModuleAPI::CmdRemove, cmdName ); }
     void execute( const QString &cmd ) { mt.call( ModuleAPI::Platform, ModuleAPI::CmdExecute, cmd ); }
 };
@@ -162,12 +165,14 @@ private:
     QList <mCvar*>cvarList;
 
 public:
+    void update( const QString &cvarName, const QString &string );
+    void clear();
+
+public slots:
     mCvar *create( const QString &name, const QString &string, pCvar::Flags = pCvar::NoFlags, const QString &desc = QString::null );
     bool set( const QString &name, const QString &string, bool force = false ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarSet, name, string, force ).toBool(); }
     QString get( const QString &name ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarGet, name ).toString(); }
     void reset( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::CvarReset, name ); }
-    void update( const QString &cvarName, const QString &string );
-    void clear();
     mCvar *find( const QString &name ) const;
 };
 
@@ -190,10 +195,6 @@ class Mod_Gui : public QObject {
     Q_CLASSINFO( "description", "Platform gui wrapper class" )
 
 public:
-    void raise() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRaise ); }
-    void hide() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiHide ); }
-    void createSystemTray() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiCreateSystray ); }
-    void removeSystemTray() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSystray ); }
     void removeAction( ModuleAPI::ToolBarActions id ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveAction, static_cast<ModuleAPI::ToolBarActions>( id )); }
     void addToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddToolBar, qVariantFromValue( reinterpret_cast<void*>( toolBarPtr ))); }
     void removeToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveToolBar, qVariantFromValue( reinterpret_cast<void*>( toolBarPtr ))); }
@@ -204,9 +205,29 @@ public:
     void setConsoleState( int state ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiSetConsoleState, static_cast<int>( state )); }
     void addSettingsTab( QWidget *widget, const QString &name, const QString &icon = QString()) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddSettingsTab, qVariantFromValue( widget ), name, icon ); }
     void removeSettingsTab( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSettingsTab, name ); }
+
+public slots:
+    void raise() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRaise ); }
+    void hide() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiHide ); }
+    void createSystemTray() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiCreateSystray ); }
+    void removeSystemTray() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSystray ); }
     void showTabWidget() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiShowTabWidget ); }
     void hideTabWidget() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiHideTabWidget ); }
 };
+
+//
+// class::Mod_Platform
+//
+#ifdef RENDERER_ENABLED
+class Mod_Platform : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO( "description", "Platform function wrapper class" )
+    Q_DECLARE_FLAGS ( PlatformFlags, ModuleAPI::Flags )
+
+public slots:
+    PlatformFlags flags() const { return static_cast<PlatformFlags>( mt.call( ModuleAPI::Platform, ModuleAPI::PlatformFlags ).toInt()); }
+};
+#endif
 
 //
 // class::Mod_Renderer
@@ -217,13 +238,16 @@ class Mod_Renderer : public QObject {
     Q_CLASSINFO( "description", "Renderer wrapper class" )
 
 public:
-    mtrHandle_t loadMaterial( const QString &filename ) { return static_cast<mtrHandle_t>( mt.call( ModuleAPI::Renderer, RendererAPI::LoadMaterial, filename ).toInt()); }
-    void drawMaterial( float x, float y, float w, float h, mtrHandle_t handle ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, x, y, w, h, static_cast<int>( handle )); }
-    void setColour( float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::SetColour, r, g, b, a ); }
     void setColour( const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->setColour( colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
     void drawText( float x, float y, QFont font, const QString &text, float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawText, x, y, qVariantFromValue( font ), text, r, g, b, a ); }
     void drawText( float x, float y, QFont font, const QString &text, const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->drawText( x, y, font, text, colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
     void reload() { mt.call( ModuleAPI::Renderer, RendererAPI::Reload ); }
+
+public slots:
+    mtrHandle_t loadMaterial( const QString &filename ) { return static_cast<mtrHandle_t>( mt.call( ModuleAPI::Renderer, RendererAPI::LoadMaterial, filename ).toInt()); }
+    void drawMaterial( float x, float y, float w, float h, mtrHandle_t handle ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, x, y, w, h, static_cast<int>( handle )); }
+    void setColour( float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::SetColour, r, g, b, a ); }
+    void setWindowTitle( const QString &title ) { mt.call( ModuleAPI::Renderer, RendererAPI::SetWindowTitle, title ); }
 };
 #endif
 
@@ -238,6 +262,7 @@ extern class Mod_App app;
 extern class Mod_Gui gui;
 #ifdef RENDERER_ENABLED
 extern class Mod_Renderer r;
+extern class Mod_Platform yp2;
 #endif
 
 #endif // MOD_TRAP_H

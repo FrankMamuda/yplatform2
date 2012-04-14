@@ -36,6 +36,7 @@ class Mod_App app;
 class Mod_Gui gui;
 #ifdef RENDERER_ENABLED
 class Mod_Renderer r;
+class Mod_Platform yp2;
 #endif
 
 /*
