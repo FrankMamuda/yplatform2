@@ -56,19 +56,16 @@ public:
     QString name() const { return this->m_name; }
     QString description() const { return this->m_description; }
     QString string() const { return this->m_string; }
-#ifdef QTSCRIPT_ENABLED
-    Q_INVOKABLE QScriptValue str() const { return QScriptValue( this->m_string.toLatin1().constData()); }
-#endif
 
     // flags & other funcs
     pCvar::Flags flags;
 
     // other funcs
-    Q_INVOKABLE int     integer() const;
-    Q_INVOKABLE float   value() const;
-    Q_INVOKABLE bool    set( const QString &string, bool force = false );
-    Q_INVOKABLE bool    set( int, bool force = false );
-    Q_INVOKABLE bool    set( float, bool force = false );
+    int     integer() const;
+    float   value() const;
+    bool    set( const QString &string, bool force = false );
+    bool    set( int, bool force = false );
+    bool    set( float, bool force = false );
     void    update( const QString &string );
 
 private slots:
@@ -86,5 +83,7 @@ private:
     QString m_name;
     QString m_description;
 };
+
+Q_DECLARE_METATYPE( mCvar* )
 
 #endif // MOD_CVARFUNC_H

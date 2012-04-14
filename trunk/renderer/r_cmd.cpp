@@ -57,6 +57,8 @@ void R_Cmd::bind( imgHandle_t handle ) {
     // bind texture
     if ( this->texture != image->texture ) {
         this->texture = image->texture;
+
+        // bind texture
         glBindTexture( GL_TEXTURE_2D, image->texture );
     }
 }
@@ -71,10 +73,27 @@ void R_Cmd::setCoords( float x, float y, float w, float h ) {
     glImp.adjustCoords( w, h );
 
     // add vert coords
-    this->create2DVector( x, y, this->coords[0] );
-    this->create2DVector( x + w, y, this->coords[1] );
-    this->create2DVector( x + w, y + h, this->coords[2] );
-    this->create2DVector( x, y + h, this->coords[3] );
+    if ( w > 0 && h > 0 ) {
+        this->create2DVector( x, y, this->coords[0] );
+        this->create2DVector( x + w, y, this->coords[1] );
+        this->create2DVector( x + w, y + h, this->coords[2] );
+        this->create2DVector( x, y + h, this->coords[3] );
+    } else if ( w < 0 && h > 0 ) {
+        this->create2DVector( x + -w, y, this->coords[0] );
+        this->create2DVector( x, y, this->coords[1] );
+        this->create2DVector( x, y + h, this->coords[2] );
+        this->create2DVector( x + -w, y + h, this->coords[3] );
+    } else if ( w > 0 && h < 0 ) {
+        this->create2DVector( x, y + -h, this->coords[0] );
+        this->create2DVector( x + w, y + -h, this->coords[1] );
+        this->create2DVector( x + w, y, this->coords[2] );
+        this->create2DVector( x, y, this->coords[3] );
+    } else if ( w > 0 && h > 0 ) {
+        this->create2DVector( x + -w, y + -h, this->coords[0] );
+        this->create2DVector( x, y + -h, this->coords[1] );
+        this->create2DVector( x, y, this->coords[2] );
+        this->create2DVector( x + -w, y, this->coords[3] );
+    }
 }
 
 /*

@@ -35,7 +35,8 @@ SOURCES += r_public.cpp \
     r_material.cpp \
     r_mtrlib.cpp \
     r_materialstage.cpp \
-    r_settings.cpp
+    r_settings.cpp \
+    ../modules/mod_script.cpp
 HEADERS += r_public.h \
     renderer_global.h \
     r_glimp.h \
@@ -50,7 +51,11 @@ HEADERS += r_public.h \
     r_material.h \
     r_mtrlib.h \
     r_materialstage.h \
-    r_settings.h
+    r_settings.h \
+    ../common/sys_filesystem.h \
+    ../common/sys_cvarfunc.h \
+    ../common/sys_common.h \
+    ../modules/mod_script.h
 OTHER_FILES += CHANGELOG.txt \
     assets/smth.qml \
     resources/materials/common.js

@@ -352,7 +352,7 @@ void Gui_Main::changeEvent( QEvent *e ) {
 completeCommand
 ================
 */
-bool Gui_Main::completeCommand( const QString &string ) {
+bool Gui_Main::completeCommand() {
     int match = 0;
     QStringList matchedStrings;
     int y;
@@ -491,7 +491,7 @@ bool Gui_Main::eventFilter( QObject *object, QEvent *event ) {
                     if ( this->ui->consoleInput->text().isEmpty())
                         return true;
 
-                    return completeCommand( this->ui->consoleInput->text());
+                    return completeCommand();
                 }
             }
             return false;

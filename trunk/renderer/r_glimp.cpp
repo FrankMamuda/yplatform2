@@ -72,7 +72,7 @@ void R_GLimp::init() {
     QGL::setPreferredPaintEngine( QPaintEngine::OpenGL );
 
     // init widget
-    this->widget->setWindowTitle( Renderer::Title );
+    this->setWindowTitle( Renderer::Title );
     this->widget->setWindowIcon( QIcon( Renderer::PlatformLogo ));
     this->widget->show();
 
@@ -86,6 +86,15 @@ void R_GLimp::init() {
 
     // glimp is ok
     this->setInitialized();
+}
+
+/*
+===============
+resizeScreen
+===============
+*/
+void R_GLimp::setWindowTitle( const QString &title ) {
+    this->widget->setWindowTitle( title );
 }
 
 /*

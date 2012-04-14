@@ -246,6 +246,9 @@ void Sys_Module::init() {
     // init cvars
     mod_extract = cv.create( "mod_extract", "1", pCvar::Archive, "toggle module copying from packages" );
 
+    // reset
+    this->setFlags( ModuleAPI::NoFlags );
+
     // precache modules
     this->preCacheModules();
 
@@ -419,6 +422,13 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
         cmd.add( args.first().toString(), args.at( 1 ).value<cmdCommand_t>(), args.at( 2 ).toString());
         return true;
 
+    case ModuleAPI::CmdAddScripted:
+        if ( args.count() != 3 ) {
+            com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: CmdAddScripted [cmdName] [function] (description)\n" ));
+            return false;
+        }
+        cmd.add( args.first().toString(), args.at( 1 ).value<QScriptValue>(), args.at( 2 ).toString());
+        return true;
 
     case ModuleAPI::CmdRemove:
         if ( args.count() != 1 ) {
@@ -591,6 +601,12 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
         return true;
 
         //
+        // platform
+        //
+    case ModuleAPI::PlatformFlags:
+        return static_cast<int>( this->flags());
+
+        //
         // renderer
         //
     case ModuleAPI::RendererKeyEvent:
@@ -598,6 +614,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "platformSyscalls: RendererKeyEvent [type] [key]\n" ));
             return false;
         }
+
         foreach ( pModule *modPtr, this->modList ) {
             if ( modPtr->type() != pModule::Renderer )
                 modPtr->call( ModuleAPI::KeyEvent, args.at( 0 ), args.at( 1 ));
@@ -692,6 +709,13 @@ QVariant Sys_Module::rendererSyscalls( RendererAPI::RendererAPICalls callNum, co
 
             case RendererAPI::Reload:
                 return modPtr->call( RendererAPI::Reload );
+
+            case RendererAPI::SetWindowTitle:
+                if ( args.count() != 1 ) {
+                    com.error( Sys_Common::SoftError, this->tr( "rendererSyscalls: SetWindowTitle [string])\n" ));
+                    return false;
+                }
+                return modPtr->call( RendererAPI::SetWindowTitle, args.at( 0 ));
 
             default:
                 // abort
@@ -820,6 +844,20 @@ void Sys_Module::populateListWidget() {
 
             if ( tempIcon.isNull())
                 tempIcon = QIcon( ":/icons/module_128" );
+
+
+            // generate filename
+            QString filename = QString( "modules/%1%2_%3_%4.%5" )
+                    .arg( LIBRARY_PREFIX )
+                    .arg( modPtr->filename())
+                    .arg( LIBRARY_SUFFIX )
+                    .arg( ARCH_STRING )
+                    .arg( LIBRARY_EXT );
+
+
+            // perliminary check (we don't care if it's in a pack or not)
+            if ( !fs.exists( filename ))
+                tempIcon = QIcon( ":/icons/panic" );
 
             QListWidgetItem *moduleItem = new QListWidgetItem( tempIcon, modPtr->name());
             if ( modPtr->isLoaded()) {

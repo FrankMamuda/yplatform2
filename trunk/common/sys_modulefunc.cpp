@@ -93,7 +93,7 @@ update
 ================
 */
 void pModule::update() {
-    if ( this->type() != Renderer )
+    if ( this->type() != Renderer && !this->hasErrorMessage())
         this->call( ModuleAPI::Update );
 }
 
@@ -158,9 +158,12 @@ void pModule::loadHandle() {
 
             if ( mInit ) {
                 // success
+                if ( this->type() == Renderer )
+                    mod.setFlags( ModuleAPI::RendererLoaded );
+
                 return;
             } else {
-                if ( this->type() == Renderer )
+                if ( this->type() == Module )
                     this->setErrorMessage( this->tr( "Module could be initialized" ));
                 else if ( this->type() == Renderer )
                     this->setErrorMessage( this->tr( "Renderer could be initialized" ));

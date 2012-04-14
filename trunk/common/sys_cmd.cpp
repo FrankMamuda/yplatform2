@@ -97,6 +97,25 @@ void Sys_Cmd::add( const QString &command, cmdCommand_t function, const QString 
 
 /*
 ============
+add
+============
+*/
+void Sys_Cmd::add( const QString &command, QScriptValue function, const QString &description ) {
+    // failsafe
+    if ( this->find( command ) != NULL ) {
+        com.print( this->tr( "^2Sys_Cmd::add: command ^3\"%1\" already exists\n" ).arg( command ));
+        return;
+    }
+
+    // alloc new command
+    this->cmdList << new pCmd( command, function, description );
+
+    // add to completer
+    com.gui()->addToCompleter( command );
+}
+
+/*
+============
 remove
 ============
 */
@@ -230,6 +249,26 @@ pCmd *Sys_Cmd::find( const QString &command ) const {
             return cmdPtr;
     }
     return NULL;
+}
+
+/*
+============
+execute
+============
+*/
+void pCmd::execute( const QStringList &args ) {
+    if ( !this->isScripted())
+        this->m_function( args );
+    else {
+        if ( this->scriptFunction().isFunction()) {
+            QScriptValueList scriptArgs;
+
+            foreach ( QString arg, args )
+                scriptArgs << arg;
+
+            this->scriptFunction().call( QScriptValue(), scriptArgs );
+        }
+    }
 }
 
 /*

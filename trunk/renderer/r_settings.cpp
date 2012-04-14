@@ -30,6 +30,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 extern mCvar *r_screenMode;
 extern mCvar *r_adjustScreen;
+extern mCvar *r_hideOnESC;
 
 /*
 ================
@@ -73,6 +74,13 @@ void R_Settings::intializeCvars() {
     this->s_mode = r_screenMode->integer();
     this->ui->screenMode->setCurrentIndex( this->s_mode );
 
+    // set default values
+    this->s_hideOnESC = r_hideOnESC->integer();
+    if ( this->s_hideOnESC )
+        this->ui->hideOnESC->setCheckState( Qt::Checked );
+    else
+        this->ui->hideOnESC->setCheckState( Qt::Unchecked );
+
     // unlock cvars
     this->lockCvars( false );
 }
@@ -111,6 +119,7 @@ saveCvars
 void R_Settings::saveCvars() {
     r_adjustScreen->set( this->s_adjust );
     r_screenMode->set( this->s_mode );
+    r_hideOnESC->set( this->s_hideOnESC );
 }
 
 /*
@@ -138,4 +147,19 @@ void R_Settings::on_screenMode_currentIndexChanged( int index ) {
         return;
 
     this->s_mode = index;
+}
+
+/*
+================
+hideOnESC->stateChanged
+================
+*/
+void R_Settings::on_hideOnESC_stateChanged( int state ) {
+    if ( this->cvarsLocked())
+        return;
+
+    if ( state == Qt::Checked )
+        this->s_hideOnESC = true;
+    else
+        this->s_hideOnESC = false;
 }

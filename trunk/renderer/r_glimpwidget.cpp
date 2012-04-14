@@ -27,6 +27,11 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
 
+//
+// cvars
+//
+mCvar *r_hideOnESC;
+
 /*
 ===============
 construct
@@ -90,7 +95,7 @@ void R_GlimpWidget::keyPressEvent( QKeyEvent *e ) {
     if ( e->isAutoRepeat())
         e->ignore();
     else {
-        if ( e->key() == Qt::Key_Escape )
+        if ( e->key() == Qt::Key_Escape && r_hideOnESC->integer())
             this->hide();
 
         mt.keyEvent( ModuleAPI::KeyPress, e->key());

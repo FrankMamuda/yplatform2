@@ -88,6 +88,7 @@ public:
     QString icon() const { return this->m_icon; }
     bool isLoaded() const { return this->m_loaded; }
     QString getErrorMessage() const { return this->m_error; }
+    bool hasErrorMessage() const { return !this->m_error.isEmpty(); }
     QString filename() const { return this->m_filename; }
     unsigned int apiVersion() const { return this->m_api; }
     Types type() const { return this->m_type; }

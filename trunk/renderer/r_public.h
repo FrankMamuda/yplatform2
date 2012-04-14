@@ -56,7 +56,8 @@ namespace RendererAPI {
         Raise,
         Hide,
         State,
-        Reload
+        Reload,
+        SetWindowTitle
     };
 }
 

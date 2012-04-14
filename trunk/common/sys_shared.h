@@ -30,6 +30,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include <QtGlobal>
 #include <QtCore>
+#include <QtScript>
 
 //
 // defines
@@ -37,7 +38,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 namespace Sys {
     static const QString Title       ( QObject::trUtf8( "YPlatform2" ));
     static const QString Copyright   ( QObject::trUtf8( "Copyright (c) 2009-2012, Edd 'Double Dee' Psycho." ));
-    static const QString Version     ( QObject::trUtf8( "YCommons: v2.9.4" ));
+    static const QString Version     ( QObject::trUtf8( "YCommons: v2.9.5" ));
 
     // colours
     static const QChar ColourEscape  ( '^' );
@@ -61,6 +62,9 @@ Q_DECLARE_METATYPE( byte* )
 typedef int fileHandle_t;
 Q_DECLARE_METATYPE( fileHandle_t )
 Q_DECLARE_METATYPE( fileHandle_t* )
+
+// script value
+Q_DECLARE_METATYPE( QScriptValue )
 
 //
 // platform-specific

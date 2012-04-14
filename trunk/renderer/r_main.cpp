@@ -38,6 +38,7 @@ class R_Main m;
 //
 extern mCvar *r_screenMode;
 extern mCvar *r_adjustScreen;
+extern mCvar *r_hideOnESC;
 
 //
 // commands
@@ -57,6 +58,7 @@ void R_Main::init( bool reload ) {
         // init cvars
         r_screenMode = cv.create( "r_screenMode", QString( "%1" ).arg( Renderer::DefaultScreenMode ), pCvar::Archive, "renderer screen dimensions" );
         r_adjustScreen = cv.create( "r_adjustScreen", "1", pCvar::Archive, "adjust screen to virtual coordinates" );
+        r_hideOnESC = cv.create( "r_hideOnESC", "1", pCvar::NoFlags, "hide renderer upon pressing ESC key" );
 
         // create screen
         glImp.init();
@@ -241,7 +243,7 @@ void R_Main::beginFrame() {
     this->setTime( com.milliseconds() * 0.001f );
 
     // update mtr scripts
-    mLib.update();
+    mLib.mse->update();
 }
 
 /*
@@ -265,22 +267,10 @@ void R_Main::shutdown( bool reload ) {
     // stop evaluating material libraries
     mLib.shutdown();
 
-    // clear images
-    foreach ( R_Image *imgPtr, this->imageList )
-        delete imgPtr;
+    // clear images, materials and stages
+    // assuming script takes care of its own garbage
     this->imageList.clear();
-
-    // must clear all stages
-    // not just the ones in the material
-    // since scripting allows to define stage
-    // as a separate entity
-    foreach ( R_MaterialStage *mtrStagePtr, this->mtrStageList )
-        delete mtrStagePtr;
     this->mtrStageList.clear();
-
-    // clear materials
-    foreach ( R_Material *mtrPtr, this->mtrList )
-        delete mtrPtr;
     this->mtrList.clear();
 
     if ( !reload ) {

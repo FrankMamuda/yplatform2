@@ -55,6 +55,7 @@ SOURCES += \
 win32:INCLUDEPATH += includes
 
 QT += xml
+QT += script
 
 FORMS += \
     gui/gui_main.ui \

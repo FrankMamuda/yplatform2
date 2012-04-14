@@ -95,7 +95,7 @@ private:
     QStringList lastMatch;
     QStringList history;
     QImage *addImageResource( const QString &filename, int w = 0, int h = 0 );
-    bool completeCommand( const QString &string );
+    bool completeCommand();
 
     // actions
     QAction *settigsAction;

@@ -9,7 +9,7 @@ r15 (v0.98.48):
 
 r17 (v0.98.49):
     -image loading fixes
-    -notifyng on missing assets only once
+    -notifying on missing assets only once
 
 TODO:
     multiple update() cmds for each context

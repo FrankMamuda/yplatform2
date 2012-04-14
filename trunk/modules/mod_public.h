@@ -22,6 +22,11 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #define MOD_PUBLIC_H
 
 namespace ModuleAPI {
+    enum Flags {
+        NoFlags             = 0x00,
+        RendererLoaded      = 0x01
+    };
+
     // console state (gui)
     enum ConsoleState {
         ConsoleUnlocked = 0,
@@ -99,6 +104,12 @@ namespace ModuleAPI {
         GuiShowTabWidget,
         GuiHideTabWidget,
 
+        // platform flags
+        PlatformFlags,
+
+        // TODO: move me to cmd in next API release
+        CmdAddScripted,
+
         // renderer only
         RendererKeyEvent = 100,
         RendererMouseEvent,
@@ -106,12 +117,12 @@ namespace ModuleAPI {
         RendererWheelEvent
     };
     enum KeyEventType {
-        KeyPress,
+        KeyPress = 0,
         KeyRelease,
         DoubleClick
     };
     enum Destination {
-        Platform,
+        Platform = 0,
         Renderer/*,
         Soundsystem*/
     };

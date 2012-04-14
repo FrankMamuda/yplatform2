@@ -33,87 +33,6 @@ class R_MtrLib mLib;
 
 // declare scriptable stages for materials
 Q_DECLARE_METATYPE( R_MaterialStage* )
-Q_DECLARE_METATYPE( mCvar* )
-
-/*
-===================
-loadMtrLib
-===================
-*/
-void R_MtrLib::loadMtrLib( const QString &filename ) {
-    QByteArray buffer;
-    QString mtrLib;
-
-    // load mtr file
-    buffer = fs.readFile( filename );
-    if ( buffer.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: could not read mtrLib \'%1\'\n" ).arg( filename ));
-        return;
-    }
-    mtrLib = QString( reinterpret_cast<const char*>( buffer.data()));
-
-    // create new context
-    this->engine.pushContext();
-
-    // do static check
-    if ( !this->engine.canEvaluate( mtrLib )) {
-        com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: cannot evaluate mtrLib \'%1\'\n" ).arg( filename ));
-        return;
-    }
-    this->engine.evaluate( mtrLib );
-
-    // uncaught exception?
-    if ( this->engine.hasUncaughtException()) {
-        QScriptValue exception = this->engine.uncaughtException();
-        this->catchError();
-        com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib (\'%1\'): exception: \'%2\'\n" ).arg( filename ).arg( exception.toString()));
-        return;
-    }
-
-    // find update function, if it is (not mandatory)
-    this->updateFunc = this->engine.evaluate( "update" );
-
-    // pop context
-    this->engine.popContext();
-}
-
-/*
-===================
-update
-===================
-*/
-void R_MtrLib::update() {
-    if ( !this->hasInitialized())
-        return;
-
-    if ( !this->updateFunc.isError() && this->updateFunc.isFunction() && !this->hasCaughtError()) {
-        this->updateFunc.call( this->object );
-        if ( engine.hasUncaughtException()) {
-            QScriptValue exception = engine.uncaughtException();
-            com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::loadMtrLib: could not call update(), exception \'%1\'\n" ).arg( exception.toString()));
-            return;
-        }
-    }
-}
-
-/*
-===================
-scriptPrint
-===================
-*/
-QScriptValue scriptPrint( QScriptContext *context, QScriptEngine *engine ) {
-    int y;
-    QString msg;
-
-    for ( y = 0; y < context->argumentCount(); y++ ) {
-        if ( y > 0 || !( y == context->argumentCount()-1 ))
-            msg.append( " " );
-
-        msg.append( context->argument( y ).toString());
-    }
-    com.print( msg );
-    return engine->undefinedValue();
-}
 
 /*
 ===================
@@ -245,85 +164,27 @@ R_Image::ClampModes R_MtrLib::getClampMode( const QString &mode ) {
 
 /*
 ===================
-scriptMsec
-===================
-*/
-QScriptValue scriptMsec( QScriptContext *context, QScriptEngine *engine ) {
-    Q_UNUSED( context )
-    return engine->toScriptValue( com.milliseconds());
-}
-
-/*
-===================
-scriptCvar
-===================
-*/
-QScriptValue scriptCvar( QScriptContext *context, QScriptEngine *engine ) {
-    mCvar *cvarPtr= NULL;
-
-    // no constructors please
-    if ( context->isCalledAsConstructor()) {
-        context->throwError( QObject::trUtf8( "'cvar' called as a constructor\n" ));
-        return engine->undefinedValue();
-    }
-
-    // failsafe
-    if ( context->argumentCount() > 3 ) {
-        context->throwError( QObject::trUtf8( "'cvar' called with multiple arguments\n" ));
-        return engine->undefinedValue();
-    } else if ( context->argumentCount() == 1 ) {
-        cvarPtr = cv.create( context->argument( 0 ).toString(), "", pCvar::NoFlags );
-    } else if ( context->argumentCount() == 2 ) {
-        cvarPtr = cv.create( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::NoFlags );
-    } else if ( context->argumentCount() == 3 ) {
-        if ( context->argument( 2 ).toBool())
-            cvarPtr = cv.create( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::Archive );
-        else
-            cvarPtr = cv.create( context->argument( 0 ).toString(), context->argument( 1 ).toString(), pCvar::NoFlags );
-    } else if ( context->argumentCount() == 0 ) {
-        context->throwError( QObject::trUtf8( "'cvar' called without arguments\n" ));
-        return engine->undefinedValue();
-    }
-
-    // find cvar
-    cvarPtr = cv.find( context->argument( 0 ).toString());
-    if ( cvarPtr != NULL )
-        return engine->newQObject( cvarPtr, QScriptEngine::ScriptOwnership );
-
-    // should we export all platform cvars to module?
-    return engine->undefinedValue();
-}
-
-/*
-===================
 init
-
-dd: use separate context/engine to avoid conflict?
-    done, though we should handle multiple update
-    funcs not just single one (QList<QScriptValue>updateFuncList smth.)
 ===================
 */
 void R_MtrLib::init() {
     int numMtrLibFiles;
+    QScriptEngine *e;
 
     // announce
     com.print( this->tr( "^2R_MtrLib::init: ^5loading material libraries\n" ));
 
-    // create scripting engine
-    this->object = engine.newQObject( this );
+    // init scripting engine
+    this->mse = new Mod_ScriptEngine( "MtrLib", "materials/", true, true );
 
     // add custom funcs/constructors
-    this->engine.globalObject().setProperty( "print", this->engine.newFunction( scriptPrint ));
-    this->material = this->engine.newFunction( scriptMaterial );
-    this->engine.globalObject().setProperty( "material", material );
-    this->engine.globalObject().setProperty( "stage", this->engine.newFunction( scriptStage ));
-    this->engine.globalObject().setProperty( "registerTexture", this->engine.newFunction( scriptTexture ));
-    this->engine.globalObject().setProperty( "milliseconds", this->engine.newFunction( scriptMsec ));
-    this->engine.globalObject().setProperty( "cvar", this->engine.newFunction( scriptCvar ));
+    e = &mse->engine;
+    e->globalObject().setProperty( "material", e->newFunction( scriptMaterial ));
+    e->globalObject().setProperty( "stage", e->newFunction( scriptStage ));
+    e->globalObject().setProperty( "registerTexture", e->newFunction( scriptTexture ));
 
     // register stage metatype
-    qScriptRegisterMetaType( &this->engine, mtrStageToScriptValue, mtrStageFromScriptValue );
-    qRegisterMetaType<mCvar*>( "cvar" );
+    qScriptRegisterMetaType( e, mtrStageToScriptValue, mtrStageFromScriptValue );
 
     // scan for material libraries, build filelist
     QRegExp filter( QString( "*.js" ));
@@ -340,8 +201,9 @@ void R_MtrLib::init() {
         return;
     }
 
+    // parse one by one
     foreach ( QString filename, fileList )
-        this->loadMtrLib( filename );
+        this->mse->loadScript( filename );
 
     // all done
     this->setInitialized();
@@ -354,7 +216,7 @@ shutdown
 */
 void R_MtrLib::shutdown() {
     if ( this->hasInitialized()) {
-        this->engine.abortEvaluation();
+        this->mse->~Mod_ScriptEngine();
         this->setInitialized( false );
     }
 }

@@ -122,7 +122,7 @@ void App_Main::parseArgs( int argc, char *argv[] ) {
     // reset counter
     argList.removeFirst();
     foreach ( QString str, argList )
-        cmd.execute( str );
+        cmd.execute( str, Sys_Cmd::Delayed );
 }
 
 /*

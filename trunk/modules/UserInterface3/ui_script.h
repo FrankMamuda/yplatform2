@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,50 +18,45 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 ===========================================================================
 */
 
-#ifndef R_MTRLIB_H
-#define R_MTRLIB_H
+#ifndef UI_SCRIPT_H
+#define UI_SCRIPT_H
 
 //
 // includes
 //
-#include "r_shared.h"
-#include "r_material.h"
-#include "../modules/mod_script.h"
+#include "ui_main.h"
+#include "../mod_script.h"
 
 //
-// class:R_MtrLib
+// class:UI_ScriptEngine
 //
-class R_MtrLib : public QObject {
+class UI_ScriptEngine : public QObject {
     Q_OBJECT
-    Q_CLASSINFO( "description", "MtrLib engine" )
+    Q_CLASSINFO( "description", "UiScript engine" )
+    Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
+
+public:
+    explicit UI_ScriptEngine();
+    ~UI_ScriptEngine();
+
+    // property getters
+    bool hasInitialized() const { return this->m_initialized; }
+
+    // scripting engine
+    Mod_ScriptEngine *mse;
 
 private:
     // properties
     bool m_initialized;
 
-public:
-    // property getters
-    bool hasInitialized() const { return this->m_initialized; }
-    R_Image::ClampModes getClampMode( const QString & );
-
-    // scripting engine related
-    Mod_ScriptEngine *mse;
-
 signals:
 
 public slots:
-    void init();
-    void shutdown();
+    void loadUIScript( const QStringList &args );
+    void evaluateUIScript( const QStringList &args );
 
     // property setters
-    void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
+    void setInitialized( bool initialized = true ) { this->m_initialized = initialized; }
 };
 
-//
-// externals
-//
-#ifdef R_BUILD
-extern class R_MtrLib mLib;
-#endif
-
-#endif // R_MTRLIB_H
+#endif // UI_SCRIPT_H
