@@ -23,11 +23,8 @@ Materials are updated via *update()* function which is called with 50 FPS.
       * _setColourGen( type, args, .. )_ - e.g. ( "const", 1.0, 0.0, 0.0, 1.0 ).
       * _setAlphaGen( type, args, .. )_ - e.g. "const" or "func" ( "sine", "square", etc.).
       * _setTextureMod( type, args, .. )_ - e.g. "scale", "rotate".
-  * _milliseconds()_ - returns current platform time.
-  * _print( msg )_ - prints message to console.
-  * _cvar( cvarName )_ - returns value of a cvar.
 
-To see the rest, undocumented features, check *r_mtrlib.cpp* and *r_materialstage.h* for public slots.
+To see the rest, undocumented features, check *r_mtrlib.cpp* and *r_materialstage.h* for public slots and general scripting functions in *mod_script*.
 
 *Example material*:
 {{{
