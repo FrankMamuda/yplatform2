@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ typedef int fontHandle_t;
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <gl/gl.h>
+#include <gl/glu.h>
 #endif
 #include "../common/sys_shared.h"
 
@@ -47,8 +48,8 @@ namespace Renderer {
     static const QString DefaultImage ( ":/common/default" );
     static const QString PlatformLogo ( ":/common/platform" );
     static const QString Title        ( QObject::trUtf8( "Nu Renderer" ));
-    static const QString Copyright    ( QObject::trUtf8( "Copyright (c) 2011, Edd 'Double Dee' Psycho." ));
-    static const QString Version      ( QObject::trUtf8( "v0.98.50 (beta)" ));
+    static const QString Copyright    ( QObject::trUtf8( "Copyright (c) 2011-2012, Edd 'Double Dee' Psycho." ));
+    static const QString Version      ( QObject::trUtf8( "v0.98.51 (beta)" ));
     typedef float Vec2D[2];
     typedef float Vec4D[4];
 }
