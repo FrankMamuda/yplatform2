@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -83,6 +83,7 @@ public:
     DstBlend::Modes getDstBlendMode( const QString & );
     void create2DVector( float x, float y, Renderer::Vec2D &array ) { array[0] = x; array[1] = y; }
     void create4DVector( float a, float b, float c, float d, Renderer::Vec4D &array  ) { array[0] = a; array[1] = b; array[2] = c; array[3] = d; }
+    void setBlendMode( SrcBlend::Modes, DstBlend::Modes );
 
 private:
     GLuint  texture;
@@ -94,7 +95,6 @@ private:
     void    setTextureCoords( float, float, float, float );
     void    setTextureCoords( const Renderer::Vec2D[Renderer::MaterialVertexes] );
     void    drawTriangleStrip();
-    void    setBlendMode( SrcBlend::Modes, DstBlend::Modes );
     void    setAnimation( R_MaterialStage * );
     float   evaluateFunction( GenFunc *func );
     void    calcScrollTexCoords( R_MaterialStage * );

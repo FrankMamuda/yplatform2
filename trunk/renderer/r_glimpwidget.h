@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -46,6 +46,14 @@ namespace Renderer {
 class R_GlimpWidget : public QGLWidget {
     Q_OBJECT
     Q_CLASSINFO( "description", "Renderer window" )
+    Q_PROPERTY( int projection2D READ projection2D WRITE setProjection2D )
+
+public:
+    R_GlimpWidget( QWidget *parent );
+    bool projection2D() const { return this->m_2d; }
+
+public slots:
+    void setProjection2D( bool toggle = true );
 
 protected:
     virtual void resizeGL( int, int );
@@ -59,8 +67,8 @@ protected:
     virtual void wheelEvent( QWheelEvent *);
     virtual void initializeGL();
 
-public:
-    R_GlimpWidget( QWidget *parent );
+private:
+    bool m_2d;
 };
 
 #endif // R_GLIMPWIDGET_H

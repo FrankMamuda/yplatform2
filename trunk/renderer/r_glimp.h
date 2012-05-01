@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 namespace Renderer {
     const static int NumScreenModes = 6;
     const static int DefaultScreenMode = 1;
+    const static int MaximumTextureSize = 4096;
     const static int HorizontalScreenModes[NumScreenModes] = { 320, 640, 800, 1024, 1280, 1600 };
     const static int VerticalScreenModes[NumScreenModes]   = { 240, 480, 600,  768, 1024, 1200 };
 };
@@ -60,6 +61,7 @@ public:
 
     // renderer window
     R_GlimpWidget *widget;
+    int glVersionFlags;
 
 private:
     // properties

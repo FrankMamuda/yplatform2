@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -52,10 +52,19 @@ void R_GLimp::init() {
     com.print( this->tr( "^2R_GLimp::init: ^5initializing OpenGL display\n" ));
     QGLFormat format;
 
+    // check for OpenGL support
+    if ( !format.hasOpenGL()) {
+        com.error( Sys_Common::FatalError, this->tr( "R_GLimp::init: could not initialized OpenGL\n" ));
+        return;
+    }
+    this->glVersionFlags = static_cast<int>( format.openGLVersionFlags());
+
 #ifndef Q_OS_WIN
     // breaks compatibility with intel inegrated graphics on winxp
-    if (( format.openGLVersionFlags() & format.OpenGL_Version_1_5 ) == 0 )
+    if (( this->glVersionFlags & QGLFormat::OpenGL_Version_1_5 ) == 0 ) {
         com.error( Sys_Common::FatalError, this->tr( "R_GLimp::init: OpenGL version 1.5 or higher is required\n" ));
+        return;
+    }
 #endif
 
     // set format

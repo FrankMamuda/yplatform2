@@ -39,6 +39,8 @@ r19:
     -javascript cmds
     -probably more (can't remember)
 
+r22:
+    -ignoring duplicate packages
 
 TODOs
     -cmd completion (filename, etc.)

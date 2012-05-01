@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "r_image.h"
 #include "r_main.h"
+#include "r_glimp.h"
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
 
@@ -110,10 +111,103 @@ void R_Image::reload( const QString &filename, ClampModes mode ) {
 
 /*
 ===================
+mipMap
+===================
+*/
+void R_Image::mipMap( byte *inPtr, int w, int h ) {
+    int		y, k;
+    byte	*outPtr;
+    int		row;
+
+    if ( w == 1 && h == 1 )
+        return;
+
+    row = w * 4;
+    outPtr = inPtr;
+    w >>= 1;
+    h >>= 1;
+
+    if ( w == 0 || h == 0 ) {
+        w += h;
+
+        for ( y = 0; y < w; y++, outPtr += 4, inPtr += 8 ) {
+            outPtr[0] = ( inPtr[0] + inPtr[4] ) >> 1;
+            outPtr[1] = ( inPtr[1] + inPtr[5] ) >> 1;
+            outPtr[2] = ( inPtr[2] + inPtr[6] ) >> 1;
+            outPtr[3] = ( inPtr[3] + inPtr[7] ) >> 1;
+        }
+        return;
+    }
+
+    for ( y = 0; y < h; y++, inPtr += row ) {
+        for ( k = 0; k < w; k++, outPtr += 4, inPtr += 8 ) {
+            outPtr[0] = ( inPtr[0] + inPtr[4] + inPtr[row]     + inPtr[row + 4] ) >> 2;
+            outPtr[1] = ( inPtr[1] + inPtr[5] + inPtr[row + 1] + inPtr[row + 5] ) >> 2;
+            outPtr[2] = ( inPtr[2] + inPtr[6] + inPtr[row + 2] + inPtr[row + 6] ) >> 2;
+            outPtr[3] = ( inPtr[3] + inPtr[7] + inPtr[row + 3] + inPtr[row + 7] ) >> 2;
+        }
+    }
+}
+
+/*
+===================
+resampleTexture
+===================
+*/
+void R_Image::resampleTexture( unsigned *in, int inWidth, int inHeight, unsigned *out, int outWidth, int outHeight ) {
+    int	y, k;
+    unsigned *inRow, *inRow2;
+    unsigned frac, fracStep;
+    unsigned p1[Renderer::MaximumTextureSize], p2[Renderer::MaximumTextureSize];
+    byte *pix1, *pix2, *pix3, *pix4;
+
+    // failsafe
+    if ( outWidth > Renderer::MaximumTextureSize )
+        com.error( Sys_Common::SoftError, this->tr( "R_Image::resampleTexture: could not resample texture (max width)\n" ));
+
+    fracStep = inWidth * 0x10000 / outWidth;
+    frac = fracStep >> 2;
+
+    for ( y = 0; y < outWidth; y++ ) {
+        p1[y] = 4 * ( frac >> 16 );
+        frac += fracStep;
+    }
+
+    frac = 3 * ( fracStep >> 2 );
+    for ( y = 0; y < outWidth; y++ ) {
+        p2[y] = 4 * ( frac >> 16);
+        frac += fracStep;
+    }
+
+    for ( y = 0; y < outHeight; y++, out += outWidth ) {
+        inRow = in + inWidth * static_cast<int>(( y + 0.25f ) * inHeight / outHeight );
+        inRow2 = in + inWidth * static_cast<int>(( y + 0.75f ) * inHeight / outHeight );
+
+        frac = fracStep >> 1;
+
+        for ( k = 0; k < outWidth; k++ ) {
+            pix1 = reinterpret_cast<byte*>( inRow + p1[k] );
+            pix2 = reinterpret_cast<byte*>( inRow + p2[k] );
+            pix3 = reinterpret_cast<byte*>( inRow2 + p1[k] );
+            pix4 = reinterpret_cast<byte*>( inRow2 + p2[k] );
+            ( reinterpret_cast<byte*>( out + k ))[0] = ( pix1[0] + pix2[0] + pix3[0] + pix4[0] ) >> 2;
+            ( reinterpret_cast<byte*>( out + k ))[1] = ( pix1[1] + pix2[1] + pix3[1] + pix4[1] ) >> 2;
+            ( reinterpret_cast<byte*>( out + k ))[2] = ( pix1[2] + pix2[2] + pix3[2] + pix4[2] ) >> 2;
+            ( reinterpret_cast<byte*>( out + k ))[3] = ( pix1[3] + pix2[3] + pix3[3] + pix4[3] ) >> 2;
+        }
+    }
+}
+
+/*
+===================
 createTexture
 ===================
 */
-void R_Image::createTexture( const byte *buffer, int w, int h ) {
+void R_Image::createTexture( byte *buffer, int w, int h ) {
+    int scaledWidth, scaledHeight;
+    byte *scaledBuffer, *resampledBuffer = NULL;
+    int mipLevel = 0;
+
     // enable texturing
     glEnable( GL_TEXTURE_2D );
 
@@ -124,19 +218,88 @@ void R_Image::createTexture( const byte *buffer, int w, int h ) {
     glBindTexture( GL_TEXTURE_2D, this->texture );
 
     // set wrap parms
-    // GL_REPEAT, GL_CLAMP, GL_CLAMP_TO_EDGE
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->clampModeGL());
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->clampModeGL());
 
-    // build mipmaps
-    gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGBA, w, h, GL_RGBA, GL_UNSIGNED_BYTE, reinterpret_cast<const GLvoid*>( buffer ));
+    // convert to exact power of 2 sizes
+    for ( scaledWidth = 1; scaledWidth < w; scaledWidth <<= 1 )
+        ;
+    for ( scaledHeight = 1; scaledHeight < h; scaledHeight <<= 1 )
+        ;
 
-    // upload texture data
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, reinterpret_cast<const GLvoid*>( buffer ));
+    // resample image if required
+    if ( scaledWidth != w || scaledHeight != h ) {
+        resampledBuffer = new byte[scaledWidth * scaledHeight * 4];
+        this->resampleTexture( reinterpret_cast<unsigned*>( buffer ), w, h, reinterpret_cast<unsigned*>( resampledBuffer ), scaledWidth, scaledHeight );
+        buffer = resampledBuffer;
+        w = scaledWidth;
+        h = scaledHeight;
+    }
+
+    // clamp to the renderer texture upper size limit
+    while ( scaledWidth > Renderer::MaximumTextureSize || scaledHeight > Renderer::MaximumTextureSize ) {
+        scaledWidth >>= 1;
+        scaledHeight >>= 1;
+    }
+    scaledBuffer = new byte[sizeof( unsigned ) * scaledWidth * scaledHeight];
+
+    // copy or resample data as appropriate for first MIP level
+    if (( scaledWidth == w ) && ( scaledHeight == h ))
+        memcpy( scaledBuffer, buffer, w * h * 4 );
+    else {
+        // use the normal mip-mapping function to go down from here
+        while ( w > scaledWidth || h > scaledHeight ) {
+            this->mipMap( buffer, w, h );
+
+            w >>= 1;
+            h >>= 1;
+
+            if ( w < 1 )
+                w = 1;
+
+            if ( h < 1 )
+                h = 1;
+        }
+        memcpy( scaledBuffer, buffer, w * h * 4 );
+    }
+
+    this->setWidth( scaledWidth );
+    this->setHeight( scaledHeight );
+
+    // generate base texture
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledBuffer );
+
+    // generate mipmaps
+    while ( scaledWidth > 1 || scaledHeight > 1 ) {
+        this->mipMap( scaledBuffer, scaledWidth, scaledHeight );
+
+        scaledWidth >>= 1;
+        scaledHeight >>= 1;
+
+        if ( scaledWidth < 1 )
+            scaledWidth = 1;
+
+        if ( scaledHeight < 1 )
+            scaledHeight = 1;
+
+        // advance by level
+        mipLevel++;
+
+        // generate texture for the mipmap
+        glTexImage2D( GL_TEXTURE_2D, mipLevel, GL_RGBA, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledBuffer );
+    }
 
     // set filter
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+
+    // get rid of temporary buffers
+    if ( resampledBuffer != NULL )
+        delete [] resampledBuffer;
+    delete [] scaledBuffer;
+
+    // unbind texture
+    glBindTexture( GL_TEXTURE_2D, 0 );
 
     // disable texturing
     glDisable( GL_TEXTURE_2D );
@@ -410,7 +573,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
                     }
                 }
             }
-            breakOut:;
+breakOut:;
         }
     }
 

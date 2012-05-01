@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -74,7 +74,9 @@ private:
 #ifdef BUILTIN_TARGA_LOADER
     byte *loadTargaImage( const QString &, int, const byte *, unsigned int &, unsigned int & );
 #endif
-    void createTexture( const byte *buffer, int w, int h );
+    void createTexture( byte *buffer, int w, int h );
+    void resampleTexture( unsigned *, int, int, unsigned *, int, int );
+    void mipMap( byte *, int, int );
 
     // properties
     bool m_valid;

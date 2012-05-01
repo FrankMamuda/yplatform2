@@ -69,13 +69,14 @@ void Sys_Filesystem::init() {
     fs_debug = cv.create( "fs_debug", "0", pCvar::Archive );
     fs_ignoreLinks = cv.create( "fs_ignoreLinks", "0", pCvar::Archive );
 
-    // add searchPaths
+    // add search paths
+#ifndef YP2_FINAL_RELEASE
+    // dev dir takes priority
+    this->addSearchPath( QDir( "../yplatform2" ).absolutePath().append( "/" ).append( fs_basePath->string()), Filesystem::ProjectPathID );
+#endif
     this->addSearchPath( ":/", Filesystem::InternalPathID );
     this->addSearchPath( fs_homePath->string().append( fs_basePath->string()), Filesystem::HomePathID );
     this->addSearchPath( fs_appPath->string().append( fs_basePath->string()), Filesystem::AppPathID );
-#ifndef YP2_FINAL_RELEASE
-    this->addSearchPath( QDir( "../yplatform2" ).absolutePath().append( "/" ).append( fs_basePath->string()), Filesystem::ProjectPathID );
-#endif
 
     // reset handles
     // -1 and 0 is reserved
@@ -154,6 +155,7 @@ loadPackages
 */
 void Sys_Filesystem::loadPackages() {
     int y = 0;
+    bool dup;
 
     // find packages in searchpaths
     foreach ( pSearchPath *sp, this->searchPaths ) {
@@ -167,7 +169,21 @@ void Sys_Filesystem::loadPackages() {
 
             // get pFile::Package list
             QFileInfoList list = dir.entryInfoList();
+
             foreach ( QFileInfo fInfo, list ) {
+                dup = false;
+
+                // ignore duplicate packages
+                foreach ( pSearchPath *sp, this->searchPaths ) {
+                    if ( !QString::compare( fInfo.fileName(), sp->path())) {
+                        dup = true;
+                        break;
+                    }
+                }
+                if ( dup )
+                    continue;
+
+                // load the package
                 pPackage *pPtr = pkg.load( fInfo.fileName(), Sys_Filesystem::Silent );
                 if ( pPtr != NULL )
                     this->addSearchPath( pPtr, fInfo.fileName());
@@ -1138,8 +1154,11 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
     lnkHeader_t header;
     fileHandle_t fHandle;
 
+#if 0
+    // this message is annoying
     if ( !( flags.testFlag( Silent )))
         com.print( this->tr( "^3Sys_FileSystem::readLink: reading win32 link \"%1\"\n" ).arg( filename.mid( filename.lastIndexOf( "\\" ) + 1 )));
+#endif
 
     if ( this->open( pFile::Read, filename, fHandle, flags ) <= 0 ) {
         com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read win32 link \"%1\"\n" ).arg( filename ));

@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -153,7 +153,7 @@ R_Cmd::SrcBlend::Modes R_Cmd::getSrcBlendMode( const QString &name ) {
     else if ( !QString::compare( name, "colour", Qt::CaseInsensitive ) || !QString::compare( name, "color", Qt::CaseInsensitive ))
         return SrcBlend::Colour;
     else if ( !QString::compare( name, "minusColour", Qt::CaseInsensitive ) || !QString::compare( name, "minusColor", Qt::CaseInsensitive ) ||
-             !QString::compare( name, "oneMinusColour", Qt::CaseInsensitive ) || !QString::compare( name, "oneMinusColor", Qt::CaseInsensitive ))
+              !QString::compare( name, "oneMinusColour", Qt::CaseInsensitive ) || !QString::compare( name, "oneMinusColor", Qt::CaseInsensitive ))
         return SrcBlend::MinusColour;
     else if ( !QString::compare( name, "srcAlpha", Qt::CaseInsensitive ))
         return SrcBlend::SrcAlpha;
@@ -192,7 +192,7 @@ R_Cmd::DstBlend::Modes R_Cmd::getDstBlendMode( const QString &name ) {
     else if ( !QString::compare( name, "colour", Qt::CaseInsensitive ) || !QString::compare( name, "color", Qt::CaseInsensitive ))
         return DstBlend::Colour;
     else if ( !QString::compare( name, "minusColour", Qt::CaseInsensitive ) || !QString::compare( name, "minusColor", Qt::CaseInsensitive ) ||
-             !QString::compare( name, "oneMinusColour", Qt::CaseInsensitive ) || !QString::compare( name, "oneMinusColor", Qt::CaseInsensitive ))
+              !QString::compare( name, "oneMinusColour", Qt::CaseInsensitive ) || !QString::compare( name, "oneMinusColor", Qt::CaseInsensitive ))
         return DstBlend::MinusColour;
 
     // this should not happen
@@ -304,6 +304,10 @@ drawImage
 ===============
 */
 void R_Cmd::drawImage( float x, float y, float w, float h, float s1, float t1, float s2, float t2, imgHandle_t handle ) {
+    // set rendering mode to 2D
+    if ( !glImp.widget->projection2D())
+        glImp.widget->setProjection2D();
+
     // setup coords
     this->setCoords( x, y, w, h );
     this->setTextureCoords( s1, t1, s2, t2 );
@@ -521,6 +525,10 @@ drawMaterial
 void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle ) {
     const R_Material *mtrPtr;
 
+    // set rendering mode to 2D
+    if ( !glImp.widget->projection2D())
+        glImp.widget->setProjection2D();
+
     // failsafe
     if ( handle < 0 || handle >= m.mtrList.count())
         return;
@@ -548,9 +556,9 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
     // draw stages
     foreach ( R_MaterialStage *stagePtr, mtrPtr->stageList ) {
         this->setTextureCoords( stagePtr->coords( R_MaterialStage::S1 ),
-                               stagePtr->coords( R_MaterialStage::T1 ),
-                               stagePtr->coords( R_MaterialStage::S2 ),
-                               stagePtr->coords( R_MaterialStage::T2 ));
+                                stagePtr->coords( R_MaterialStage::T1 ),
+                                stagePtr->coords( R_MaterialStage::S2 ),
+                                stagePtr->coords( R_MaterialStage::T2 ));
 
         // execute textureMods
         switch ( stagePtr->textureMod()->type()) {

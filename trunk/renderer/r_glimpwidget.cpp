@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "r_glimp.h"
 #include "r_glimpwidget.h"
+#include "r_cmd.h"
 #include "r_main.h"
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
@@ -50,11 +51,35 @@ initializeGL
 void R_GlimpWidget::initializeGL() {
     glDisable( GL_TEXTURE_2D );
     glDisable( GL_COLOR_MATERIAL );
-    glEnable( GL_POLYGON_SMOOTH );
-    glEnable( GL_DEPTH_TEST );
-    glDepthFunc( GL_LEQUAL );
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
     glClearDepth( 1.0f );
+    glEnable( GL_DEPTH_TEST );
+    glDepthFunc( GL_LEQUAL );
+}
+
+/*
+================
+setProjection2D
+================
+*/
+void R_GlimpWidget::setProjection2D( bool toggle ) {
+    this->m_2d = toggle;
+
+    // set 2D virtual screen size
+    glViewport( 0, 0, this->width(), this->height());
+    glScissor( 0, 0, this->width(), this->height());
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+
+    if ( this->projection2D()) {
+        glDisable( GL_DEPTH_TEST );
+        glOrtho( 0.0f, this->width(), this->height(), 0.0f, 0.0f, 1.0f );
+    } else
+        glEnable( GL_DEPTH_TEST );
+
+    rCmd.setBlendMode( R_Cmd::SrcBlend::SrcAlpha, R_Cmd::DstBlend::MinusSrcAlpha );
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
 }
 
 /*
@@ -62,15 +87,8 @@ void R_GlimpWidget::initializeGL() {
 resizeGL
 ===============
 */
-void R_GlimpWidget::resizeGL( int w, int h ) {
-    // set 2D virtual screen size
-    glViewport( 0, 0, w, h );
-    glScissor( 0, 0, w, h );
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
-    glOrtho( 0.0f, w, h, 0.0f, 0.0f, 1.0f );
-    glMatrixMode( GL_MODELVIEW );
-    glLoadIdentity();
+void R_GlimpWidget::resizeGL( int, int ) {
+    this->setProjection2D();
 }
 
 /*
