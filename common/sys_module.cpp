@@ -172,7 +172,8 @@ void Sys_Module::load( const QStringList &args ) {
                     break;
                 } else {
                     com.print( this->tr( "^3Sys_Module::load: module \"%1\" has already been loaded\n" ).arg( modPtr->name()));
-                    this->itemLoadError( this->tr( "Module \"%1\" has already been loaded\n" ).arg( modPtr->name()));
+                    //this->itemLoadError( this->tr( "Module \"%1\" has already been loaded\n" ).arg( modPtr->name()));
+                    return;
                 }
             }
         }

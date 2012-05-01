@@ -11,5 +11,8 @@ r17 (v0.98.49):
     -image loading fixes
     -notifying on missing assets only once
 
+r22 (v0.98.52):
+    -implemented idTech3 style mipmapping (getting rid of glu)
+
 TODO:
     multiple update() cmds for each context

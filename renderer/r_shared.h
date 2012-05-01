@@ -37,7 +37,6 @@ typedef int fontHandle_t;
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <gl/gl.h>
-#include <gl/glu.h>
 #endif
 #include "../common/sys_shared.h"
 
@@ -49,7 +48,7 @@ namespace Renderer {
     static const QString PlatformLogo ( ":/common/platform" );
     static const QString Title        ( QObject::trUtf8( "Nu Renderer" ));
     static const QString Copyright    ( QObject::trUtf8( "Copyright (c) 2011-2012, Edd 'Double Dee' Psycho." ));
-    static const QString Version      ( QObject::trUtf8( "v0.98.51 (beta)" ));
+    static const QString Version      ( QObject::trUtf8( "v0.98.52 (beta)" ));
     typedef float Vec2D[2];
     typedef float Vec4D[4];
 }
