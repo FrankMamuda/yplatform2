@@ -108,7 +108,7 @@ void App_Main::parseArgs( int argc, char *argv[] ) {
 
     // failsafe
     if ( !cmdLine.startsWith( "+" )) {
-        com.error( Sys_Common::SoftError, this->tr( "App_Main::parseArgs: arguments must start with '+'\n" ));
+        com.error( StrSoftError + this->tr( "arguments must start with '+'\n" ));
         return;
     }
 

@@ -60,10 +60,5 @@ long myftol( float f );
 #define myftol( x )( static_cast<int>( x ))
 #endif
 
-// define clamp to edge
-#if !defined( GL_CLAMP_TO_EDGE )
-#define GL_CLAMP_TO_EDGE 0x812F
-#endif
-
 #endif // R_BUILD
 #endif // R_SHARED_H

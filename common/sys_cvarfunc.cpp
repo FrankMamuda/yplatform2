@@ -25,10 +25,15 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_cvar.h"
 #include "sys_common.h"
 #include "sys_module.h"
+#include "../gui/gui_password.h"
+#include "../applet/app_hasher.h"
 
 //
-//  move slots to private?
+// cvars
 //
+extern pCvar *sys_developer;
+extern pCvar *sys_protected;
+extern pCvar *sys_password;
 
 /*
 ============
@@ -62,12 +67,12 @@ pCvar::~pCvar() {
 integer
 ============
 */
-int pCvar::integer() const {
+int pCvar::integer( bool temp ) const {
     bool valid;
     int y;
 
     // set integer if any
-    y = this->string().toInt( &valid );
+    y = this->string( temp ).toInt( &valid );
 
     // all ok, return integer value
     if ( valid )
@@ -81,12 +86,12 @@ int pCvar::integer() const {
 value
 ============
 */
-float pCvar::value() const {
+float pCvar::value( bool temp ) const {
     bool valid;
     float y;
 
     // set integer if any
-    y = this->string().toFloat( &valid );
+    y = this->string( temp ).toFloat( &valid );
 
     // all ok, return float value
     if ( valid )
@@ -97,30 +102,61 @@ float pCvar::value() const {
 
 /*
 ============
+passwordCheck
+============
+*/
+bool pCvar::passwordCheck() {
+    if ( !this->flags.testFlag( Password ) || !sys_protected->integer())
+        return true;
+
+    if ( !sys_developer->integer()) {
+        Gui_Password p;
+        if ( p.exec()) {
+            if ( !QString::compare( hash.encrypt( p.ui->pwdEdit->text()), sys_password->string()))
+                return true;
+            else {
+                com.print( Sys::cRed + this->tr( " \"%1\" is password protected\n" ).arg( this->name()));
+                return false;
+            }
+        }
+
+        return false;
+    }
+    return true;
+}
+
+/*
+============
 set
 ============
 */
-bool pCvar::set( const QString &string, bool force ) {
-    if ( this->flags.testFlag( ReadOnly ) && !force ) {
-        com.print( this->tr( " ^1'%1' is read only\n" ).arg( this->name()));
-#if 0
-        // disabled for now
-        // to be enabled when Gui_Settings is complete
-    } else if ( this->flags.testFlag( Password ) && !com.developerMode ) {
-        com.print( this->tr( " ^1'%1' is password protected\n" ).arg( this->name()));
-#endif
-    } else if ( this->flags.testFlag( Latched ) && !force ) {
+bool pCvar::set( const QString &string, AccessFlags access ) {
+    if ( !access.testFlag( Force ) && !this->passwordCheck())
+        return false;
+
+    if ( this->flags.testFlag( ReadOnly ) && !access.testFlag( Force )) {
+        com.print( Sys::cRed + this->tr( " \"%1\" is read only\n" ).arg( this->name()));
+    } else if ( this->flags.testFlag( Latched ) && !access.testFlag( Force )) {
         if ( !this->latchString().isEmpty()) {
             if ( !QString::compare( this->string(), string ))
                 return true;
         }
         if ( QString::compare( this->latchString(), string ))
             this->setLatchString( string );
-        com.print( this->tr( " ^3'%1' will be changed upon restart\n" ).arg( this->name()));
+        com.print( Sys::cYellow + this->tr( " \"%1\" will be changed upon restart\n" ).arg( this->name()));
     } else {
-        if ( QString::compare( this->string(), string )) {
-            this->setString( string );
-            emit valueChanged( this->name(), this->string());
+        QString tempStr( string );
+        if ( !QString::compare( this->name(), "sys_password" ) && !access.testFlag( Config ))
+             tempStr = hash.encrypt( string );
+
+        if ( QString::compare( this->string(), tempStr )) {
+            if ( access.testFlag( Temp ))
+                this->setString( tempStr, true );
+            else
+                this->setString( tempStr, false );
+
+            if ( !access.testFlag( Temp ))
+                emit valueChanged( this->name(), this->string());
         }
     }
     return true;
@@ -131,8 +167,8 @@ bool pCvar::set( const QString &string, bool force ) {
 set
 ============
 */
-bool pCvar::set( int integer, bool force ) {
-    return this->set( QString( "%1" ).arg( integer ), force );
+bool pCvar::set( int integer, AccessFlags access ) {
+    return this->set( QString( "%1" ).arg( integer ), access );
 }
 
 /*
@@ -140,8 +176,8 @@ bool pCvar::set( int integer, bool force ) {
 set
 ============
 */
-bool pCvar::set( double integer, bool force ) {
-    return this->set( QString( "%1" ).arg( integer ), force );
+bool pCvar::set( double integer, AccessFlags access ) {
+    return this->set( QString( "%1" ).arg( integer ), access );
 }
 
 /*
@@ -149,8 +185,8 @@ bool pCvar::set( double integer, bool force ) {
 set
 ============
 */
-bool pCvar::set( float value, bool force ) {
-    return this->set( QString( "%1" ).arg( value ), force );
+bool pCvar::set( float value, AccessFlags access ) {
+    return this->set( QString( "%1" ).arg( value ), access );
 }
 
 /*

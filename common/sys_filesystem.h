@@ -182,13 +182,14 @@ class Sys_Filesystem : public QObject {
     
 public:
     enum OpenFlag {
-        NoFlags    = 0x00,
-        Absolute   = 0x01,
-        DirsOnly   = 0x02,
-        PacksOnly  = 0x04,
-        Force      = 0x08,
-        Silent     = 0x10,
-        Linked     = 0x20
+        NoFlags         = 0x00,
+        Absolute        = 0x01,
+        DirsOnly        = 0x02,
+        PacksOnly       = 0x04,
+        Force           = 0x08,
+        Silent          = 0x10,
+        Linked          = 0x20,
+        SkipInternal    = 0x40
     };
     Q_DECLARE_FLAGS ( OpenFlags, OpenFlag )
 

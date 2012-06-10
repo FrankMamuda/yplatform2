@@ -42,6 +42,11 @@ r19:
 r22:
     -ignoring duplicate packages
 
+r23:
+    -convenience strings (not fully implemented yet), nothing special
+    -temporary cvars for settings (no hard coding)
+    -cvar access flags & password protection (dev mode)
+
 TODOs
     -cmd completion (filename, etc.)
     -revert long->int in fs (ck ioquake3 code)

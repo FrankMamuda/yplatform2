@@ -266,7 +266,7 @@ void Gui_Main::createSystemTray() {
 
     // check for sysTray
     if ( !QSystemTrayIcon::isSystemTrayAvailable()) {
-        com.error( Sys_Common::SoftError, this->tr( "Gui_Main::createSystemTray: could not detect system tray\n" ));
+        com.error( StrSoftError + this->tr( "could not detect system tray\n" ));
         return;
     }
 
@@ -394,7 +394,7 @@ bool Gui_Main::completeCommand() {
 
     // print out suggestions
     this->printImage( "icons/about", 16, 16 );
-    com.print( this->tr( " ^5Available commands and cvars:\n" ));
+    com.print( Sys::cCyan + this->tr( " Available commands and cvars:\n" ));
     foreach ( QString str, matchedStrings ) {
         // check commands
         pCmd *cmdPtr;
@@ -606,7 +606,7 @@ QImage *Gui_Main::addImageResource( const QString &filename, int width, int heig
     // failsafe
     foreach ( imageResourceDef_t *imgPtr, this->imageResources ) {
         if ( !QString::compare( filename, imgPtr->name )) {
-            com.error( Sys_Common::SoftError, this->tr( "Gui_Main::addImageResource: image \"%1\" has already been added\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "image \"%1\" has already been added\n" ).arg( filename ));
             return NULL;
         }
     }
@@ -626,7 +626,7 @@ QImage *Gui_Main::addImageResource( const QString &filename, int width, int heig
         this->ui->consoleScreen->document()->addResource( QTextDocument::ImageResource, QUrl( filename ), this->imageResources.last()->image );
         return &this->imageResources.last()->image;
     } else
-        com.error( Sys_Common::SoftError, this->tr( "Gui_Main::addImageResource: could not add image \"%1\"\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "could not add image \"%1\"\n" ).arg( filename ));
 
     return NULL;
 }
@@ -689,8 +689,10 @@ void Gui_Main::on_consoleInput_returnPressed() {
     if ( !this->ui->consoleInput->text().isEmpty()) {
         com.print( QString( "^2\%1\n" ).arg( this->ui->consoleInput->text()));
 
-        if ( cmd.execute( this->ui->consoleInput->text()))
-            this->addToHistory( this->ui->consoleInput->text());
+        if ( cmd.execute( this->ui->consoleInput->text())) {
+            if ( !this->ui->consoleInput->text().startsWith( "sys_password" ))
+                this->addToHistory( this->ui->consoleInput->text());
+        }
 
         this->ui->consoleInput->clear();
         this->resetHistoryOffset();
@@ -792,7 +794,7 @@ void Gui_Main::loadHistory( const QString &filename ) {
     QDomDocument histFile;
 
     // read buffer
-    QByteArray buffer = fs.readFile( filename, Sys_Filesystem::Silent );
+    QByteArray buffer = fs.readFile( filename, ( Sys_Filesystem::Silent | Sys_Filesystem::SkipInternal ));
 
     // failsafe
     if ( buffer.isEmpty())
@@ -809,7 +811,7 @@ void Gui_Main::loadHistory( const QString &filename ) {
 
             // check element name
             if ( QString::compare( histElement.tagName(), "history" )) {
-                com.error( Sys_Common::SoftError, this->tr( "Gui_Main::loadHistory: expected <history> in \"%1\"\n" ).arg( filename ));
+                com.error( StrSoftError + this->tr( "expected <history> in \"%1\"\n" ).arg( filename ));
                 return;
             }
 
@@ -820,7 +822,7 @@ void Gui_Main::loadHistory( const QString &filename ) {
 
                     // check element name
                     if ( QString::compare( cmdElement.tagName(), "cmd" )) {
-                        com.error( Sys_Common::SoftError, this->tr( "Gui_Main::loadHistory: expected <cmd> in \"%1\"\n" ).arg( filename ));
+                        com.error( StrSoftError + this->tr( "expected <cmd> in \"%1\"\n" ).arg( filename ));
                         return;
                     }
 
@@ -876,7 +878,7 @@ void Gui_Main::removeAction( ModuleAPI::ToolBarActions id ) {
         break;
 
     default:
-        com.error( Sys_Common::SoftError, this->tr( "Gui_Main::removeAction: invalid action id '%1'\n" ).arg( id ));
+        com.error( StrSoftError + this->tr( "invalid action id '%1'\n" ).arg( id ));
     }
 }
 
@@ -914,7 +916,7 @@ void Gui_Main::addTabExt( TabDestinations dest, QWidget *widget, const QString &
     // failsafe
     foreach ( customTabDef_t *customTabPtr, this->tabWidgetTabs[dest] ) {
         if ( !QString::compare( name, customTabPtr->name )) {
-            com.error( Sys_Common::SoftError, this->tr( "Gui_Main::addTabExt: tab already exists\n" ));
+            com.error( StrSoftError + this->tr( "tab already exists\n" ));
             return;
         }
     }

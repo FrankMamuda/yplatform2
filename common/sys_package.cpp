@@ -180,16 +180,16 @@ bool Sys_Package::readPackage( pPackage *pPtr ) {
                 // in case we fail
                 corruptHeader:
                     delete pEntryPtr;
-                com.error( Sys_Common::SoftError, this->tr( "Sys_Package::readPackage: corrupt header in package \"%1\"\n" ).arg( pPtr->name()));
+                com.error( StrSoftError + this->tr( "corrupt header in package \"%1\"\n" ).arg( pPtr->name()));
                 break;
             } else if ( tmp == Package::IdentCentralDir )
                 // we don't really care about central dir headers
                 // assuming package is compressed in regular way
                 return true;
             else
-                com.error( Sys_Common::SoftError, this->tr( "Sys_Package::readPackage: ident mismatch in package \"%1\"\n" ).arg( pPtr->name()));
+                com.error( StrSoftError + this->tr( "ident mismatch in package \"%1\"\n" ).arg( pPtr->name()));
         } else
-            com.error( Sys_Common::SoftError, this->tr( "Sys_Package::readPackage: could not read package \"%1\" ident\n" ).arg( pPtr->name()));
+            com.error( StrSoftError + this->tr( "could not read package \"%1\" ident\n" ).arg( pPtr->name()));
 
         break;
     }
@@ -228,7 +228,7 @@ pPackage *Sys_Package::load( const QString &filename, int flags ) {
             return pPtr;
         }
     } else
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Package::load: could not read package \"%1\"\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "could not read package \"%1\"\n" ).arg( filename ));
 
     // this package ain't worth adding to list
     fail:

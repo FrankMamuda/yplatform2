@@ -25,6 +25,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include <QDialog>
 #include <QTabWidget>
+#include <QSpinBox>
+#include <QCheckBox>
+#include "../common/sys_cvarfunc.h"
 
 //
 // namespaces
@@ -32,6 +35,49 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 namespace Ui {
     class Gui_Settings;
 }
+
+//
+// class:pSettingsCvar
+//
+class pSettingsCvar : public QObject {
+    Q_OBJECT
+    Q_PROPERTY( Types type READ type WRITE setType )
+    Q_ENUMS( Types )
+
+public:
+    // currently supported types
+    enum Types {
+        CheckBox = 0,
+        SpinBox
+    };
+
+    Types type () const { return this->m_type; }
+
+    // constructor
+    pSettingsCvar( pCvar *bCvarPtr, QObject *bObjPtr, pSettingsCvar::Types bType, QObject *parent );
+
+    // set initial values from cvars
+    void setState();
+
+    // save value
+    void save();
+
+public slots:
+    void setType( Types bType ) { this->m_type = bType; }
+
+    // checkBox
+    void stateChanged( int state );
+
+    // spinBox
+    void integerValueChanged( int integer );
+
+private:
+    Types m_type;
+
+    // pointers to cvar and corresponding object
+    pCvar *cvarPtr;
+    QObject *objPtr;
+};
 
 //
 // class:Gui_Settings
@@ -44,8 +90,11 @@ class Gui_Settings : public QDialog {
 public:
     explicit Gui_Settings( QWidget *parent = 0 );
     ~Gui_Settings();
-    bool cvarsLocked() const { return this->m_cvarsLocked; };
+    bool cvarsLocked() const { return this->m_cvarsLocked; }
     QTabWidget *settingsTabWidget;
+    void addCvar( pCvar *cvarPtr, pSettingsCvar::Types type, QObject *objPtr ) {
+        this->cvarList << new pSettingsCvar( cvarPtr, objPtr, type, qobject_cast<QObject*>( this ));
+    }
 
 signals:
     void updateModules();
@@ -56,24 +105,17 @@ protected:
 private slots:
     void on_buttonAccept_clicked();
     void on_buttonClose_clicked();
-    void lockCvars( bool lock = true ) { this->m_cvarsLocked = lock; };
-    void on_iconSize_valueChanged( int );
-    void on_extractModules_stateChanged( int );
-    void on_enableFsDebug_stateChanged( int );
-    void on_ignoreLinks_stateChanged( int );
+    void lockCvars( bool lock = true ) { this->m_cvarsLocked = lock; }
     void saveCvars();
     void intializeCvars();
-
-    void on_restoreSize_stateChanged(int arg1);
 
 private:
     bool m_cvarsLocked;
     Ui::Gui_Settings *ui;
     bool s_fsDebug;
-    bool s_modExtract;
-    unsigned int s_guiIconSize;
-    bool s_restoreSize;
-    bool s_ignoreLinks;
+
+    // auto cvars
+    QList <pSettingsCvar*>cvarList;
 };
 
 #endif // GUI_SETTINGS_H

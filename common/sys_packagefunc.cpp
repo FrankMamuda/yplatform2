@@ -123,7 +123,7 @@ long pEntry::read( byte *buffer, unsigned long len, int flags ) {
 
     // failsafe
     if ( !this->hasInitialized()) {
-        com.error( Sys_Common::SoftError, this->tr( "pEntry( '%1' )::read: file has not been opened\n" ).arg( this->name()));
+        com.error( StrSoftError + this->tr( "package \"%1\" has not been opened\n" ).arg( this->name()));
         return -1;
     }
 
@@ -223,7 +223,7 @@ long pEntry::read( byte *buffer, unsigned long len, int flags ) {
             if ( zlibError == Z_STREAM_END )
                 break;
         } else {
-            com.error( Sys_Common::SoftError, this->tr( "pEntry( '%1' )::read: unsupported compression method\n" ).arg( this->name()));
+            com.error( StrSoftError + this->tr( "unsupported compression method in package \"%1\"\n" ).arg( this->name()));
             return -1;
         }
     }

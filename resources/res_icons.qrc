@@ -14,6 +14,7 @@
         <file alias="refresh">icons/refresh_48.png</file>
         <file alias="accept">icons/accept_48.png</file>
         <file alias="module">icons/module_48.png</file>
+        <file alias="locked">icons/locked_48.png</file>
     </qresource>
     <qresource prefix="/platform">
         <file alias="consoleText.html">platform/consoleText.html</file>

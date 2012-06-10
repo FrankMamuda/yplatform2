@@ -38,7 +38,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 namespace Sys {
     static const QString Title       ( QObject::trUtf8( "YPlatform2" ));
     static const QString Copyright   ( QObject::trUtf8( "Copyright (c) 2009-2012, Edd 'Double Dee' Psycho." ));
-    static const QString Version     ( QObject::trUtf8( "YCommons: v2.9.6" ));
+    static const QString Version     ( QObject::trUtf8( "YCommons: v2.9.7" ));
 
     // colours
     static const QChar ColourEscape  ( '^' );
@@ -51,6 +51,15 @@ namespace Sys {
     static const QChar ColourMagenta ( '6' );
     static const QChar ColourWhite   ( '7' );
     static const QChar ColourNull    ( '*' );
+    static const QString cBlack      ( "^0" );
+    static const QString cRed        ( "^1" );
+    static const QString cGreen      ( "^2" );
+    static const QString cYellow     ( "^3" );
+    static const QString cBlue       ( "^4" );
+    static const QString cCyan       ( "^5" );
+    static const QString cMagenta    ( "^6" );
+    static const QString cWhite      ( "^7" );
+    static const QString cNull       ( "^*" );
 }
 
 // byte
@@ -65,6 +74,17 @@ Q_DECLARE_METATYPE( fileHandle_t* )
 
 // script value
 Q_DECLARE_METATYPE( QScriptValue )
+
+// function name
+#define ClassFuncPure QString( "%1::%2" ).arg( this->metaObject()->className()).arg( __func__ )
+#define ClassFunc QString( "%1::%2: " ).arg( this->metaObject()->className()).arg( __func__ )
+
+// some convenience strings
+#define StrDebug Sys::cMagenta + ClassFunc
+#define StrFatalError Sys_Common::FatalError, ClassFunc
+#define StrSoftError Sys_Common::SoftError, ClassFunc
+#define StrMsg Sys::cGreen + ClassFunc + Sys::cCyan
+#define StrWarn Sys::cGreen + ClassFunc + Sys::cYellow
 
 //
 // platform-specific
@@ -178,23 +198,4 @@ Q_DECLARE_METATYPE( QScriptValue )
 #  error "arch not supported"
 #endif
 
-#if defined ( YP_BIG_ENDIAN ) && defined ( YP_LITTLE_ENDIAN )
-#  error "endianness defined as both big and little"
-#elif defined ( YP_BIG_ENDIAN )
-#  define littleShort( x ) shortSwap( x )
-#  define littleLong( x ) longSwap( x )
-#  define littleFloat( x ) floatSwap( &x )
-#  define bigShort
-#  define bigLong
-#  define bigFloat
-#elif defined ( YP_LITTLE_ENDIAN )
-#  define littleShort
-#  define littleLong
-#  define littleFloat
-#  define bigShort( x ) shortSwap( x )
-#  define bigLong( x ) longSwap( x )
-#  define bigFloat( x ) floatSwap( &x )
-#else
-#  error "endianness not defined"
-#  endif
 #endif
