@@ -68,7 +68,7 @@ void Sys_Cmd::shutdown() {
         this->setInitialized( false );
 
     // announce
-    com.print( this->tr( "^2Sys_Cmd: ^5shutting down command subsystem\n" ));
+    com.print( StrMsg + this->tr( "shutting down command subsystem\n" ));
 
     // remove all commands
     foreach ( pCmd *cmdFunc, this->cmdList )
@@ -84,7 +84,7 @@ add
 void Sys_Cmd::add( const QString &command, cmdCommand_t function, const QString &description ) {
     // failsafe
     if ( this->find( command ) != NULL ) {
-        com.print( this->tr( "^2Sys_Cmd::add: command ^3\"%1\" already exists\n" ).arg( command ));
+        com.print( StrWarn + this->tr( "command ^3\"%1\" already exists\n" ).arg( command ));
         return;
     }
 
@@ -103,7 +103,7 @@ add
 void Sys_Cmd::add( const QString &command, QScriptValue function, const QString &description ) {
     // failsafe
     if ( this->find( command ) != NULL ) {
-        com.print( this->tr( "^2Sys_Cmd::add: command ^3\"%1\" already exists\n" ).arg( command ));
+        com.print( StrWarn + this->tr( "command ^3\"%1\" already exists\n" ).arg( command ));
         return;
     }
 
@@ -138,7 +138,7 @@ print
 */
 void Sys_Cmd::print( const QStringList &args ) {
     if ( args.count() < 1 ) {
-        com.print( this->tr( "^3usage: ^2con_print ^3[^2message^3] - print text to console\n" ));
+        com.print( Sys::cYellow + this->tr( "usage: ^2con_print ^3[^2message^3] - print text to console\n" ));
         return;
     }
 
@@ -153,7 +153,7 @@ echoImage
 */
 void Sys_Cmd::printImage( const QStringList &args ) {
     if ( args.count() != 3 ) {
-        com.print( this->tr( "^3usage: ^2con_printImage ^3[^2filename^3] ^3[^2width^3] ^3[^2height^3] - print an image to console\n" ));
+        com.print( Sys::cYellow + this->tr( "usage: ^2con_printImage ^3[^2filename^3] ^3[^2width^3] ^3[^2height^3] - print an image to console\n" ));
         return;
     }
 
@@ -167,7 +167,7 @@ exec
 */
 void Sys_Cmd::exec( const QStringList &args ) {
     if ( args.isEmpty()) {
-        com.print( this->tr( "^3usage: ^2exec ^3[^2filenames^3] - execute xml configuration file(s)\n" ));
+        com.print( Sys::cYellow + this->tr( "usage: ^2exec ^3[^2filenames^3] - execute xml configuration file(s)\n" ));
         return;
     }
 
@@ -194,11 +194,11 @@ void Sys_Cmd::list( const QStringList &args ) {
             numFiltered++;
         }
         if ( !numFiltered )
-            com.print( this->tr( "^1Sys_Cmd::list: could not match any available commands\n" ));
+            com.print( StrWarn + this->tr( "could not match any available commands\n" ));
         else
-            com.print( this->tr( "^2Sys_Cmd::list: ^5matched ^3%1 ^5of ^3%2 ^5available commands:\n" ).arg( numFiltered ).arg( this->cmdList.count()));
+            com.print( StrMsg + this->tr( "matched ^3%1 ^5of ^3%2 ^5available commands:\n" ).arg( numFiltered ).arg( this->cmdList.count()));
     } else
-        com.print( this->tr( "^2Sys_Cmdr::list: ^3%1 ^5available commands:\n" ).arg( this->cmdList.count()));
+        com.print( StrMsg + this->tr( "^3%1 ^5available commands:\n" ).arg( this->cmdList.count()));
 
     foreach ( pCmd *cmdPtr, this->cmdList ) {
         if ( !args.isEmpty() && !cmdPtr->name().startsWith( args.first()))
@@ -234,7 +234,7 @@ bool Sys_Cmd::executeTokenized( const QString &command, const QStringList &args 
         return true;
 
     // report unknown command
-    com.print( this->tr( "^2Sys_Cmd::execute: ^3unknown command \"%1\"\n" ).arg( command ));
+    com.print( StrWarn + this->tr( "unknown command \"%1\"\n" ).arg( command ));
     return false;
 }
 

@@ -57,9 +57,9 @@ void Sys_Common::error( ErrorTypes type, const QString &msg ) {
     }
 
     if ( type == FatalError )
-        this->print( this->tr( "^1FATAL ERROR: %1" ).arg( msg ));
+        this->print( Sys::cRed + this->tr( "FATAL ERROR: %1" ).arg( msg ));
     else
-        this->print( this->tr( "^3ERROR: %1" ).arg( msg ));
+        this->print( Sys::cRed + this->tr( "ERROR: %1" ).arg( msg ));
 
     if ( type == FatalError ) {
         this->catchError();

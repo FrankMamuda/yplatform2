@@ -117,7 +117,7 @@ void pModule::loadHandle() {
 
         // see if we have properly resolved entry/main functions
         if ( !this->modMain || !this->entry ) {
-            this->setErrorMessage( this->tr( "could not load module: errorString: %1" ).arg( this->handle.errorString()));
+            this->setErrorMessage( this->tr( "Could not load module: errorString: %1" ).arg( this->handle.errorString()));
             this->handle.unload();
             //this->handle;
         } else {
@@ -140,13 +140,13 @@ void pModule::loadHandle() {
                     this->setErrorMessage( this->tr( "Module API version mismatch - %1, expected less or equal to %2" ).arg( version ).arg( ModuleAPI::Version ));
                     return;
                 } else
-                    com.print( this->tr( "^2pModule::loadHandle: successfully loaded module \"%1\" with API - %2\n" ).arg( this->name()).arg( version ));
+                    com.print( StrMsg + this->tr( "successfully loaded module \"%1\" with API - %2\n" ).arg( this->name()).arg( version ));
             } else if ( this->type() == Renderer ) {
                 if ( version > RendererAPI::Version ) {
                     this->setErrorMessage( this->tr( "Renderer API version mismatch - %1, expected less or equal to %2" ).arg( version ).arg( RendererAPI::Version ));
                     return;
                 } else
-                    com.print( this->tr( "^2pModule::loadHandle: successfully loaded renderer with API - %1\n" ).arg( version ));
+                    com.print( StrMsg + this->tr( "successfully loaded renderer with API - %1\n" ).arg( version ));
             }
 
             // perform initialization

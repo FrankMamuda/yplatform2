@@ -19,10 +19,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 */
 
 //
-// dd, filesystem complete rewrite as part of YCommons 2.9
-//
-
-//
 // includes
 //
 #include "sys_common.h"
@@ -96,9 +92,9 @@ void Sys_Filesystem::init() {
     if ( fs_debug->integer()) {
         foreach ( pSearchPath *sp, this->searchPaths ) {
             if ( sp->type() == pFile::Directory )
-                com.print( this->tr( "^6Sys_Filesystem::init: searchPath: %1 (dir)\n" ).arg( sp->path()));
+                com.print( StrDebug + this->tr( "%1 (dir)\n" ).arg( sp->path()));
             else
-                com.print( this->tr( "^6Sys_Filesystem::init: searchPath: %1 (package)\n" ).arg( sp->path()));
+                com.print( StrDebug + this->tr( "searchPath: %1 (package)\n" ).arg( sp->path()));
 
         }
     }
@@ -106,6 +102,7 @@ void Sys_Filesystem::init() {
     // add resources
     QDir::setSearchPaths( ":", QStringList( ":/" ));
 }
+
 
 /*
 ============
@@ -118,11 +115,11 @@ void Sys_Filesystem::shutdown() {
         return;
 
     // announce
-    com.print( this->tr( "^2Sys_Filesystem: ^5shutting down filesystem\n" ));
+    com.print( StrMsg + this->tr( "shutting down filesystem\n" ));
 
     // delete searchPath content
     if ( fs_debug->integer())
-        com.print( this->tr( "^6Sys_Filesystem::shutdown: clearing searchPaths (%1)\n" ).arg( this->searchPaths.count()));
+        com.print( StrDebug + this->tr( "clearing searchPaths (%1)\n" ).arg( this->searchPaths.count()));
 
     foreach ( pSearchPath *sp, this->searchPaths )
         delete sp;
@@ -130,7 +127,7 @@ void Sys_Filesystem::shutdown() {
 
     // close all open files and clear the list
     if ( fs_debug->integer())
-        com.print( this->tr( "^6Sys_Filesystem::shutdown: clearing files (%1)\n" ).arg( this->fileList.count()));
+        com.print( StrDebug + this->tr( "clearing files (%1)\n" ).arg( this->fileList.count()));
 
     foreach ( pFile *filePtr, this->fileList ) {
         if ( filePtr->mode() >= pFile::Read ) {
@@ -177,8 +174,7 @@ void Sys_Filesystem::loadPackages() {
                 foreach ( pSearchPath *sp, this->searchPaths ) {
                     if ( !QString::compare( fInfo.fileName(), sp->path())) {
                         dup = true;
-                        break;
-                    }
+                        break;                    }
                 }
                 if ( dup )
                     continue;
@@ -247,7 +243,7 @@ QString Sys_Filesystem::buildPath( const QString &filename, const QString &baseP
     *ok = false;
 
     if ( basePath.isNull() || basePath.isEmpty() || filename.isNull() || filename.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::buildPath: invalid path\n" ));
+        com.error( StrSoftError + this->tr( "invalid path\n" ));
         return "";
     }
 
@@ -268,8 +264,12 @@ bool Sys_Filesystem::existsExt( QString &filename, OpenFlags &flags, int &search
     int y = -1;
 
     if ( filename.startsWith( ":/" )) {
+        // abort with skipInternal flag and :/ paths
+        if ( flags.testFlag( Sys_Filesystem::SkipInternal ))
+            return false;
+
         if ( flags.testFlag( Absolute )) {
-            com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::existsExt: (Absolute) set for internal path\n" ));
+            com.error( StrFatalError + this->tr( "(Absolute) flag set for internal path\n" ));
             return false;
         }
 
@@ -291,6 +291,10 @@ bool Sys_Filesystem::existsExt( QString &filename, OpenFlags &flags, int &search
         foreach ( pSearchPath *sp, this->searchPaths ) {
             y++;
 
+            // skip internal paths
+            if ( sp->id() == Filesystem::InternalPathID && flags.testFlag( Sys_Filesystem::SkipInternal ))
+                continue;
+
             if ( sp->type() == pFile::Directory ) {
                 if ( flags.testFlag( PacksOnly ))
                     continue;
@@ -302,7 +306,7 @@ bool Sys_Filesystem::existsExt( QString &filename, OpenFlags &flags, int &search
                 } else {
                     if ( !tmpFile.open( QIODevice::ReadOnly )) {
                         if ( fs_debug->integer())
-                            com.print( this->tr( "^6Sys_Filesystem::existsExt: cannot open file \"%1\": %2\n" ).arg( tmpFile.fileName()).arg( tmpFile.errorString()));
+                            com.print( StrDebug + this->tr( "cannot open file \"%1\": %2\n" ).arg( tmpFile.fileName()).arg( tmpFile.errorString()));
                         continue;
                     }
 
@@ -421,13 +425,13 @@ void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHa
 
     // failsafe
     if ( filename.startsWith( ":/" )) {
-        com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInWriteMode: cannot write to internal filesystem\n" ));
+        com.error( StrFatalError + this->tr( "cannot write to internal filesystem\n" ));
         return;
     }
 
     // failsafe
     if ( filename.endsWith( Filesystem::DefaultPackageExtension )) {
-        com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInWriteMode: cannot write to package\n" ));
+        com.error( StrFatalError + this->tr( "openInWriteMode: cannot write to package\n" ));
         return;
     }
 
@@ -436,12 +440,12 @@ void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHa
 
     // failed
     if ( searchPathIndex < 0 ) {
-        com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInWriteMode: could not resolve homePath\n" ));
+        com.error( StrFatalError + this->tr( "openInWriteMode: could not resolve homePath\n" ));
         return;
     }
 
     if ( fs_debug->integer())
-        com.print( this->tr( "^6Sys_Filesystem::openInWriteMode: open \"%1\" in \"%2\" in write mode\n" ).arg( filename, this->searchPaths.at( searchPathIndex )->path()));
+        com.print( StrDebug + this->tr( "open \"%1\" in \"%2\" in write mode\n" ).arg( filename, this->searchPaths.at( searchPathIndex )->path()));
 
     // assign next available handle
     fHandle = this->numFileHandles++;
@@ -463,18 +467,18 @@ void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHa
 
     if ( !tmpDir.exists()) {
         if ( !( flags.testFlag( Silent )))
-            com.print( this->tr( "^2Sys_Filesystem::openInWriteMode: ^3creating non-existant path \"%1\"\n" ).arg( tmpDir.absolutePath()));
+            com.print( StrDebug + this->tr( "creating non-existant path \"%1\"\n" ).arg( tmpDir.absolutePath()));
 
         tmpDir.mkpath( tmpDir.absolutePath());
         if ( !tmpDir.exists()) {
-            com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInWriteMode: could not create path \"%1\"\n" ).arg( this->searchPaths.at( searchPathIndex )->path()));
+            com.error( StrFatalError + this->tr( "could not create path \"%1\"\n" ).arg( this->searchPaths.at( searchPathIndex )->path()));
             return;
         }
     }
 
     if ( !filePtr->fHandle.open( QIODevice::WriteOnly )) {
         if ( !( flags.testFlag( Silent )))
-            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::openInWriteMode: could not open \"%1\" in write mode\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "could not open \"%1\" in write mode\n" ).arg( filename ));
         return;
     }
 
@@ -493,19 +497,19 @@ long Sys_Filesystem::openInAppendMode( const QString &filename, fileHandle_t &fH
 
     // absolute path
     if ( flags.testFlag( Absolute )) {
-        com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInAppendMode: (Absolute) appending files outside searchPaths not supported\n" ));
+        com.error( StrFatalError + this->tr( "(Absolute) appending files outside searchPaths not supported\n" ));
         return -1;
     }
 
     // failsafe
     if ( filename.startsWith( ":/" )) {
-        com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInAppendMode: cannot append internal filesystem files\n" ));
+        com.error( StrFatalError + this->tr( "cannot append to internal filesystem files\n" ));
         return -1;
     }
 
     // failsafe
     if ( filename.endsWith( Filesystem::DefaultPackageExtension )) {
-        com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::openInAppendMode: cannot write to package\n" ));
+        com.error( StrFatalError + this->tr( "cannot write to package\n" ));
         return -1;
     }
 
@@ -520,7 +524,7 @@ long Sys_Filesystem::openInAppendMode( const QString &filename, fileHandle_t &fH
     filePtr->fHandle.setFileName( QString( filename ).prepend( this->searchPaths.at( searchPathIndex )->path()));
     if ( !filePtr->fHandle.open( QIODevice::Append )) {
         if ( !( flags.testFlag( Silent )))
-            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::openInAppendMode: could not open \"%1\" in append mode\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "could not open \"%1\" in append mode\n" ).arg( filename ));
         return -1;
     }
 
@@ -548,31 +552,35 @@ long Sys_Filesystem::open( pFile::OpenModes mode, const QString &filename, fileH
 
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::open: filesystem not initialized\n" ));
+        com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
         return fileLength;
     }
 
+    // abort with skipInternal flag and :/ paths
+    if ( filename.startsWith( ":/" ) && flags.testFlag( Sys_Filesystem::SkipInternal ))
+        return fileLength;
+
     // we cannot have these symbols in paths
     if ( path.contains( ".." ) || path.contains( "::" )) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::open: invalid path \"%1\"\n" ).arg( path ));
+        com.error( StrSoftError + this->tr( "invalid path \"%1\"\n" ).arg( path ));
         return fileLength;
     }
 
     // check if it exists at all
     if ( !this->exists( path, flags, fsp ) && mode != pFile::Write ) {
         if ( !( flags.testFlag( Silent )))
-            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::open: could not open file \"%1\"\n" ).arg( path ));
+            com.error( StrSoftError + this->tr( "could not open file \"%1\"\n" ).arg( path ));
         return fileLength;
     } else {
         if ( mode != pFile::Write ) {
             if ( fs_debug->integer()) {
                 if ( !( flags.testFlag( Absolute ))) {
                     if ( this->searchPaths.at( fsp )->type() == pFile::Directory )
-                        com.print( this->tr( "^6Sys_Filesystem::open: success for \"%1\" in \"%2\" (dir)\n" ).arg( path, this->searchPaths.at( fsp )->path()));
+                        com.print( StrDebug + this->tr( "success for \"%1\" in \"%2\" (Dir)\n" ).arg( path, this->searchPaths.at( fsp )->path()));
                     else
-                        com.print( this->tr( "^6Sys_Filesystem::open: success for \"%1\" in \"%2\" (package)\n" ).arg( path, this->searchPaths.at( fsp )->path()));
+                        com.print( StrDebug + this->tr( "success for \"%1\" in \"%2\" (Package)\n" ).arg( path, this->searchPaths.at( fsp )->path()));
                 } else {
-                    com.print( this->tr( "^6Sys_Filesystem::open: success for \"%1\" (absolute)\n" ).arg( path ));
+                    com.print( StrDebug + this->tr( "success for \"%1\" (Absolute)\n" ).arg( path ));
                 }
             }
         }
@@ -587,17 +595,17 @@ long Sys_Filesystem::open( pFile::OpenModes mode, const QString &filename, fileH
 
                     case pFile::Read:
                         if ( !( flags.testFlag( Silent )))
-                            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::open: file \"%1\" already open in read mode\n" ).arg( path ));
+                            com.error( StrSoftError + this->tr( "file \"%1\" already open in read mode\n" ).arg( path ));
                         break;
 
                     case pFile::Append:
                         if ( !( flags.testFlag( Silent )))
-                            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::open: file \"%1\" already open in append mode\n" ).arg( path ));
+                            com.error( StrSoftError + this->tr( "file \"%1\" already open in append mode\n" ).arg( path ));
                         break;
 
                     case pFile::Write:
                         if ( !( flags.testFlag( Silent )))
-                            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::open: file \"%1\" already open in write mode\n" ).arg( path ));
+                            com.error( StrSoftError + this->tr( "file \"%1\" already open in write mode\n" ).arg( path ));
                         break;
                     }
                     return fileLength;
@@ -621,7 +629,7 @@ long Sys_Filesystem::open( pFile::OpenModes mode, const QString &filename, fileH
             break;
 
         default:
-            com.error( Sys_Common::FatalError, this->tr( "Sys_FileSystem::open: invalid mode %1\n" ).arg( mode ));
+            com.error( StrFatalError + this->tr( "invalid mode %1\n" ).arg( mode ));
             return -1;
         }
     }
@@ -636,7 +644,7 @@ close
 void Sys_Filesystem::close( const QString &filename, OpenFlags flags ) {
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::close: filesystem not initialized\n" ));
+        com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
         return;
     }
 
@@ -644,7 +652,7 @@ void Sys_Filesystem::close( const QString &filename, OpenFlags flags ) {
         if ( !QString::compare( filename, filePtr->name())) {
             if ( filePtr->mode() == pFile::Closed ) {
                 if ( !( flags.testFlag( Silent )))
-                    com.print( this->tr( "^2Sys_Filesystem::close: ^3file \"%1\" already closed\n" ).arg( filename ));
+                    com.print( StrWarn + this->tr( "file \"%1\" already closed\n" ).arg( filename ));
                 return;
             }
             filePtr->setOpenMode( pFile::Closed );
@@ -657,7 +665,7 @@ void Sys_Filesystem::close( const QString &filename, OpenFlags flags ) {
         }
     }
     if ( fs_debug->integer())
-        com.print( this->tr( "^6Sys_Filesystem::close: file \"%1\" has not been opened\n" ).arg( filename ));
+        com.print( StrDebug + this->tr( "file \"%1\" has not been opened\n" ).arg( filename ));
 }
 
 /*
@@ -668,7 +676,7 @@ close
 void Sys_Filesystem::close( const fileHandle_t fHandle, OpenFlags flags ) {
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::close: filesystem not initialized\n" ));
+        com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
         return;
     }
 
@@ -679,13 +687,13 @@ void Sys_Filesystem::close( const fileHandle_t fHandle, OpenFlags flags ) {
         if ( fHandle == filePtr->handle()) {
             if ( filePtr->mode() == pFile::Closed ) {
                 if ( !( flags.testFlag( Silent )))
-                    com.print( this->tr( "^2Sys_Filesystem::close: ^3file \"%1\" already closed\n" ).arg( filePtr->name()));
+                    com.print( StrWarn + this->tr( "file \"%1\" already closed\n" ).arg( filePtr->name()));
                 return;
             }
             filePtr->setOpenMode( pFile::Closed );
 
             if ( fs_debug->integer())
-                com.print( this->tr( "^6Sys_Filesystem::close: closing \"%1\"\n" ).arg( filePtr->name()));
+                com.print( StrDebug + this->tr( "closing \"%1\"\n" ).arg( filePtr->name()));
 
             if ( filePtr->pathType() == pFile::Directory )
                 filePtr->fHandle.close();
@@ -695,7 +703,7 @@ void Sys_Filesystem::close( const fileHandle_t fHandle, OpenFlags flags ) {
             return;
         }
     }
-    com.print( this->tr( "^2Sys_Filesystem::close: ^3file with handle %1 has not been opened\n" ).arg( fHandle ));
+    com.print( StrWarn + this->tr( "file with handle %1 has not been opened\n" ).arg( fHandle ));
 }
 
 /*
@@ -706,12 +714,12 @@ read
 long Sys_Filesystem::read( byte *buffer, unsigned long len, fileHandle_t fHandle, OpenFlags flags ) {
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::read: filesystem not initialized\n" ));
+        com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
         return -1;
     }
 
     if ( !fHandle ) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::read: called without fileHandle\n" ));
+        com.error( StrSoftError + this->tr( "called without fileHandle\n" ));
         return -1;
     }
 
@@ -719,7 +727,7 @@ long Sys_Filesystem::read( byte *buffer, unsigned long len, fileHandle_t fHandle
         if ( fHandle == filePtr->handle()) {
             if ( filePtr->mode() != pFile::Read ) {
                 if ( !( flags.testFlag( Silent )))
-                    com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::read: file \"%1\" opened in wrong mode, aborting\n" ).arg( filePtr->name()));
+                    com.error( StrSoftError + this->tr( "file \"%1\" opened in wrong mode, aborting\n" ).arg( filePtr->name()));
                 return -1;
             }
 
@@ -730,7 +738,7 @@ long Sys_Filesystem::read( byte *buffer, unsigned long len, fileHandle_t fHandle
         }
     }
     if ( !( flags.testFlag( Silent )))
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::read: file with handle %1 has not been opened\n" ).arg( fHandle ));
+        com.error( StrSoftError + this->tr( "file with handle %1 has not been opened\n" ).arg( fHandle ));
     return -1;
 }
 
@@ -742,12 +750,12 @@ write
 long Sys_Filesystem::write( const byte *buffer, unsigned long len, fileHandle_t fHandle, OpenFlags flags ) {
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::write: filesystem not initialized\n" ));
+        com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
         return -1;
     }
 
     if ( !fHandle ) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::write: called without fileHandle\n" ));
+        com.error( StrSoftError + this->tr( "called without fileHandle\n" ));
         return -1;
     }
 
@@ -755,7 +763,7 @@ long Sys_Filesystem::write( const byte *buffer, unsigned long len, fileHandle_t 
         if ( fHandle == filePtr->handle()) {
             if ( filePtr->mode() != pFile::Write ) {
                 if ( !( flags.testFlag( Silent )))
-                    com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::write: file \"%1\" opened in wrong mode\n" ).arg( filePtr->name()));
+                    com.error( StrSoftError + this->tr( "file \"%1\" opened in wrong mode\n" ).arg( filePtr->name()));
                 return -1;
             }
 
@@ -763,13 +771,13 @@ long Sys_Filesystem::write( const byte *buffer, unsigned long len, fileHandle_t 
                 return filePtr->fHandle.write( QByteArray( reinterpret_cast<const char*>( buffer ), len ));
             else {
                 if ( !( flags.testFlag( Silent )))
-                    com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::write: file \"%1\" is in a package\n" ).arg( filePtr->name()));
+                    com.error( StrSoftError + this->tr( "file \"%1\" is in a package\n" ).arg( filePtr->name()));
                 return -1;
             }
         }
     }
     if ( !( flags.testFlag( Silent )))
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::write: file with handle %1 has not been opened\n" ).arg( fHandle ));
+        com.error( StrSoftError + this->tr( "file with handle %1 has not been opened\n" ).arg( fHandle ));
     return -1;
 }
 
@@ -790,12 +798,12 @@ seek
 bool Sys_Filesystem::seek( fileHandle_t fHandle, long offset, OpenFlags flags, SeekModes seekMode ) {
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::seek: filesystem not initialized\n" ));
+        com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
         return false;
     }
 
     if ( !fHandle ) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::seek: called without fileHandle\n" ));
+        com.error( StrSoftError + this->tr( "called without fileHandle\n" ));
         return false;
     }
 
@@ -803,7 +811,7 @@ bool Sys_Filesystem::seek( fileHandle_t fHandle, long offset, OpenFlags flags, S
         if ( fHandle == filePtr->handle()) {
             if ( filePtr->mode() != pFile::Read ) {
                 if ( !( flags.testFlag( Silent )))
-                    com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::seek: file \"%1\" is not open in read mode\n" ).arg( filePtr->name()));
+                    com.error( StrSoftError + this->tr( "file \"%1\" is not open in read mode\n" ).arg( filePtr->name()));
                 return false;
             }
 
@@ -815,20 +823,20 @@ bool Sys_Filesystem::seek( fileHandle_t fHandle, long offset, OpenFlags flags, S
                 else if ( seekMode == End )
                     return filePtr->fHandle.seek( filePtr->fHandle.size());
                 else {
-                    com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::seek: unknown seek mode\n" ));
+                    com.error( StrFatalError + this->tr( "unknown seek mode\n" ));
                     return false;
                 }
             } else {
                 // for now
                 if ( offset < 0 || seekMode == End ) {
-                    com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::seek: cannot seek in packages\n" ));
+                    com.error( StrFatalError + this->tr( "cannot seek in packages\n" ));
                     return false;
                 }
                 byte buffer[Filesystem::PackageSeekBuffer];
                 long remaining = offset;
 
                 if( offset < 0 || seekMode == End ) {
-                    com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::seek: negative offsets and End not supported for packaged files\n" ));
+                    com.error( StrFatalError + this->tr( "negative offsets and (End) mode not supported for packaged files\n" ));
                     return false;
                 }
 
@@ -859,14 +867,14 @@ bool Sys_Filesystem::seek( fileHandle_t fHandle, long offset, OpenFlags flags, S
                     return true;
 
                 default:
-                    com.error( Sys_Common::FatalError, this->tr( "Sys_Filesystem::seek: unknown seek mode\n" ));
+                    com.error( StrFatalError + this->tr( "unknown seek mode\n" ));
                     return false;
                 }
             }
         }
     }
     if ( !( flags.testFlag( Silent )))
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::seek: file with handle %1 has not been opened\n" ).arg( fHandle ));
+        com.error( StrSoftError + this->tr( "file with handle %1 has not been opened\n" ).arg( fHandle ));
     return false;
 }
 
@@ -890,12 +898,16 @@ QByteArray Sys_Filesystem::readFile( const QString &filename, OpenFlags flags ) 
     byte *buf = NULL;
     QByteArray buffer;
 
+    // abort with skipInternal flag and :/ paths
+    if ( filename.startsWith( ":/" ) && flags.testFlag( Sys_Filesystem::SkipInternal ))
+        return QByteArray();
+
     // look for it in the filesystem
     len = this->open( pFile::Read, filename, fHandle, flags );
 
     if ( len <= 0 ) {
         if ( !( flags.testFlag( Silent )))
-            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::readFile: could not read file \"%1\"\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "could not read file \"%1\"\n" ).arg( filename ));
         return QByteArray();
     }
 
@@ -930,7 +942,7 @@ touch
 */
 void Sys_Filesystem::touch( const QStringList &args ) {
     if ( args.isEmpty() < 2 ) {
-        com.print( this->tr( "^3usage: ^2fs_touch ^3[^2filename^3]\n" ));
+        com.print( Sys::cYellow + this->tr( "usage: ^2fs_touch ^3[^2filename^3]\n" ));
         return;
     }
     this->touch( args.first());
@@ -958,7 +970,7 @@ QStringList Sys_Filesystem::listDirectory( QString searchDir, const QString &pat
     else if ( mode == ListDirs )
         dir.setFilter( QDir::NoDotAndDotDot | QDir::Dirs );
     else {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::listDirectory: invalid list mode\n" ));
+        com.error( StrSoftError + this->tr( "invalid list mode\n" ));
         return QStringList();
     }
     QFileInfoList entryList = dir.entryInfoList();
@@ -990,12 +1002,12 @@ QStringList Sys_Filesystem::list( QString searchDir, const QRegExp &filter, List
 
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::list: filesystem not initialized\n" ));
+        com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
         return QStringList();
     }
 
     if ( searchDir.startsWith( "." )) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::list: Dot and DotDot paths not supported\n" ));
+        com.error( StrSoftError + this->tr( "Dot and DotDot paths not supported\n" ));
         return QStringList();
     }
 
@@ -1026,7 +1038,7 @@ QStringList Sys_Filesystem::list( QString searchDir, const QRegExp &filter, List
                             if ( pFilePtr->name().endsWith( "/" ))
                                 foundFiles << pFilePtr->name();
                         } else {
-                            com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::list: invalid list mode\n" ));
+                            com.error( StrSoftError + this->tr( "invalid list mode\n" ));
                             return QStringList();
                         }
                     }
@@ -1065,13 +1077,13 @@ void Sys_Filesystem::list( const QStringList &args ) {
 
     // announce
     if ( args.isEmpty())
-        com.print( this->tr( "^3Base directory\n" ));
+        com.print( Sys::cYellow + this->tr( "Base directory\n" ));
     else
-        com.print( this->tr( "^3Directory of \"%1\"\n" ).arg( args.first()));
+        com.print( Sys::cYellow + this->tr( "Directory of \"%1\"\n" ).arg( args.first()));
 
     // print out
     foreach ( QString str, filteredList )
-        com.print( QString( "^2 %1\n" ).arg( str ));
+        com.print( Sys::cYellow + QString( " %1\n" ).arg( str ));
 }
 
 /*
@@ -1111,14 +1123,14 @@ bool Sys_Filesystem::extract( const QString &filename ) {
 
     // if it's not in the package, we bail
     if ( pkgBuffer.isNull()) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::extract: could not open packaged file\n" ));
+        com.error( StrSoftError + this->tr( "could not open packaged file\n" ));
         return false;
     }
 
     // determine local path
     localFilename = this->buildPath( filename, fs_homePath->string() + fs_basePath->string(), &ok );
     if ( !ok ) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_Filesystem::extract: could not resolve homePath\n" ));
+        com.error( StrSoftError + this->tr( "could not resolve homePath\n" ));
         return false;
     }
     localFilename.replace( "/", QDir::separator());
@@ -1157,22 +1169,23 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
 #if 0
     // this message is annoying
     if ( !( flags.testFlag( Silent )))
-        com.print( this->tr( "^3Sys_FileSystem::readLink: reading win32 link \"%1\"\n" ).arg( filename.mid( filename.lastIndexOf( "\\" ) + 1 )));
+        com.print( StrWarn + this->tr( "reading win32 link \"%1\"\n" ).arg( filename.mid( filename.lastIndexOf( "\\" ) + 1 )));
+#endif
 #endif
 
     if ( this->open( pFile::Read, filename, fHandle, flags ) <= 0 ) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read win32 link \"%1\"\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "could not read win32 link \"%1\"\n" ).arg( filename ));
         return false;
     }
 
     if ( !this->read( reinterpret_cast<byte*>( &header ), sizeof( header ), fHandle )) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read header of win32 link \"%1\"\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "could not read header of win32 link \"%1\"\n" ).arg( filename ));
         this->close( fHandle );
         return false;
     }
 
     if ( memcmp( header.magic, "L\0\0\0", 4 ) != 0 ) {
-        com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: incorrect header magic for win32 link \"%1\"\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "incorrect header magic for win32 link \"%1\"\n" ).arg( filename ));
         this->close( fHandle );
         return false;
     }
@@ -1183,7 +1196,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
 
         // skip that list
         if ( !this->read( reinterpret_cast<byte*>( &len ), sizeof( len ), fHandle ) || ( !this->seek( fHandle, len, flags, Current ))) {
-            com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read shell item id list for win32 link \"%1\"\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "could not read shell item id list for win32 link \"%1\"\n" ).arg( filename ));
             this->close( fHandle );
             return false;
         }
@@ -1201,7 +1214,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
         lnkFileLocation_t loc;
 
         if ( !this->read( reinterpret_cast<byte*>( &loc ), sizeof( loc ), fHandle )) {
-            com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read shell item id list for win32 link \"%1\"\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "could not read shell item id list for win32 link \"%1\"\n" ).arg( filename ));
             this->close( fHandle );
             return false;
         }
@@ -1219,7 +1232,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
         char *start = reinterpret_cast<char*>( data ) - sizeof( loc );
 
         if ( !this->read( data, size, fHandle )) {
-            com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read path data for win32 link \"%1\"\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "could not read path data for win32 link \"%1\"\n" ).arg( filename ));
             this->close( fHandle );
             return false;
         }
@@ -1262,7 +1275,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
             quint16 len;
 
             if ( !this->read( reinterpret_cast<byte*>( &len ), sizeof( len ), fHandle )) {
-                com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read description string length for win32 link \"%1\"\n" ).arg( filename ));
+                com.error( StrSoftError + this->tr( "could not read description string length for win32 link \"%1\"\n" ).arg( filename ));
                 this->close( fHandle );
                 return false;
             }
@@ -1271,7 +1284,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
             data = new byte[len+1];
 
             if ( !this->read( data, len, fHandle )) {
-                com.error( Sys_Common::SoftError, this->tr( "Sys_FileSystem::readLink: could not read description string for win32 link \"%1\"\n" ).arg( filename ));
+                com.error( StrSoftError + this->tr( "could not read description string for win32 link \"%1\"\n" ).arg( filename ));
                 delete [] data;
                 this->close( fHandle );
                 return false;

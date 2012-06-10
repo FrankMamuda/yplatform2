@@ -46,6 +46,102 @@ Gui_Settings::Gui_Settings( QWidget *parent ) :QDialog( parent ), ui( new Ui::Gu
     this->settingsTabWidget = this->ui->tabWidget;
 }
 
+
+/*
+================
+construct
+================
+*/
+pSettingsCvar::pSettingsCvar( pCvar *bCvarPtr, QObject *bObjPtr, pSettingsCvar::Types bType, QObject *parent ) {
+    QSpinBox *sPtr;
+    QCheckBox *cPtr;
+
+    // set data, type and object
+    this->objPtr = bObjPtr;
+    this->setType( bType );
+    this->setParent( parent );
+    this->cvarPtr = bCvarPtr;
+    this->cvarPtr->resetTempString();
+
+    // connect slots
+    switch ( this->type()) {
+    case CheckBox:
+        cPtr = qobject_cast<QCheckBox*>( this->objPtr );
+        cPtr->connect( cPtr, SIGNAL( stateChanged( int )), this, SLOT( stateChanged( int )));
+        break;
+
+    case SpinBox:
+        sPtr = qobject_cast<QSpinBox*>( this->objPtr );
+        sPtr->connect( sPtr, SIGNAL( valueChanged( int )), this, SLOT( integerValueChanged( int )));
+        break;
+
+    default:
+        com.error( StrSoftError + this->tr( "unknown type\n" ));
+        return;
+    }
+}
+
+/*
+================
+setState
+================
+*/
+void pSettingsCvar::setState() {
+    QSpinBox *sPtr;
+    QCheckBox *cPtr;
+
+    // set values to GUI
+    switch ( this->type()) {
+    case CheckBox:
+        cPtr = qobject_cast<QCheckBox*>( this->objPtr );
+        if ( this->cvarPtr->integer())
+            cPtr->setCheckState( Qt::Checked );
+        else
+            cPtr->setCheckState( Qt::Unchecked );
+        break;
+
+    case SpinBox:
+        sPtr = qobject_cast<QSpinBox*>( this->objPtr );
+        sPtr->setValue( this->cvarPtr->integer());
+        break;
+
+    default:
+        com.error( StrSoftError + this->tr( "unknown type\n" ));
+        return;
+    }
+}
+
+/*
+================
+stateChanged
+================
+*/
+void pSettingsCvar::stateChanged( int state ) {
+    Gui_Settings *sParent = qobject_cast<Gui_Settings*>( this->parent());
+
+    if ( sParent->cvarsLocked())
+        return;
+
+    if ( state == Qt::Checked )
+        this->cvarPtr->set( true, pCvar::Temp );
+    else
+        this->cvarPtr->set( false, pCvar::Temp );
+}
+
+/*
+================
+integerValueChanged
+================
+*/
+void pSettingsCvar::integerValueChanged( int integer ) {
+    Gui_Settings *sParent = qobject_cast<Gui_Settings*>( this->parent());
+
+    if ( sParent->cvarsLocked())
+        return;
+
+    this->cvarPtr->set( integer, pCvar::Temp );
+}
+
 /*
 ================
 initializeCvars
@@ -56,42 +152,22 @@ void Gui_Settings::intializeCvars() {
     this->lockCvars();
 
     // set default values
-    this->s_fsDebug = fs_debug->integer();
-    if ( this->s_fsDebug )
-        this->ui->enableFsDebug->setCheckState( Qt::Checked );
-    else
-        this->ui->enableFsDebug->setCheckState( Qt::Unchecked );
+    this->addCvar( fs_debug, pSettingsCvar::CheckBox, this->ui->enableFsDebug );
+    this->addCvar( fs_ignoreLinks, pSettingsCvar::CheckBox, this->ui->ignoreLinks );
+    this->addCvar( mod_extract, pSettingsCvar::CheckBox, this->ui->extractModules );
+    this->addCvar( gui_toolBarIconSize, pSettingsCvar::SpinBox, this->ui->iconSize );
+    this->addCvar( gui_restoreSize, pSettingsCvar::CheckBox, this->ui->restoreSize );
 
-    // set default values
-    this->s_ignoreLinks = fs_ignoreLinks->integer();
-    if ( this->s_ignoreLinks )
-        this->ui->ignoreLinks->setCheckState( Qt::Checked );
-    else
-        this->ui->ignoreLinks->setCheckState( Qt::Unchecked );
 #ifndef Q_OS_WIN
     this->ui->ignoreLinks->setDisabled( true );
 #endif
 
-    // set default values
-    this->s_modExtract = mod_extract->integer();
-    if ( this->s_modExtract )
-        this->ui->extractModules->setCheckState( Qt::Checked );
-    else
-        this->ui->extractModules->setCheckState( Qt::Unchecked );
-
-    // set default values
-    this->s_guiIconSize = gui_toolBarIconSize->integer();
-    this->ui->iconSize->setValue( this->s_guiIconSize );
-
-    // set default values
-    this->s_restoreSize = gui_restoreSize->integer();
-    if ( this->s_restoreSize )
-        this->ui->restoreSize->setCheckState( Qt::Checked );
-    else
-        this->ui->restoreSize->setCheckState( Qt::Unchecked );
-
     // unlock cvars
     this->lockCvars( false );
+
+    // set state
+    foreach ( pSettingsCvar *scPtr, this->cvarList )
+        scPtr->setState();
 
     // emit signal for modules
     emit this->updateModules();
@@ -144,85 +220,29 @@ void Gui_Settings::on_buttonClose_clicked() {
 
 /*
 ================
+save
+================
+*/
+void pSettingsCvar::save() {
+    // set values to GUI
+    switch ( this->type()) {
+    case CheckBox:
+    case SpinBox:
+     this->cvarPtr->setTempString();
+        break;
+
+    default:
+        com.error( StrSoftError + this->tr( "unknown type\n" ));
+        return;
+    }
+}
+
+/*
+================
 saveCvars
 ================
 */
 void Gui_Settings::saveCvars() {
-    gui_toolBarIconSize->set( static_cast<int>( this->s_guiIconSize ));
-    mod_extract->set( this->s_modExtract );
-    fs_debug->set( this->s_fsDebug );
-    fs_ignoreLinks->set( this->s_ignoreLinks );
-    gui_restoreSize->set( this->s_restoreSize );
-}
-
-/*
-================
-iconSize->valueChanged
-================
-*/
-void Gui_Settings::on_iconSize_valueChanged( int value ) {
-    if ( this->cvarsLocked())
-        return;
-
-    this->s_guiIconSize = value;
-}
-
-/*
-================
-extractModules->stateChanged
-================
-*/
-void Gui_Settings::on_extractModules_stateChanged( int state ) {
-    if ( this->cvarsLocked())
-        return;
-
-    if ( state == Qt::Checked )
-        this->s_modExtract = true;
-    else
-        this->s_modExtract = false;
-}
-
-/*
-================
-enableFsDebug->stateChanged
-================
-*/
-void Gui_Settings::on_enableFsDebug_stateChanged( int state ) {
-    if ( this->cvarsLocked())
-        return;
-
-    if ( state == Qt::Checked )
-        this->s_fsDebug = true;
-    else
-        this->s_fsDebug = false;
-}
-
-/*
-================
-ignoreLinks->stateChanged
-================
-*/
-void Gui_Settings::on_ignoreLinks_stateChanged( int state ) {
-    if ( this->cvarsLocked())
-        return;
-
-    if ( state == Qt::Checked )
-        this->s_ignoreLinks = true;
-    else
-        this->s_ignoreLinks = false;
-}
-
-/*
-================
-restoreSize->stateChanged
-================
-*/
-void Gui_Settings::on_restoreSize_stateChanged( int state ){
-    if ( this->cvarsLocked())
-        return;
-
-    if ( state == Qt::Checked )
-        this->s_restoreSize = true;
-    else
-        this->s_restoreSize = false;
+    foreach ( pSettingsCvar *scPtr, this->cvarList )
+        scPtr->save();
 }
