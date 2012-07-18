@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="drive_cd_48">resources/icons/drive_cd_48.png</file>
+        <file alias="drive_hd_48">resources/icons/drive_hd_48.png</file>
+        <file alias="drive_rm_48">resources/icons/drive_usb_48.png</file>
+        <file alias="media_cd_48">resources/icons/media_cd_48.png</file>
+        <file alias="media_hd_48">resources/icons/media_hd_48.png</file>
+        <file alias="media_rm_48">resources/icons/media_usb_48.png</file>
+        <file alias="scan_48">resources/icons/scan_48.png</file>
+        <file alias="media_sm_48">resources/icons/media_smart_48.png</file>
+        <file alias="media_sd_48">resources/icons/media_sd_48.png</file>
+        <file alias="media_fl_48">resources/icons/media_flash_48.png</file>
+        <file alias="remove_48">resources/icons/remove_48.png</file>
+        <file alias="add_48">resources/icons/add_48.png</file>
+        <file alias="noise_filter_48">resources/icons/noise_filter_48.png</file>
+    </qresource>
+</RCC>
