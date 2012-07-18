@@ -47,6 +47,13 @@ r23:
     -temporary cvars for settings (no hard coding)
     -cvar access flags & password protection (dev mode)
 
+r24:
+    -few fixes, nothing special
+
 TODOs
     -cmd completion (filename, etc.)
     -revert long->int in fs (ck ioquake3 code)
+    -module threading
+    -QVariant in cmd, pure communication through cmd
+    (abandon current module framework)
+

@@ -88,7 +88,7 @@ construct
 */
 R_MaterialStage::R_MaterialStage( const QString &texture, R_Material *mtrPtr, const QString &clampMode ) {
     if ( mtrPtr == NULL ) {
-        com.error( Sys_Common::SoftError, this->tr( "R_MaterialStage::construct: NULL parent material\n" ));
+        com.error( StrSoftError + this->tr( "NULL parent material\n" ));
         return;
     }
 
@@ -117,7 +117,7 @@ setBlendMode
 */
 void R_MaterialStage::setBlendMode( const QString &blendMode ) {
     if ( blendMode.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "R_MaterialStage::setBlendMode: no blend mode specified\n" ));
+        com.error( StrSoftError + this->tr( "no blend mode specified\n" ));
         return;
     }
 
@@ -128,7 +128,7 @@ void R_MaterialStage::setBlendMode( const QString &blendMode ) {
     else if ( !QString::compare( blendMode, "blend", Qt::CaseInsensitive ))
         this->setBlendMode( "srcAlpha", "minusSrcAlpha" );
     else {
-        com.print( this->tr( "^3WARNING: R_Material::setBlendMode: unknown blend mode \'%1\', setting dst blend 'one'\n" ).arg( blendMode ));
+        com.print( StrWarn + this->tr( "unknown blend mode \'%1\', setting dst blend 'one'\n" ).arg( blendMode ));
         this->setBlendMode( "one", "one" );
     }
 }
@@ -299,7 +299,7 @@ void R_MaterialStage::setTextureMod( const QString &name, const QVariant &arg0, 
     else if ( !QString::compare( name, "scale", Qt::CaseInsensitive ))
         this->scale( arg0.toFloat(), arg1.toFloat());
     else {
-        com.error( Sys_Common::SoftError, this->tr( "R_MaterialStage::setTextureMod: unknown texture mod \"%1\"\n" ).arg( name ));
+        com.error( StrSoftError + this->tr( "unknown texture mod \"%1\"\n" ).arg( name ));
         this->textureMod()->setType( TextureMod::None );
     }
 }
@@ -334,7 +334,7 @@ void R_MaterialStage::setAlphaGen( const QString &name, const QVariant &arg0, co
     } else if ( !QString::compare( name, "func", Qt::CaseInsensitive )) {
         this->setAlphaFunc( arg0.toString(), arg1.toFloat(), arg2.toFloat(), arg3.toFloat(), arg4.toFloat());
     } else {
-        com.error( Sys_Common::SoftError, this->tr( "R_MaterialStage::setAlphaGen: unknown alpha gen \"%1\"\n" ).arg( name ));
+        com.error( StrSoftError + this->tr( "unknown alpha gen \"%1\"\n" ).arg( name ));
         this->alphaGen()->setType( AlphaGen::None );
     }
 }
@@ -352,7 +352,7 @@ void R_MaterialStage::setColourGen( const QString &name, const QVariant &arg0, c
         this->colourGen()->setType( ColourGen::Const );
         this->colourGen()->colour = QColor::fromRgbF( arg0.toFloat(), arg1.toFloat(), arg2.toFloat());
     } else {
-        com.error( Sys_Common::SoftError, this->tr( "R_MaterialStage::setColourGen: unknown colour gen \"%1\"\n" ).arg( name ));
+        com.error( StrSoftError + this->tr( "unknown colour gen \"%1\"\n" ).arg( name ));
         this->colourGen()->setType( ColourGen::None );
     }
 }
@@ -385,7 +385,7 @@ float *GenFunc::tableForType() {
     }
 
     // this should not happen
-    com.error( Sys_Common::SoftError, this->tr( "GenFunc::tableForType: invalid function type '%1'\n" ).arg( this->type()));
+    com.error( StrSoftError + this->tr( "invalid function type '%1'\n" ).arg( this->type()));
     return NULL;
 }
 
@@ -409,7 +409,7 @@ GenFunc::Types GenFunc::typeForName( const QString &name ) const {
         return None;
 
     // this should not happen
-    com.error( Sys_Common::SoftError, this->tr( "GenFunc::typeForName: invalid genFunc '%1'\n" ).arg( name ));
+    com.error( StrSoftError + this->tr( "invalid genFunc '%1'\n" ).arg( name ));
     return None;
 }
 

@@ -49,12 +49,12 @@ init
 ===============
 */
 void R_GLimp::init() {
-    com.print( this->tr( "^2R_GLimp::init: ^5initializing OpenGL display\n" ));
+    com.print( StrMsg + this->tr( "initializing OpenGL display\n" ));
     QGLFormat format;
 
     // check for OpenGL support
     if ( !format.hasOpenGL()) {
-        com.error( Sys_Common::FatalError, this->tr( "R_GLimp::init: could not initialized OpenGL\n" ));
+        com.error( StrFatalError + this->tr( "could not initialized OpenGL\n" ));
         return;
     }
     this->glVersionFlags = static_cast<int>( format.openGLVersionFlags());
@@ -62,7 +62,7 @@ void R_GLimp::init() {
 #ifndef Q_OS_WIN
     // breaks compatibility with intel inegrated graphics on winxp
     if (( this->glVersionFlags & QGLFormat::OpenGL_Version_1_5 ) == 0 ) {
-        com.error( Sys_Common::FatalError, this->tr( "R_GLimp::init: OpenGL version 1.5 or higher is required\n" ));
+        com.error( StrFatalError + this->tr( "OpenGL version 1.5 or higher is required\n" ));
         return;
     }
 #endif
@@ -148,7 +148,7 @@ shutdown
 void R_GLimp::shutdown() {
     if ( this->hasInitialized()) {
         // announce
-        com.print( this->tr( "^3R_GLimp: shutdown\n" ));
+        com.print( StrMsg + this->tr( "shutdown\n" ));
 
         // remove cmds
         cmd.remove( "r_raise" );
@@ -193,7 +193,7 @@ int R_GLimp::getScreenMode() {
     if ( currentMode >= 0 && currentMode < Renderer::NumScreenModes )
         return currentMode;
     else {
-        com.error( Sys_Common::SoftError, this->tr( "R_GLimp::getScreenMode: invalid screen mode '%1', setting default\n" ));
+        com.error( StrSoftError + this->tr( "invalid screen mode '%1', setting default\n" ));
         r_screenMode->set( Renderer::DefaultScreenMode );
         return Renderer::DefaultScreenMode;
     }

@@ -31,6 +31,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include <QtGlobal>
 #include <QtCore>
 #include <QtScript>
+#include <QtGui>
 
 //
 // defines
@@ -74,6 +75,9 @@ Q_DECLARE_METATYPE( fileHandle_t* )
 
 // script value
 Q_DECLARE_METATYPE( QScriptValue )
+
+// toolbar
+Q_DECLARE_METATYPE( QToolBar* )
 
 // function name
 #define ClassFuncPure QString( "%1::%2" ).arg( this->metaObject()->className()).arg( __func__ )

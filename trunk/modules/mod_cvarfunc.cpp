@@ -88,11 +88,11 @@ float mCvar::value() const {
 set
 ============
 */
-bool mCvar::set( const QString &string, bool force ) {
+bool mCvar::set( const QString &string, pCvar::AccessFlags flags ) {
     bool ret;
 
     // call platform
-    ret = cv.set( this->name(), string, force );
+    ret = cv.set( this->name(), string, flags );
 
     // set local cvar
     this->setString( cv.get( this->name()));
@@ -128,8 +128,8 @@ void mCvar::setString( const QString &string ) {
 set (integer)
 ============
 */
-bool mCvar::set( int integer, bool force ) {
-    return this->set( QString( "%1" ).arg( integer ), force );
+bool mCvar::set( int integer, pCvar::AccessFlags flags ) {
+    return this->set( QString( "%1" ).arg( integer ), flags );
 }
 
 /*
@@ -137,6 +137,6 @@ bool mCvar::set( int integer, bool force ) {
 set (value)
 ============
 */
-bool mCvar::set( float value, bool force ) {
-    return this->set( QString( "%1" ).arg( value ), force );
+bool mCvar::set( float value, pCvar::AccessFlags flags ) {
+    return this->set( QString( "%1" ).arg( value ), flags );
 }

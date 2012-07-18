@@ -93,6 +93,7 @@ Mod_ScriptEngine::Mod_ScriptEngine( const QString &name, const QString &path, bo
     qRegisterMetaType<pFile::OpenModes>( "pFile::OpenModes" );
     qRegisterMetaType<pFile::PathType>( "pFile::PathType" );
     qRegisterMetaType<pCvar::Flags>( "pCvar::Flags" );
+    qRegisterMetaType<pCvar::AccessFlags>( "pCvar::AccessFlags" );
     qRegisterMetaType<Sys_Filesystem::OpenFlag>( "Sys_Filesystem::OpenFlag" );
     qRegisterMetaType<Sys_Filesystem::SeekModes>( "Sys_Filesystem::SeekModes" );
     qRegisterMetaType<Sys_Filesystem::ListModes>( "Sys_Filesystem::ListModes" );

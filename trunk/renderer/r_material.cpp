@@ -67,7 +67,7 @@ R_MaterialStage *R_Material::stage( int index ) {
         this->stageList << stagePtr;
         return stagePtr;
     } else if ( index > this->stageList.count()) {
-        com.error( Sys_Common::SoftError, this->tr( "R_Material::stage: stage index '%1' out of range\n" ).arg( index ));
+        com.error( StrSoftError + this->tr( "stage index '%1' out of range\n" ).arg( index ));
         return NULL;
     }
     return this->stageList.at( index );

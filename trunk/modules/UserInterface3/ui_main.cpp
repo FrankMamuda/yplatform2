@@ -90,14 +90,14 @@ extern "C" UISHARED_EXPORT QVariant modMain( ModuleAPI::ModuleAPICalls callNum, 
 
     case ModuleAPI::Init:
         // check for renderer
-        com.print( "^3UI3: ^5Checking for renderer\n" );
+        com.print( Sys::cYellow + QObject::trUtf8( "UI3: ^5checking for renderer\n" ));
         if ( !yp2.flags().testFlag( ModuleAPI::RendererLoaded )) {
-            com.error( Sys_Common::SoftError, QObject::trUtf8( "^3UI3: ^5No renderer detected, aborting initialization\n" ));
+            com.error( Sys_Common::SoftError, QObject::trUtf8( "UI3: no renderer detected, aborting initialization\n" ));
             return false;
         }
 
         // perform initialization
-        com.print(  QObject::trUtf8( "^3UI3 ^5is running\n" ));
+        com.print( Sys::cYellow + QObject::trUtf8( "UI3 ^5is running\n" ));
 
         // recache renderer assets
         r.reload();
@@ -133,10 +133,10 @@ extern "C" UISHARED_EXPORT QVariant modMain( ModuleAPI::ModuleAPICalls callNum, 
 
     case ModuleAPI::Shutdown:
         // perform shutdown
-        com.print( "UI3 is down\n" );
+        com.print( Sys::cYellow + QObject::trUtf8( "UI3 is down\n" ));
 
-	// shutdown
-	m.shutdown();
+        // shutdown
+        m.shutdown();
 
         // clear cvars
         cv.clear();

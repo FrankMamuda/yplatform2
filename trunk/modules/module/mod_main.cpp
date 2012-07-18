@@ -46,7 +46,7 @@ extern "C" MODULESHARED_EXPORT QVariant modMain( ModuleAPI::ModuleAPICalls callN
 
     case ModuleAPI::Init:
         // perform initialization
-        com.print( "Hello world\n" );
+        com.print( QObject::trUtf8( "Hello world\n" ));
         break;
 
     case ModuleAPI::Update:
@@ -65,7 +65,7 @@ extern "C" MODULESHARED_EXPORT QVariant modMain( ModuleAPI::ModuleAPICalls callN
 
     case ModuleAPI::Shutdown:
         // perform shutdown
-        com.print( "Goodbye cruel world\n" );
+        com.print( QObject::trUtf8( "Goodbye cruel world\n" ));
 
         // clear cvars
         cv.clear();

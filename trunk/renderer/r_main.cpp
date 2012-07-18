@@ -121,7 +121,7 @@ listImages
 ===================
 */
 void R_Main::listImages() {
-    com.print( this->tr( "Image list:\n" ));
+    com.print( Sys::ColourYellow + this->tr( "Image list:\n" ));
     foreach ( R_Image *img, this->imageList ) {
         com.print( this->tr( " %1: w %2 h %3 tex %4\n" ).arg( img->name()).arg( img->width()).arg( img->height()).arg(( unsigned int )img->texture ));
     }
@@ -133,7 +133,7 @@ listMaterials
 ===================
 */
 void R_Main::listMaterials() {
-    com.print( this->tr( "Material list:\n" ));
+    com.print( Sys::ColourYellow + this->tr( "Material list:\n" ));
     foreach ( R_Material *mtr, this->mtrList ) {
         com.print( this->tr( " %1: stages %2\n" ).arg( mtr->name()).arg( mtr->stageList.count()));
     }
@@ -149,7 +149,7 @@ imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode
 
     // abort on empty name
     if ( filename.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "R_Main::loadImage: called with empty name\n" ));
+        com.error( StrSoftError + this->tr( "called with empty name\n" ));
         return -1;
     }
 
@@ -184,12 +184,12 @@ imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode
     // giving up, set default image
     if ( !imgPtr->isValid()) {
         // did not find a valid texture, revert to default
-        com.print( this->tr( "^3WARNING: R_Main::loadImage: could not find image \'%1\', setting default\n" ).arg( filename ));
+        com.print( StrWarn + this->tr( "could not find image \'%1\', setting default\n" ).arg( filename ));
         delete imgPtr;
 
         // ..if we have a default (should not happen since default img is in internal assets)
         if ( !QString::compare( filename, Renderer::DefaultImage )) {
-            com.error( Sys_Common::FatalError, this->tr( "R_Main::loadImage: cannot load default image\n" ));
+            com.error( StrFatalError + this->tr( "cannot load default image\n" ));
             m.shutdown();
             return -1;
         }
@@ -213,7 +213,7 @@ mtrHandle_t R_Main::loadMaterial( const QString &mtrName ) {
 
     // abort on empty name
     if ( mtrName.isEmpty()) {
-        com.error( Sys_Common::SoftError, this->tr( "R_Main::loadMaterial: called with empty name\n" ));
+        com.error( StrSoftError + this->tr( "called with empty name\n" ));
         return -1;
     }
 

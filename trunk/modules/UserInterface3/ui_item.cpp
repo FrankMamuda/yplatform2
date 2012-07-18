@@ -51,7 +51,7 @@ setParent
 */
 void UiItem::setParent( UiItem *parentPtr ) {
     if ( parentPtr == this ) {
-        com.print( this->tr( "UiItem::setParent: can't set self\n" ));
+        com.print( StrWarn + this->tr( "can't set self\n" ));
         return;
     }
 
@@ -60,9 +60,9 @@ void UiItem::setParent( UiItem *parentPtr ) {
         parentPtr->addChild( this );
     } else {
         if ( this->name().isEmpty())
-            com.print( this->tr( "UiItem::setParent: parent has been already set\n" ));
+            com.print( StrWarn + this->tr( "parent has been already set\n" ));
         else
-            com.print( this->tr( "UiItem::setParent: parent has been already set for item \"%1\"\n" ).arg( this->name()));
+            com.print( StrWarn + this->tr( "parent has been already set for item \"%1\"\n" ).arg( this->name()));
     }
 }
 

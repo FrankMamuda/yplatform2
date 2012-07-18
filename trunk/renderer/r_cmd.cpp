@@ -50,7 +50,7 @@ void R_Cmd::bind( imgHandle_t handle ) {
 
     // this really should not happen, but just in case
     if ( !image ) {
-        com.error( Sys_Common::FatalError, this->tr( "R_Cmd::bind: called with NULL image\n" ));
+        com.error( StrFatalError + this->tr( "called with NULL image\n" ));
         return;
     }
 
@@ -167,7 +167,7 @@ R_Cmd::SrcBlend::Modes R_Cmd::getSrcBlendMode( const QString &name ) {
         return SrcBlend::AlphaSaturate;
 
     // this should not happen
-    com.error( Sys_Common::SoftError, this->tr( "R_Material::getSrcBlendMode: unknown blend mode \'%1\', setting src blend 'one'\n" ).arg( name ));
+    com.error( StrSoftError + this->tr( "unknown blend mode \'%1\', setting src blend 'one'\n" ).arg( name ));
     return SrcBlend::One;
 }
 
@@ -196,7 +196,7 @@ R_Cmd::DstBlend::Modes R_Cmd::getDstBlendMode( const QString &name ) {
         return DstBlend::MinusColour;
 
     // this should not happen
-    com.error( Sys_Common::SoftError, this->tr( "R_Material::getDstBlendMode: unknown blend mode \'%1\', setting dst blend 'one'\n" ).arg( name ));
+    com.error( StrSoftError + this->tr( "unknown blend mode \'%1\', setting dst blend 'one'\n" ).arg( name ));
     return DstBlend::One;
 }
 
@@ -251,7 +251,7 @@ void R_Cmd::setBlendMode( SrcBlend::Modes srcBlend, DstBlend::Modes dstBlend ) {
 
     default:
         srcFactor = SrcBlend::One;
-        com.error( Sys_Common::SoftError, this->tr( "R_Cmd::setBlendMode: invalid source blend mode\n" ));
+        com.error( StrSoftError + this->tr( "invalid source blend mode\n" ));
         break;
     }
 
@@ -290,7 +290,7 @@ void R_Cmd::setBlendMode( SrcBlend::Modes srcBlend, DstBlend::Modes dstBlend ) {
 
     default:
         dstFactor = DstBlend::One;
-        com.error( Sys_Common::SoftError, this->tr( "R_Cmd::setBlendMode: invalid destination blend mode\n" ));
+        com.error( StrSoftError + this->tr( "invalid destination blend mode\n" ));
         break;
     }
 
@@ -596,7 +596,7 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
             break;
 
         default:
-            com.error( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid textureMod '%1'\n" ).arg( stagePtr->textureMod()->type()));
+            com.error( StrFatalError + this->tr( "invalid textureMod '%1'\n" ).arg( stagePtr->textureMod()->type()));
             return;
         }
 
@@ -614,7 +614,7 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
             break;
 
         default:
-            com.error( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid alphaGen '%1'\n" ).arg( stagePtr->alphaGen()->type()));
+            com.error( StrFatalError + this->tr( "invalid alphaGen '%1'\n" ).arg( stagePtr->alphaGen()->type()));
             return;
         }
 
@@ -630,7 +630,7 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
             break;
 
         default:
-            com.error( Sys_Common::FatalError, this->tr( "R_Cmd::drawMaterial: invalid colourGen '%1'\n" ).arg( stagePtr->colourGen()->type()));
+            com.error( StrFatalError + this->tr( "invalid colourGen '%1'\n" ).arg( stagePtr->colourGen()->type()));
             return;
         }
 
