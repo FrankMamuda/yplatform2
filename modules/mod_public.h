@@ -76,6 +76,7 @@ namespace ModuleAPI {
         CmdAdd,
         CmdRemove,
         CmdExecute,
+        CmdAddScripted,
 
         // cvars
         CvarCreate,
@@ -103,12 +104,10 @@ namespace ModuleAPI {
         GuiRemoveSettingsTab,
         GuiShowTabWidget,
         GuiHideTabWidget,
+        GuiClearConsole,
 
         // platform flags
         PlatformFlags,
-
-        // TODO: move me to cmd in next API release
-        CmdAddScripted,
 
         // renderer only
         RendererKeyEvent = 100,
@@ -127,7 +126,7 @@ namespace ModuleAPI {
         Soundsystem*/
     };
     // api version (to avoid mismatch)
-    const static unsigned int Version = 7;
+    const static unsigned int Version = 8;
 }
 
 #endif // MOD_PUBLIC_H

@@ -157,7 +157,7 @@ R_Image::ClampModes R_MtrLib::getClampMode( const QString &mode ) {
     } else if ( !QString::compare( mode, "clampToEdge", Qt::CaseInsensitive ) || !QString::compare( mode, "edge", Qt::CaseInsensitive )) {
         return R_Image::ClampToEdge;
     } else {
-        com.error( Sys_Common::SoftError, this->tr( "R_MtrLib::setClampMode: unknown clamp mode \"%1\", setting \"repeat\"\n" ).arg( mode ));
+        com.error( StrSoftError + this->tr( "unknown clamp mode \"%1\", setting \"repeat\"\n" ).arg( mode ));
         return R_Image::Repeat;
     }
 }
@@ -172,7 +172,7 @@ void R_MtrLib::init() {
     QScriptEngine *e;
 
     // announce
-    com.print( this->tr( "^2R_MtrLib::init: ^5loading material libraries\n" ));
+    com.print( StrMsg + this->tr( "loading material libraries\n" ));
 
     // init scripting engine
     this->mse = new Mod_ScriptEngine( "MtrLib", "materials/", true, true );
@@ -197,7 +197,7 @@ void R_MtrLib::init() {
 
     // nothing at all?
     if ( !numMtrLibFiles ) {
-        com.print( this->tr( "^3WARNING: R_Material::init: no material libraries found\n" ));
+        com.print( StrWarn + this->tr( "no material libraries found\n" ));
         return;
     }
 

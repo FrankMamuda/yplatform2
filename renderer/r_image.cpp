@@ -163,7 +163,7 @@ void R_Image::resampleTexture( unsigned *in, int inWidth, int inHeight, unsigned
 
     // failsafe
     if ( outWidth > Renderer::MaximumTextureSize )
-        com.error( Sys_Common::SoftError, this->tr( "R_Image::resampleTexture: could not resample texture (max width)\n" ));
+        com.error( StrSoftError + this->tr( "could not resample texture (max width)\n" ));
 
     fracStep = inWidth * 0x10000 / outWidth;
     frac = fracStep >> 2;
@@ -322,7 +322,7 @@ GLint R_Image::clampModeGL() const {
         return GL_CLAMP_TO_EDGE;
 
     default:
-        com.error( Sys_Common::SoftError, this->tr( "R_Image::clampMode: unknown clamp mode \"%1\"\n" ).arg( this->m_clamp ));
+        com.error( StrSoftError + this->tr( "unknown clamp mode \"%1\"\n" ).arg( this->m_clamp ));
         return GL_REPEAT;
     }
 }
@@ -345,7 +345,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
 
     // check length
     if ( len < Renderer::TargaHeaderLength ) {
-        com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") header too short\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "header of \"%1\" too short\n" ).arg( filename ));
         return NULL;
     }
 
@@ -373,17 +373,17 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
     imageBuffer += 18;
 
     if ( header.imageType != 2 && header.imageType != 10  && header.imageType != 3 )  {
-        com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") only type 2 (RGB), 3 (gray), and 10 (RGB) TGA images supported\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "(\"%1\") only type 2 (RGB), 3 (gray), and 10 (RGB) TGA images supported\n" ).arg( filename ));
         return NULL;
     }
 
     if ( header.colourmapType != 0 ) {
-        com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") colormaps not supported\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "(\"%1\") colormaps not supported\n" ).arg( filename ));
         return NULL;
     }
 
     if (( header.pixelSize != 32 && header.pixelSize != 24 ) && header.imageType != 3 ) {
-        com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") only 32 or 24 bit images supported\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "(\"%1\") only 32 or 24 bit images supported\n" ).arg( filename ));
         return NULL;
     }
 
@@ -392,14 +392,14 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
     numPixels = columns * rows * 4;
 
     if ( !columns || !rows || numPixels > 0x7FFFFFFF || numPixels / columns / 4 != rows ) {
-        com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") invalid image size\n" ).arg( filename ));
+        com.error( StrSoftError + this->tr( "invalid image size in \"%1\"\n" ).arg( filename ));
         return NULL;
     }
     rgba = new byte[numPixels];
 
     if ( header.idLength != 0 ) {
         if ( imageBuffer + header.idLength > endBuffer ) {
-            com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") header too short\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "header in \"%1\" too short\n" ).arg( filename ));
             return NULL;
         }
 
@@ -409,7 +409,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
 
     if ( header.imageType == 2 || header.imageType == 3 ) {
         if ( imageBuffer + columns * rows * header.pixelSize / 8 > endBuffer ) {
-            com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") file truncated\n" ).arg( filename ));
+            com.error( StrSoftError + this->tr( "file \"%1\" truncated\n" ).arg( filename ));
             return NULL;
         }
 
@@ -453,7 +453,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
                     break;
 
                 default:
-                    com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") illegal pixelSize '%2'\n" ).arg( filename ).arg( header.pixelSize ));
+                    com.error( StrSoftError + this->tr( "illegal pixelSize '%1' in \"%2\"\n" ).arg( header.pixelSize ).arg( filename ));
                     return NULL;
                 }
 
@@ -473,7 +473,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
 
             for ( column = 0; column < static_cast<int>( columns ); ) {
                 if ( imageBuffer + 1 > endBuffer ) {
-                    com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") file truncated\n" ).arg( filename ));
+                    com.error( StrSoftError + this->tr( "file \"%1\" truncated\n" ).arg( filename ));
                     return NULL;
                 }
                 packetHeader = *imageBuffer++;
@@ -482,7 +482,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
                 // run-len packet
                 if ( packetHeader & 0x80 ) {
                     if ( imageBuffer + header.pixelSize / 8 > endBuffer ) {
-                        com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") file truncated\n" ).arg( filename ));
+                        com.error( StrSoftError + this->tr( "file \"%1\" truncated\n" ).arg( filename ));
                         return NULL;
                     }
                     switch ( header.pixelSize ) {
@@ -501,7 +501,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
                         break;
 
                     default:
-                        com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") illegal pixelSize '%2'\n" ).arg( filename ).arg( header.pixelSize ));
+                        com.error( StrSoftError + this->tr( "illegal pixelSize '%1' in \"%2\"\n" ).arg( header.pixelSize ).arg( filename ));
                         return NULL;
                     }
 
@@ -526,7 +526,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
                     // non run-len packet
                 } else {
                     if ( imageBuffer + header.pixelSize / 8 * packetSize > endBuffer ) {
-                        com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") file truncated\n" ).arg( filename ));
+                        com.error( StrSoftError + this->tr( "file \"%1\" truncated\n" ).arg( filename ));
                         return NULL;
                     }
 
@@ -554,7 +554,7 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
                             break;
 
                         default:
-                            com.error( Sys_Common::SoftError, this->tr( "R_Image::loadTargaImage: (\"%1\") illegal pixelSize '%2'\n" ).arg( filename ).arg( header.pixelSize ));
+                            com.error( StrSoftError + this->tr( "illegal pixelSize '%1' in \"%2\"\n" ).arg( header.pixelSize ).arg( filename ));
                             return NULL;
                         }
                         column++;
@@ -579,7 +579,7 @@ breakOut:;
 
     // print a warning
     if ( header.attributes & 0x20 )
-        com.print( this->tr( "^3WARNING: R_Image::loadTargaImage: (\"%1\") TGA file header declares top-down image, ignoring\n" ).arg( filename ));
+        com.print( StrWarn + this->tr( "TGA file header in \"%1\" declares top-down image, ignoring\n" ).arg( filename ));
 
     // return
     return rgba;

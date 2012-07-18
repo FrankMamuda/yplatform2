@@ -1171,7 +1171,6 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
     if ( !( flags.testFlag( Silent )))
         com.print( StrWarn + this->tr( "reading win32 link \"%1\"\n" ).arg( filename.mid( filename.lastIndexOf( "\\" ) + 1 )));
 #endif
-#endif
 
     if ( this->open( pFile::Read, filename, fHandle, flags ) <= 0 ) {
         com.error( StrSoftError + this->tr( "could not read win32 link \"%1\"\n" ).arg( filename ));

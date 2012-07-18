@@ -263,10 +263,10 @@ void Sys_Cvar::list( const QStringList &args ) {
 
         if ( cvarPtr->flags.testFlag( pCvar::Latched ))
             com.print( "^3L" );
-#if 0
+
         if ( cvarPtr->flags.testFlag( pCvar::Password ))
             com.print( "^3P" );
-#endif
+
         com.print( "\n" );
     }
 }

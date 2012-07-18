@@ -293,12 +293,12 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
     // commons
     //
     case ModuleAPI::ComPrint:
-        if ( args.count() != 1 ) {
+        if ( args.count() != 2 ) {
             com.error( Sys_Common::SoftError, this->tr( "ComPrint [message]\n" ));
             return false;
         }
 
-        com.print( args.first().toString());
+        com.print( args.first().toString(), args.at( 1 ).toInt());
         return true;
 
     case ModuleAPI::ComError:
@@ -461,7 +461,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
 
     case ModuleAPI::CvarSet:
         if ( args.count() != 3 ) {
-            com.error( Sys_Common::SoftError, this->tr( "CvarSet [name] [value] (force)\n" ));
+            com.error( Sys_Common::SoftError, this->tr( "CvarSet [name] [value] (access)\n" ));
             return false;
         }
         cvarPtr = cv.find( args.first().toString());
@@ -501,19 +501,23 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
         // gui
         //
     case ModuleAPI::GuiRaise:
-        com.gui()->show();
+        if ( com.gui() != NULL )
+            com.gui()->show();
         return true;
 
     case ModuleAPI::GuiHide:
-        com.gui()->hide();
+        if ( com.gui() != NULL )
+            com.gui()->hide();
         return true;
 
     case ModuleAPI::GuiCreateSystray:
-        com.gui()->createSystemTray();
+        if ( com.gui() != NULL )
+            com.gui()->createSystemTray();
         return true;
 
     case ModuleAPI::GuiRemoveSystray:
-        com.gui()->removeSystemTray();
+        if ( com.gui() != NULL )
+            com.gui()->removeSystemTray();
         return true;
 
     case ModuleAPI::GuiRemoveAction:
@@ -521,7 +525,8 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiRemoveAction [name]\n" ));
             return false;
         }
-        com.gui()->removeAction( static_cast<ModuleAPI::ToolBarActions>( args.first().toInt()));
+        if ( com.gui() != NULL )
+            com.gui()->removeAction( static_cast<ModuleAPI::ToolBarActions>( args.first().toInt()));
         return true;
 
     case ModuleAPI::GuiAddToolBar:
@@ -529,7 +534,8 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiAddToolbar [toolBarPtr]\n" ));
             return false;
         }
-        com.gui()->addToolBar( reinterpret_cast<QToolBar*>( args.at( 0 ).value<void*>()));
+        if ( com.gui() != NULL )
+            com.gui()->addToolBar( args.at( 0 ).value<QToolBar*>());
         return true;
 
     case ModuleAPI::GuiRemoveToolBar:
@@ -537,11 +543,13 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiRemoveToolBar [toolBarPtr]\n" ));
             return false;
         }
-        com.gui()->removeToolBar( reinterpret_cast<QToolBar*>( args.at( 0 ).value<void*>()));
+        if ( com.gui() != NULL )
+            com.gui()->removeToolBar( args.at( 0 ).value<QToolBar*>());
         return true;
 
     case ModuleAPI::GuiRemoveMainToolBar:
-        com.gui()->removeMainToolBar();
+        if ( com.gui() != NULL )
+            com.gui()->removeMainToolBar();
         return true;
 
     case ModuleAPI::GuiAddTab:
@@ -549,7 +557,8 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiAddTab [widgetPtr] [name] (icon)\n" ));
             return false;
         }
-        com.gui()->addTabExt( Gui_Main::MainWindow, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
+        if ( com.gui() != NULL )
+            com.gui()->addTabExt( Gui_Main::MainWindow, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
         return true;
 
     case ModuleAPI::GuiRemoveTab:
@@ -557,7 +566,8 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiRemoveTab [name]\n" ));
             return false;
         }
-        com.gui()->removeTabExt( Gui_Main::MainWindow, args.first().toString());
+        if ( com.gui() != NULL )
+            com.gui()->removeTabExt( Gui_Main::MainWindow, args.first().toString());
         return true;
 
     case ModuleAPI::GuiSetActiveTab:
@@ -565,7 +575,8 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiSetActiveTab [name]\n" ));
             return false;
         }
-        com.gui()->setActiveTab( args.first().toString());
+        if ( com.gui() != NULL )
+            com.gui()->setActiveTab( args.first().toString());
         return true;
 
     case ModuleAPI::GuiSetConsoleState:
@@ -573,7 +584,8 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiSetConsoleState [state]\n" ));
             return false;
         }
-        com.gui()->setConsoleState( static_cast<ModuleAPI::ConsoleState>( args.first().toInt()));
+        if ( com.gui() != NULL )
+            com.gui()->setConsoleState( static_cast<ModuleAPI::ConsoleState>( args.first().toInt()));
         return true;
 
     case ModuleAPI::GuiAddSettingsTab:
@@ -581,7 +593,8 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiAddSettingsTab [widgetPtr] [name] (icon)\n" ));
             return false;
         }
-        com.gui()->addTabExt( Gui_Main::Settings, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
+        if ( com.gui() != NULL )
+            com.gui()->addTabExt( Gui_Main::Settings, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
         return true;
 
     case ModuleAPI::GuiRemoveSettingsTab:
@@ -589,15 +602,23 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiRemoveSettingsTab [name]\n" ));
             return false;
         }
-        com.gui()->removeTabExt( Gui_Main::Settings, args.first().toString());
+        if ( com.gui() != NULL )
+            com.gui()->removeTabExt( Gui_Main::Settings, args.first().toString());
         return true;
 
     case ModuleAPI::GuiShowTabWidget:
-        com.gui()->showTabWidget();
+        if ( com.gui() != NULL )
+            com.gui()->showTabWidget();
         return true;
 
     case ModuleAPI::GuiHideTabWidget:
-        com.gui()->hideTabWidget();
+        if ( com.gui() != NULL )
+            com.gui()->hideTabWidget();
+        return true;
+
+    case ModuleAPI::GuiClearConsole:
+        if ( com.gui() != NULL )
+            com.gui()->clearConsole();
         return true;
 
         //

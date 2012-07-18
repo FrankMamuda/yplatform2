@@ -63,9 +63,9 @@ public:
     // other funcs
     int     integer() const;
     float   value() const;
-    bool    set( const QString &string, bool force = false );
-    bool    set( int, bool force = false );
-    bool    set( float, bool force = false );
+    bool    set( const QString &string, pCvar::AccessFlags flags = pCvar::NoAccessFlags );
+    bool    set( int, pCvar::AccessFlags flags = pCvar::NoAccessFlags );
+    bool    set( float, pCvar::AccessFlags flags = pCvar::NoAccessFlags );
     void    update( const QString &string );
 
 private slots:

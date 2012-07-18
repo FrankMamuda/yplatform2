@@ -109,7 +109,7 @@ class Mod_Common : public QObject {
     Q_CLASSINFO( "description", "Common function wrapper class" )
 
 public slots:
-    void print( const QString &msg ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComPrint, msg ); }
+    void print( const QString &msg, int fontSize = 10 ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComPrint, msg, fontSize ); }
     void error( int type, const QString &msg ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComError, type, msg ); }
     int milliseconds() { return mt.call( ModuleAPI::Platform, ModuleAPI::ComMilliseconds ).toInt(); }
 };
@@ -170,7 +170,7 @@ public:
 
 public slots:
     mCvar *create( const QString &name, const QString &string, pCvar::Flags = pCvar::NoFlags, const QString &desc = QString::null );
-    bool set( const QString &name, const QString &string, bool force = false ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarSet, name, string, force ).toBool(); }
+    bool set( const QString &name, const QString &string, pCvar::AccessFlags flags = pCvar::NoAccessFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarSet, name, string, static_cast<int>( flags )).toBool(); }
     QString get( const QString &name ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarGet, name ).toString(); }
     void reset( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::CvarReset, name ); }
     mCvar *find( const QString &name ) const;
@@ -196,8 +196,8 @@ class Mod_Gui : public QObject {
 
 public:
     void removeAction( ModuleAPI::ToolBarActions id ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveAction, static_cast<ModuleAPI::ToolBarActions>( id )); }
-    void addToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddToolBar, qVariantFromValue( reinterpret_cast<void*>( toolBarPtr ))); }
-    void removeToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveToolBar, qVariantFromValue( reinterpret_cast<void*>( toolBarPtr ))); }
+    void addToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddToolBar, QVariant::fromValue( toolBarPtr )); }
+    void removeToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveToolBar, QVariant::fromValue( toolBarPtr )); }
     void removeMainToolBar() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveMainToolBar ); }
     void addTab( QWidget *widget, const QString &name, const QString &icon ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddTab, qVariantFromValue( widget ), name, icon ); }
     void removeTab( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveTab, name ); }
@@ -207,6 +207,7 @@ public:
     void removeSettingsTab( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSettingsTab, name ); }
 
 public slots:
+    void clearConsole() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiClearConsole ); }
     void raise() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRaise ); }
     void hide() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiHide ); }
     void createSystemTray() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiCreateSystray ); }
