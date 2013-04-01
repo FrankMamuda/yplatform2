@@ -72,9 +72,9 @@ void Sys_Cvar::init() {
     this->validator = new QRegExpValidator( rx, this );
 
     // developer mode enabler
-    sys_developer = cv.create( "sys_developer", "0", ( pCvar::Archive | pCvar::Password ));
+    sys_developer = cv.create( "sys_developer", false, ( pCvar::Archive | pCvar::Password ));
     sys_password = cv.create( "sys_password", hash.encrypt( "" ), ( pCvar::Archive | pCvar::Password ));
-    sys_protected = cv.create( "sys_protected", "0", ( pCvar::Archive | pCvar::Password ));
+    sys_protected = cv.create( "sys_protected", false, ( pCvar::Archive | pCvar::Password ));
 }
 
 /*
@@ -252,7 +252,17 @@ void Sys_Cvar::list( const QStringList &args ) {
         if ( !args.isEmpty() && !cvarPtr->name().startsWith( args.first()))
             continue;
 
-        com.print( QString( "  ^5'%1': ^2'%2' " ).arg( cvarPtr->name(), cvarPtr->string()));
+        if ( cvarPtr->type() == pCvar::Boolean ) {
+            if ( cvarPtr->isEnabled())
+                com.print( QString( "  ^5'%1': ^2true " ).arg( cvarPtr->name()));
+            else
+                com.print( QString( "  ^5'%1': ^2false " ).arg( cvarPtr->name()));
+        } else if ( cvarPtr->type() == pCvar::Value && cvarPtr->isClamped()) {
+            com.print( QString( "  ^5'%1': ^2'%2', min: '%3', max: '%4' " ).arg( cvarPtr->name()).arg( cvarPtr->value()).arg( cvarPtr->minimum().toFloat()).arg( cvarPtr->maximum().toFloat()));
+        } else if ( cvarPtr->type() == pCvar::Integer && cvarPtr->isClamped()) {
+            com.print( QString( "  ^5'%1': ^2'%2', min: '%3', max: '%4' " ).arg( cvarPtr->name()).arg( cvarPtr->integer()).arg( cvarPtr->minimum().toInt()).arg( cvarPtr->maximum().toInt()));
+        } else
+            com.print( QString( "  ^5'%1': ^2'%2' " ).arg( cvarPtr->name(), cvarPtr->string()));
 
         // append flags
         if ( cvarPtr->flags.testFlag( pCvar::ReadOnly ))
@@ -267,8 +277,54 @@ void Sys_Cvar::list( const QStringList &args ) {
         if ( cvarPtr->flags.testFlag( pCvar::Password ))
             com.print( "^3P" );
 
+        if ( cvarPtr->flags.testFlag( pCvar::External ))
+            com.print( "^3E" );
+
+        if ( cvarPtr->type() == pCvar::Integer )
+            com.print( "^6I" );
+
+        if ( cvarPtr->type() == pCvar::Value )
+            com.print( "^6F" );
+
+        if ( cvarPtr->type() == pCvar::Boolean )
+            com.print( "^6B" );
+
         com.print( "\n" );
     }
+}
+
+/*
+============
+create (integer)
+============
+*/
+pCvar *Sys_Cvar::create( const QString &name, int value, pCvar::Flags flags, int min, int max, const QString &description ) {
+    pCvar *cvarPtr = this->create( name, QString( "%1" ).arg( value ), flags, description, pCvar::Integer );
+    cvarPtr->setMinimum( QVariant( min ));
+    cvarPtr->setMaximum( QVariant( max ));
+    return cvarPtr;
+}
+
+/*
+============
+create (float)
+============
+*/
+pCvar *Sys_Cvar::create( const QString &name, float value, pCvar::Flags flags, float min, float max, const QString &description ) {
+    pCvar *cvarPtr = this->create( name, QString( "%1" ).arg( value ), flags, description, pCvar::Value );
+    cvarPtr->setMinimum( min );
+    cvarPtr->setMaximum( max );
+    return cvarPtr;
+}
+
+/*
+============
+create (bool)
+============
+*/
+pCvar *Sys_Cvar::create( const QString &name, bool value, pCvar::Flags flags, const QString &description ) {
+    pCvar *cvarPtr = this->create( name, QString( "%1" ).arg( value ), flags, description, pCvar::Boolean );
+    return cvarPtr;
 }
 
 /*
@@ -276,7 +332,7 @@ void Sys_Cvar::list( const QStringList &args ) {
 create
 ============
 */
-pCvar *Sys_Cvar::create( const QString &name, const QString &string, pCvar::Flags flags, const QString &description, bool mCvar ) {
+pCvar *Sys_Cvar::create( const QString &name, const QString &string, pCvar::Flags flags, const QString &description, pCvar::Types type ) {
     if ( !this->validate( name )) {
         com.error( StrSoftError + this->tr( "invalid cvar name \"%1\"\n" ).arg( name ));
         return NULL;
@@ -284,16 +340,21 @@ pCvar *Sys_Cvar::create( const QString &name, const QString &string, pCvar::Flag
 
     // search for available cvars
     pCvar *cvarPtr = this->find( name );
+    if ( cvarPtr != NULL ) {
+        // when cvar is created from configuration file, it looses mCvar flag
+        // make sure we connect it for updates
+        if ( cvarPtr->flags.testFlag( pCvar::External ))
+            this->connect( cvarPtr, SIGNAL( valueChanged( QString, QString )), &mod, SLOT( updateCvar( QString, QString )));
 
-    // when cvar is created from configuration file, it looses mCvar flag
-    // make sure we connect it for updates
-    if ( cvarPtr != NULL && mCvar )
-        this->connect( cvarPtr, SIGNAL( valueChanged( QString, QString )), &mod, SLOT( updateCvar( QString, QString )));
+        // allow changing types
+        if ( cvarPtr->type() != type )
+            cvarPtr->setType( type );
 
-    // create new
-    if ( cvarPtr == NULL ) {
+        // set default value
+        cvarPtr->setResetString( string );
+    } else if ( cvarPtr == NULL ) {
         // allocate & add to list
-        cvarPtr = new pCvar( name, string, flags, description, mCvar );
+        cvarPtr = new pCvar( name, string, flags, description, type );
         this->cvarList << cvarPtr;
         com.gui()->addToCompleter( cvarPtr->name());
     }
@@ -315,15 +376,42 @@ bool Sys_Cvar::command( const QString &name, const QStringList &args ) {
 
     // print out current value if no args, otherwise set new value
     if ( args.isEmpty()) {
-        com.print( Sys::cYellow + this->tr( " \"%1\" ^5is ^3\"%2\"^5, default: ^3\"%3\"\n" ).arg(
-                      cvarPtr->name(),
-                      cvarPtr->string(),
-                      cvarPtr->resetString()));
+        if ( cvarPtr->type() == pCvar::Boolean ) {
+            if ( cvarPtr->isEnabled())
+                com.print( Sys::cYellow + this->tr( " \"%1\" ^5is ^3true, default: ^3%2\n" ).arg( cvarPtr->name()).arg( QVariant( static_cast<bool>( cvarPtr->resetString().toInt())).toString()));
+            else
+                com.print( Sys::cYellow + this->tr( " \"%1\" ^5is ^3false, default: ^3%2\n" ).arg( cvarPtr->name()).arg( QVariant( static_cast<bool>( cvarPtr->resetString().toInt())).toString()));
+        } else
+            com.print( Sys::cYellow + this->tr( " \"%1\" ^5is ^3\"%2\"^5, default: ^3\"%3\"\n" ).arg(
+                           cvarPtr->name(),
+                           cvarPtr->string(),
+                           cvarPtr->resetString()));
 
-        if ( !cvarPtr->latchString().isEmpty())
-            com.print( Sys::cYellow + this->tr( " latched: \"%1\"\n" ).arg( cvarPtr->latchString()));
-    } else
-        cvarPtr->set( args.first());
+        if ( !cvarPtr->latchString().isEmpty()) {
+            if ( cvarPtr->type() == pCvar::Boolean )
+                com.print( Sys::cYellow + this->tr( " latched: \"%1\"\n" ).arg( QVariant( static_cast<bool>( cvarPtr->latchString().toInt())).toString()));
+            else
+                com.print( Sys::cYellow + this->tr( " latched: \"%1\"\n" ).arg( cvarPtr->latchString()));
+        }
+    } else {
+        if ( cvarPtr->type() == pCvar::Boolean ) {
+            if ( !QString::compare( args.first(), "true" )) {
+                cvarPtr->set( true );
+                return true;
+            } else if ( !QString::compare( args.first(), "false" )) {
+                cvarPtr->set( false );
+                return true;
+            }
+        }
+
+        // predetermine cvar type, to avoid passing all as plain strings
+        if ( cvarPtr->type() == pCvar::String )
+            cvarPtr->set( args.first());
+        else if ( cvarPtr->type() == pCvar::Integer || cvarPtr->type() == pCvar::Boolean )
+            cvarPtr->set( args.first().toInt());
+        else if ( cvarPtr->type() == pCvar::Value )
+            cvarPtr->set( args.first().toFloat());
+    }
 
     // all ok
     return true;
@@ -401,7 +489,8 @@ void Sys_Cvar::parseConfig( const QString &filename, bool verbose ) {
                                 com.print( StrWarn + this->tr( "setting cvar \"%1\" value \"%2\"\n" ).arg( cvarName, cvarElement.text()));
 
                         } else {
-                            this->create( cvarName, cvarElement.text(), ( pCvar::Flags )cvarElement.attribute( "flags" ).toInt());
+                            // cvar type is stored just in case, make sure we read it
+                            this->create( cvarName, cvarElement.text(), static_cast<pCvar::Flags>( cvarElement.attribute( "flags" ).toInt()), "", static_cast<pCvar::Types>( cvarElement.attribute( "type" ).toInt()) );
 
                             if ( verbose )
                                 com.print( StrWarn + this->tr( "creating cvar \"%1\" with value \"%2\"\n" ).arg( cvarName, cvarElement.text()));
@@ -455,12 +544,19 @@ void Sys_Cvar::saveConfig( const QString &filename ) {
     // generate cvars config strings
     foreach ( pCvar *cvarPtr, this->cvarList ) {
         if ( cvarPtr->flags.testFlag( pCvar::Archive )) {
-            if ( fs_debug->integer())
+            // store latched value
+            if ( cvarPtr->flags.testFlag( pCvar::Latched ) && !cvarPtr->latchString().isEmpty())
+                cvarPtr->set( cvarPtr->latchString(), pCvar::Force );
+
+            if ( fs_debug->isEnabled())
                 com.print( StrDebug + this->tr( "setting \"%1\" value \"%2\"\n" ).arg( cvarPtr->name(), cvarPtr->string()));
 
             QDomElement cvarElement = configFile.createElement( "cvar" );
             cvarElement.setAttribute( "name", cvarPtr->name());
             cvarElement.setAttribute( "flags", cvarPtr->flags );
+
+            // make sure we store cvar type just in case
+            cvarElement.setAttribute( "type", cvarPtr->type());
             configElement.appendChild( cvarElement );
 
             QDomText cvarText = configFile.createTextNode( cvarPtr->string());

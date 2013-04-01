@@ -31,7 +31,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include <QtGlobal>
 #include <QtCore>
 #include <QtScript>
-#include <QtGui>
 
 //
 // defines
@@ -76,9 +75,6 @@ Q_DECLARE_METATYPE( fileHandle_t* )
 // script value
 Q_DECLARE_METATYPE( QScriptValue )
 
-// toolbar
-Q_DECLARE_METATYPE( QToolBar* )
-
 // function name
 #define ClassFuncPure QString( "%1::%2" ).arg( this->metaObject()->className()).arg( __func__ )
 #define ClassFunc QString( "%1::%2: " ).arg( this->metaObject()->className()).arg( __func__ )
@@ -97,7 +93,6 @@ Q_DECLARE_METATYPE( QToolBar* )
 #  define LIBRARY_PREFIX ""
 #  define LIBRARY_EXT "dll"
 #  define LIBRARY_SUFFIX "win"
-#  define YP_LITTLE_ENDIAN
 #else
 #  define LIBRARY_PREFIX "lib"
 #endif
@@ -120,7 +115,6 @@ Q_DECLARE_METATYPE( QToolBar* )
 #  endif
 #  define LIBRARY_EXT "dylib"
 #  define LIBRARY_SUFFIX "darwin"
-#  define YP_LITTLE_ENDIAN
 #endif
 
 #ifdef Q_OS_LINUX
@@ -155,12 +149,6 @@ Q_DECLARE_METATYPE( QToolBar* )
 #  endif
 #  define LIBRARY_EXT "so"
 #  define LIBRARY_SUFFIX "linux"
-#  include <endian.h>
-#  if __FLOAT_WORD_ORDER == __BIG_ENDIAN
-#    define YP_BIG_ENDIAN
-#  else
-#    define YP_LITTLE_ENDIAN
-#  endif
 #endif
 
 #ifdef Q_OS_FREEBSD
@@ -173,12 +161,6 @@ Q_DECLARE_METATYPE( QToolBar* )
 #  endif
 #  define LIBRARY_EXT "so"
 #  define LIBRARY_SUFFIX "freebsd"
-#  include <machine/endian.h>
-#  if BYTE_ORDER == BIG_ENDIAN
-#    define YP_BIG_ENDIAN
-#  else
-#    define YP_LITTLE_ENDIAN
-#  endif
 #endif
 
 #ifdef Q_OS_SOLARIS
@@ -189,13 +171,6 @@ Q_DECLARE_METATYPE( QToolBar* )
 #  endif
 #  define LIBRARY_EXT "so"
 #  define LIBRARY_SUFFIX "solaris"
-#  include <sys/isa_defs.h>
-#  include <sys/byteorder.h>
-#  if defined ( _BIG_ENDIAN )
-#    define YP_BIG_ENDIAN
-#  elif defined ( _LITTLE_ENDIAN )
-#    define YP_LITTLE_ENDIAN
-#  endif
 #endif
 
 #ifndef ARCH_STRING

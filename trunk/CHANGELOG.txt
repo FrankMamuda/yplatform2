@@ -50,9 +50,20 @@ r23:
 r24:
     -few fixes, nothing special
 
+r26:
+    -clamped cvars
+    -fixed black/white console colour swap
+    -APIchange, again
+    -module cvars are flagged as external cvars
+    -reverted long->int in fs
+    -fixed latched cvars (not storing value on exit)
+    -fixed default values for cvars (on create)
+    -simplified cvar handling on client (module) side
+    -probably some other fixes, features - can't recall
+
 TODOs
     -cmd completion (filename, etc.)
-    -revert long->int in fs (ck ioquake3 code)
+    -memleak test
     -module threading
     -QVariant in cmd, pure communication through cmd
     (abandon current module framework)

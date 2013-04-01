@@ -115,8 +115,8 @@ private:
 
 public slots:
     void create( const QString &name, const QString &string, pCvar::Flags flags = pCvar::NoFlags, const QString &desc = QString::null ) { cv.create( name, string, flags, desc ); }
-    bool set( const QString &name, const QString &string, pCvar::AccessFlags flags = false ) { return cv.set( name, string, flags ); }
-    QString get( const QString &name ) { return cv.get( name ); }
+    bool set( const QString &name, const QString &string, bool force = false ) { return cv.set( name, string, force ); }
+    QVariant get( const QString &name ) { return cv.get( name ); }
     void reset( const QString &name ) { cv.reset( name ); }
 };
 

@@ -40,7 +40,7 @@ extern pCvar *sys_password;
 construct
 ============
 */
-pCvar::pCvar( const QString &name, const QString &string, Flags flags, const QString &desc, bool mCvar ) {
+pCvar::pCvar( const QString &name, const QString &string, Flags flags, const QString &desc, Types type ) {
     // set the defaults
     this->flags = flags;
     this->setName( name );
@@ -48,9 +48,12 @@ pCvar::pCvar( const QString &name, const QString &string, Flags flags, const QSt
     this->setResetString( string );
     this->setLatchString();
     this->setDescription( desc );
+    this->setType( type );
+    this->setMinimum();
+    this->setMaximum();
 
     // perform module cvar updates when needed (instead of reloading value on each frame)
-    if ( mCvar )
+    if ( flags.testFlag( pCvar::External ))
         this->connect( this, SIGNAL( valueChanged( QString, QString )), &mod, SLOT( updateCvar( QString, QString )));
 }
 
@@ -60,6 +63,7 @@ destruct
 ============
 */
 pCvar::~pCvar() {
+    this->disconnect( &mod, SLOT( updateCvar( QString, QString )));
 }
 
 /*
@@ -106,10 +110,10 @@ passwordCheck
 ============
 */
 bool pCvar::passwordCheck() {
-    if ( !this->flags.testFlag( Password ) || !sys_protected->integer())
+    if ( !this->flags.testFlag( Password ) || !sys_protected->isEnabled())
         return true;
 
-    if ( !sys_developer->integer()) {
+    if ( sys_developer->isDisabled()) {
         Gui_Password p;
         if ( p.exec()) {
             if ( !QString::compare( hash.encrypt( p.ui->pwdEdit->text()), sys_password->string()))
@@ -137,12 +141,14 @@ bool pCvar::set( const QString &string, AccessFlags access ) {
     if ( this->flags.testFlag( ReadOnly ) && !access.testFlag( Force )) {
         com.print( Sys::cRed + this->tr( " \"%1\" is read only\n" ).arg( this->name()));
     } else if ( this->flags.testFlag( Latched ) && !access.testFlag( Force )) {
-        if ( !this->latchString().isEmpty()) {
-            if ( !QString::compare( this->string(), string ))
-                return true;
+        if ( !QString::compare( this->string(), string )) {
+            this->m_latch.clear();
+            return true;
         }
+
         if ( QString::compare( this->latchString(), string ))
             this->setLatchString( string );
+
         com.print( Sys::cYellow + this->tr( " \"%1\" will be changed upon restart\n" ).arg( this->name()));
     } else {
         QString tempStr( string );
@@ -168,6 +174,14 @@ set
 ============
 */
 bool pCvar::set( int integer, AccessFlags access ) {
+    if ( this->type() == Integer && this->isClamped()) {
+        if ( integer <= this->minimum().toInt())
+            integer = this->minimum().toInt();
+
+        if ( integer >= this->maximum().toInt())
+            integer = this->maximum().toInt();
+    }
+
     return this->set( QString( "%1" ).arg( integer ), access );
 }
 
@@ -176,8 +190,16 @@ bool pCvar::set( int integer, AccessFlags access ) {
 set
 ============
 */
-bool pCvar::set( double integer, AccessFlags access ) {
-    return this->set( QString( "%1" ).arg( integer ), access );
+bool pCvar::set( bool value, AccessFlags access ) {
+    if ( this->type() == Boolean && this->isClamped()) {
+        if ( value <= false )
+            value = false;
+
+        if ( value >= true )
+            value = true;
+    }
+
+    return this->set( static_cast<int>( value ), access );
 }
 
 /*
@@ -186,6 +208,14 @@ set
 ============
 */
 bool pCvar::set( float value, AccessFlags access ) {
+    if ( this->type() == Value && this->isClamped()) {
+        if ( value <= this->minimum().toFloat())
+            value = this->minimum().toFloat();
+
+        if ( value >= this->maximum().toFloat())
+            value = this->maximum().toFloat();
+    }
+
     return this->set( QString( "%1" ).arg( value ), access );
 }
 
@@ -196,4 +226,44 @@ reset
 */
 void pCvar::reset() {
     this->setString( this->resetString());
+}
+
+/*
+============
+setMinimum
+============
+*/
+void pCvar::setMinimum( QVariant min ) {
+    if ( this->type() == String )
+        this->m_min = QVariant( 0 );
+    else if ( this->type() == Boolean )
+        this->m_min = QVariant( false );
+    else
+        this->m_min = min;
+}
+
+/*
+============
+setMaximum
+============
+*/
+void pCvar::setMaximum( QVariant max ) {
+    if ( this->type() == String )
+        this->m_max = QVariant( 0 );
+    else if ( this->type() == Boolean )
+        this->m_max = QVariant( true );
+    else
+        this->m_max = max;
+}
+
+/*
+============
+isClamped
+============
+*/
+bool pCvar::isClamped() const {
+    if ( this->m_min == this->m_max || this->type() == String )
+        return false;
+    else
+        return true;
 }

@@ -88,6 +88,7 @@ public:
 protected:
     void changeEvent( QEvent * );
     void closeEvent( QCloseEvent * );
+    void resizeEvent( QResizeEvent *);
     bool eventFilter( QObject *, QEvent * );
 
 private:

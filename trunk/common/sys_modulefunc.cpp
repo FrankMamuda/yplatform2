@@ -196,7 +196,7 @@ void pModule::load() {
             .arg( LIBRARY_EXT );
 
     // check if it exists in package and copy it (if we allow it)
-    if ( mod_extract->integer()) {
+    if ( mod_extract->isEnabled()) {
         Sys_Filesystem::OpenFlags flags = Sys_Filesystem::Silent;
         QString mName = filename;
         if ( fs.exists( mName, flags, searchPathIndex )) {

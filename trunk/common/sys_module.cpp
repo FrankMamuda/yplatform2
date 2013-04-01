@@ -52,6 +52,7 @@ parseManifest
 */
 pModule *Sys_Module::parseManifest( const QString &filename ) {
     QDomDocument manifest;
+    QDomNode moduleNode;
     pModule *modPtr = NULL;
     bool foundModule = false;
 
@@ -64,14 +65,14 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
     // failsafe
     if ( buffer.isNull()) {
         modPtr->setErrorMessage( this->tr( "Invalid manifest" ));
-        return modPtr;
+        goto end;
     }
 
     //
     // parse document
     //
     manifest.setContent( buffer );
-    QDomNode moduleNode = manifest.firstChild();
+    moduleNode = manifest.firstChild();
     while ( !moduleNode.isNull()) {
         if ( moduleNode.isElement()) {
             QDomElement moduleElement = moduleNode.toElement();
@@ -79,7 +80,7 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
             // check element name
             if ( QString::compare( moduleElement.tagName(), "module" )) {
                 modPtr->setErrorMessage( this->tr( "Manifest syntax error: expected <module>" ));
-                return modPtr;
+                goto end;
             } else
                 foundModule = true;
 
@@ -91,7 +92,7 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
                 modPtr->setName( modName );
             } else {
                 modPtr->setErrorMessage( this->tr( "Module missing name" ));
-                return modPtr;
+                goto end;
             }
 
             if ( moduleElement.hasAttribute( "type" )) {
@@ -119,7 +120,7 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
                         modPtr->setApiVersion( infoElement.text().toInt());
                         if ( modPtr->apiVersion() > ModuleAPI::Version ) {
                             modPtr->setErrorMessage( this->tr( "API version mismatch - %1, expected less or equal to %2" ).arg( modPtr->apiVersion()).arg( ModuleAPI::Version ));
-                            return modPtr;
+                            goto end;
                         }
                     } else if ( !QString::compare( infoElement.tagName(), "filename", Qt::CaseInsensitive ))
                         modPtr->setFilename( infoElement.text());
@@ -127,7 +128,7 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
                         modPtr->setVersionString( infoElement.text());
                     else {
                         modPtr->setErrorMessage( this->tr( "Manifest syntax error: expected module info element, found <%1>" ).arg( infoElement.tagName()));
-                        return modPtr;
+                        goto end;
                     }
                 }
                 infoNode = infoNode.nextSibling();
@@ -144,8 +145,13 @@ pModule *Sys_Module::parseManifest( const QString &filename ) {
     // clear buffer
     buffer.clear();
 
+end:
     // return the new module
-    return modPtr;
+    if ( modPtr->hasErrorMessage()) {
+        delete modPtr;
+        return NULL;
+    } else
+        return modPtr;
 }
 
 /*
@@ -244,7 +250,7 @@ void Sys_Module::init() {
     cmd.add( "mod_unload", unloadCmd, this->tr( "unload module" ));
 
     // init cvars
-    mod_extract = cv.create( "mod_extract", "1", pCvar::Archive, this->tr( "toggle module copying from packages" ));
+    mod_extract = cv.create( "mod_extract", true, pCvar::Archive, this->tr( "toggle module copying from packages" ));
 
     // reset
     this->setFlags( ModuleAPI::NoFlags );
@@ -293,12 +299,12 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
     // commons
     //
     case ModuleAPI::ComPrint:
-        if ( args.count() != 2 ) {
+        if ( args.count() != 1 ) {
             com.error( Sys_Common::SoftError, this->tr( "ComPrint [message]\n" ));
             return false;
         }
 
-        com.print( args.first().toString(), args.at( 1 ).toInt());
+        com.print( args.first().toString());
         return true;
 
     case ModuleAPI::ComError:
@@ -454,14 +460,44 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "CvarCreate [name] [string] (flags) (description)\n" ));
             return false;
         }
-        if ( cv.create( args.first().toString(), args.at( 1 ).toString(), static_cast<pCvar::Flags>( args.at( 2 ).toInt()), args.at( 3 ).toString(), true ) != NULL )
+        if ( cv.create( args.first().toString(), args.at( 1 ).toString(), static_cast<pCvar::Flags>( args.at( 2 ).toInt()), args.at( 3 ).toString()) != NULL )
+            return true;
+
+        return false;
+
+    case ModuleAPI::CvarCreateInteger:
+        if ( args.count() != 6 ) {
+            com.error( Sys_Common::SoftError, this->tr( "CvarCreateInteger [name] [integer] (flags) (min) (max) (description)\n" ));
+            return false;
+        }
+        if ( cv.create( args.first().toString(), args.at( 1 ).toInt(), static_cast<pCvar::Flags>( args.at( 2 ).toInt()), args.at( 3 ).toInt(), args.at( 4 ).toInt(), args.at( 5 ).toString()) != NULL )
+            return true;
+
+        return false;
+
+    case ModuleAPI::CvarCreateValue:
+        if ( args.count() != 6 ) {
+            com.error( Sys_Common::SoftError, this->tr( "CvarCreateValue [name] [value] (flags) (min) (max) (description)\n" ));
+            return false;
+        }
+        if ( cv.create( args.first().toString(), args.at( 1 ).toFloat(), static_cast<pCvar::Flags>( args.at( 2 ).toInt()), args.at( 3 ).toFloat(), args.at( 4 ).toFloat(), args.at( 5 ).toString()) != NULL )
+            return true;
+
+        return false;
+
+    case ModuleAPI::CvarCreateBoolean:
+        if ( args.count() != 4 ) {
+            com.error( Sys_Common::SoftError, this->tr( "CvarCreateBoolean [name] [value] (flags) (description)\n" ));
+            return false;
+        }
+        if ( cv.create( args.first().toString(), args.at( 1 ).toBool(), static_cast<pCvar::Flags>( args.at( 2 ).toInt()), args.at( 3 ).toString()) != NULL )
             return true;
 
         return false;
 
     case ModuleAPI::CvarSet:
         if ( args.count() != 3 ) {
-            com.error( Sys_Common::SoftError, this->tr( "CvarSet [name] [value] (access)\n" ));
+            com.error( Sys_Common::SoftError, this->tr( "CvarSet [name] [value] (force)\n" ));
             return false;
         }
         cvarPtr = cv.find( args.first().toString());
@@ -501,23 +537,19 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
         // gui
         //
     case ModuleAPI::GuiRaise:
-        if ( com.gui() != NULL )
-            com.gui()->show();
+        com.gui()->show();
         return true;
 
     case ModuleAPI::GuiHide:
-        if ( com.gui() != NULL )
-            com.gui()->hide();
+        com.gui()->hide();
         return true;
 
     case ModuleAPI::GuiCreateSystray:
-        if ( com.gui() != NULL )
-            com.gui()->createSystemTray();
+        com.gui()->createSystemTray();
         return true;
 
     case ModuleAPI::GuiRemoveSystray:
-        if ( com.gui() != NULL )
-            com.gui()->removeSystemTray();
+        com.gui()->removeSystemTray();
         return true;
 
     case ModuleAPI::GuiRemoveAction:
@@ -525,8 +557,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiRemoveAction [name]\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->removeAction( static_cast<ModuleAPI::ToolBarActions>( args.first().toInt()));
+        com.gui()->removeAction( static_cast<ModuleAPI::ToolBarActions>( args.first().toInt()));
         return true;
 
     case ModuleAPI::GuiAddToolBar:
@@ -534,8 +565,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiAddToolbar [toolBarPtr]\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->addToolBar( args.at( 0 ).value<QToolBar*>());
+        com.gui()->addToolBar( reinterpret_cast<QToolBar*>( args.at( 0 ).value<void*>()));
         return true;
 
     case ModuleAPI::GuiRemoveToolBar:
@@ -543,13 +573,11 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiRemoveToolBar [toolBarPtr]\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->removeToolBar( args.at( 0 ).value<QToolBar*>());
+        com.gui()->removeToolBar( reinterpret_cast<QToolBar*>( args.at( 0 ).value<void*>()));
         return true;
 
     case ModuleAPI::GuiRemoveMainToolBar:
-        if ( com.gui() != NULL )
-            com.gui()->removeMainToolBar();
+        com.gui()->removeMainToolBar();
         return true;
 
     case ModuleAPI::GuiAddTab:
@@ -557,8 +585,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiAddTab [widgetPtr] [name] (icon)\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->addTabExt( Gui_Main::MainWindow, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
+        com.gui()->addTabExt( Gui_Main::MainWindow, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
         return true;
 
     case ModuleAPI::GuiRemoveTab:
@@ -566,8 +593,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiRemoveTab [name]\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->removeTabExt( Gui_Main::MainWindow, args.first().toString());
+        com.gui()->removeTabExt( Gui_Main::MainWindow, args.first().toString());
         return true;
 
     case ModuleAPI::GuiSetActiveTab:
@@ -575,8 +601,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiSetActiveTab [name]\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->setActiveTab( args.first().toString());
+        com.gui()->setActiveTab( args.first().toString());
         return true;
 
     case ModuleAPI::GuiSetConsoleState:
@@ -584,8 +609,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiSetConsoleState [state]\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->setConsoleState( static_cast<ModuleAPI::ConsoleState>( args.first().toInt()));
+        com.gui()->setConsoleState( static_cast<ModuleAPI::ConsoleState>( args.first().toInt()));
         return true;
 
     case ModuleAPI::GuiAddSettingsTab:
@@ -593,8 +617,7 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiAddSettingsTab [widgetPtr] [name] (icon)\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->addTabExt( Gui_Main::Settings, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
+        com.gui()->addTabExt( Gui_Main::Settings, args.at( 0 ).value<QWidget*>(), args.at( 1 ).toString(), args.at( 2 ).toString());
         return true;
 
     case ModuleAPI::GuiRemoveSettingsTab:
@@ -602,23 +625,15 @@ QVariant Sys_Module::platformSyscalls( ModuleAPI::PlatformAPICalls callNum, cons
             com.error( Sys_Common::SoftError, this->tr( "GuiRemoveSettingsTab [name]\n" ));
             return false;
         }
-        if ( com.gui() != NULL )
-            com.gui()->removeTabExt( Gui_Main::Settings, args.first().toString());
+        com.gui()->removeTabExt( Gui_Main::Settings, args.first().toString());
         return true;
 
     case ModuleAPI::GuiShowTabWidget:
-        if ( com.gui() != NULL )
-            com.gui()->showTabWidget();
+        com.gui()->showTabWidget();
         return true;
 
     case ModuleAPI::GuiHideTabWidget:
-        if ( com.gui() != NULL )
-            com.gui()->hideTabWidget();
-        return true;
-
-    case ModuleAPI::GuiClearConsole:
-        if ( com.gui() != NULL )
-            com.gui()->clearConsole();
+        com.gui()->hideTabWidget();
         return true;
 
         //
@@ -787,10 +802,19 @@ reCacheModules
 ============
 */
 void Sys_Module::reCacheModules() {
+    int y;
+
+    // clean up gui list
+    for ( y = 0; y < this->modListWidget->count(); y++ ) {
+        QListWidgetItem *itemPtr = this->modListWidget->item( y );
+        delete itemPtr;
+    }
+
+    // recache modulse
     this->preCacheModules();
 
     // announce
-    com.print( StrMsg + this->tr( "recaching modules\n" ));
+    //com.print( StrMsg + this->tr( "recaching modules\n" ));
 
     // rather dirrty, but a working solution
     // removing those manifests already loaded
@@ -818,14 +842,24 @@ preCacheModules
 ============
 */
 void Sys_Module::preCacheModules() {
-    QRegExp mFilter( "*.xml" );
+    pModule *modPtr;
+    QStringList mList;
+    QRegExp mFilter;
+
+    // list manifests
+    mFilter.setPattern( "*.xml" );
     mFilter.setPatternSyntax( QRegExp::Wildcard );
-    QStringList mList = fs.list( "modules/", mFilter, Sys_Filesystem::ListFiles );
+    mList = fs.list( "modules/", mFilter, Sys_Filesystem::ListFiles );
+
+    // clear list
     this->preCachedList.clear();
 
     // find and attempt to parse all manifests
-    foreach ( QString mStr, mList )
-        this->preCachedList << this->parseManifest( mStr );
+    foreach ( QString mStr, mList ) {
+        modPtr = this->parseManifest( mStr );
+        if ( modPtr != NULL )
+            this->preCachedList << modPtr;
+    }
 
     // sort the list
     qSort( this->preCachedList.begin(), this->preCachedList.end(), moduleSort );
@@ -837,9 +871,6 @@ populateListWidget
 ============
 */
 void Sys_Module::populateListWidget() {
-    QList<QListWidgetItem*>list;
-    foreach ( QListWidgetItem *item, list )
-        delete item;
     this->modListWidget->clear();
 
     // find icon and add to list
@@ -874,7 +905,6 @@ void Sys_Module::populateListWidget() {
                     .arg( LIBRARY_SUFFIX )
                     .arg( ARCH_STRING )
                     .arg( LIBRARY_EXT );
-
 
             // perliminary check (we don't care if it's in a pack or not)
             if ( !fs.exists( filename ))

@@ -39,7 +39,7 @@ pCvar *fs_homePath;
 pCvar *fs_appPath;
 pCvar *fs_debug;
 pCvar *fs_basePath;
-pCvar *fs_ignoreLinks;
+pCvar *fs_resolveLinks;
 
 //
 // commands
@@ -62,8 +62,8 @@ void Sys_Filesystem::init() {
     fs_homePath = cv.create( "fs_homePath", homePath.replace( '\\', Filesystem::PathSeparator ).append( Filesystem::PathSeparator ), ( pCvar::ReadOnly ));
     fs_appPath = cv.create( "fs_appPath", QDir::currentPath().replace( '\\', Filesystem::PathSeparator ).append( Filesystem::PathSeparator ), ( pCvar::ReadOnly ));
     fs_basePath = cv.create( "fs_basePath", Filesystem::BaseDirectory + Filesystem::PathSeparator, ( pCvar::Flags )( pCvar::Archive | pCvar::ReadOnly ));
-    fs_debug = cv.create( "fs_debug", "0", pCvar::Archive );
-    fs_ignoreLinks = cv.create( "fs_ignoreLinks", "0", pCvar::Archive );
+    fs_debug = cv.create( "fs_debug", false, pCvar::Archive );
+    fs_resolveLinks = cv.create( "fs_resolveLinks", true, pCvar::Archive );
 
     // add search paths
 #ifndef YP2_FINAL_RELEASE
@@ -89,7 +89,7 @@ void Sys_Filesystem::init() {
     this->loadPackages();
 
     // for debugging
-    if ( fs_debug->integer()) {
+    if ( fs_debug->isEnabled()) {
         foreach ( pSearchPath *sp, this->searchPaths ) {
             if ( sp->type() == pFile::Directory )
                 com.print( StrDebug + this->tr( "%1 (dir)\n" ).arg( sp->path()));
@@ -118,7 +118,7 @@ void Sys_Filesystem::shutdown() {
     com.print( StrMsg + this->tr( "shutting down filesystem\n" ));
 
     // delete searchPath content
-    if ( fs_debug->integer())
+    if ( fs_debug->isEnabled())
         com.print( StrDebug + this->tr( "clearing searchPaths (%1)\n" ).arg( this->searchPaths.count()));
 
     foreach ( pSearchPath *sp, this->searchPaths )
@@ -126,7 +126,7 @@ void Sys_Filesystem::shutdown() {
     this->searchPaths.clear();
 
     // close all open files and clear the list
-    if ( fs_debug->integer())
+    if ( fs_debug->isEnabled())
         com.print( StrDebug + this->tr( "clearing files (%1)\n" ).arg( this->fileList.count()));
 
     foreach ( pFile *filePtr, this->fileList ) {
@@ -305,7 +305,7 @@ bool Sys_Filesystem::existsExt( QString &filename, OpenFlags &flags, int &search
                     continue;
                 } else {
                     if ( !tmpFile.open( QIODevice::ReadOnly )) {
-                        if ( fs_debug->integer())
+                        if ( fs_debug->isEnabled())
                             com.print( StrDebug + this->tr( "cannot open file \"%1\": %2\n" ).arg( tmpFile.fileName()).arg( tmpFile.errorString()));
                         continue;
                     }
@@ -330,7 +330,7 @@ bool Sys_Filesystem::existsExt( QString &filename, OpenFlags &flags, int &search
 
 #ifdef Q_OS_WIN
     // handle win32 lnks
-    if ( !( flags.testFlag( Linked )) && !fs_ignoreLinks->integer()) {
+    if ( !( flags.testFlag( Linked )) && fs_resolveLinks->isEnabled()) {
         QString linkedFilename;
         OpenFlags linkedFlags;
 
@@ -364,7 +364,7 @@ bool Sys_Filesystem::existsExt( QString &filename, OpenFlags &flags, int &search
 openInReadMode
 ============
 */
-long Sys_Filesystem::openInReadMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags ) {
+int Sys_Filesystem::openInReadMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags ) {
     pSearchPath *sp;
     pFile *filePtr;
 
@@ -444,7 +444,7 @@ void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHa
         return;
     }
 
-    if ( fs_debug->integer())
+    if ( fs_debug->isEnabled())
         com.print( StrDebug + this->tr( "open \"%1\" in \"%2\" in write mode\n" ).arg( filename, this->searchPaths.at( searchPathIndex )->path()));
 
     // assign next available handle
@@ -492,7 +492,7 @@ void Sys_Filesystem::openInWriteMode( const QString &filename, fileHandle_t &fHa
 openInAppendMode
 ============
 */
-long Sys_Filesystem::openInAppendMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags ) {
+int Sys_Filesystem::openInAppendMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags ) {
     pFile *filePtr;
 
     // absolute path
@@ -540,12 +540,12 @@ long Sys_Filesystem::openInAppendMode( const QString &filename, fileHandle_t &fH
 open
 ============
 */
-long Sys_Filesystem::open( pFile::OpenModes mode, const QString &filename, fileHandle_t &fHandle, OpenFlags flags ) {
+int Sys_Filesystem::open( pFile::OpenModes mode, const QString &filename, fileHandle_t &fHandle, OpenFlags flags ) {
     int fsp;
     QString path;
 
     // minus one means fail
-    long fileLength = -1;
+    int fileLength = -1;
 
     // copy path
     path = filename;
@@ -573,7 +573,7 @@ long Sys_Filesystem::open( pFile::OpenModes mode, const QString &filename, fileH
         return fileLength;
     } else {
         if ( mode != pFile::Write ) {
-            if ( fs_debug->integer()) {
+            if ( fs_debug->isEnabled()) {
                 if ( !( flags.testFlag( Absolute ))) {
                     if ( this->searchPaths.at( fsp )->type() == pFile::Directory )
                         com.print( StrDebug + this->tr( "success for \"%1\" in \"%2\" (Dir)\n" ).arg( path, this->searchPaths.at( fsp )->path()));
@@ -664,7 +664,7 @@ void Sys_Filesystem::close( const QString &filename, OpenFlags flags ) {
             return;
         }
     }
-    if ( fs_debug->integer())
+    if ( fs_debug->isEnabled())
         com.print( StrDebug + this->tr( "file \"%1\" has not been opened\n" ).arg( filename ));
 }
 
@@ -692,7 +692,7 @@ void Sys_Filesystem::close( const fileHandle_t fHandle, OpenFlags flags ) {
             }
             filePtr->setOpenMode( pFile::Closed );
 
-            if ( fs_debug->integer())
+            if ( fs_debug->isEnabled())
                 com.print( StrDebug + this->tr( "closing \"%1\"\n" ).arg( filePtr->name()));
 
             if ( filePtr->pathType() == pFile::Directory )
@@ -711,7 +711,7 @@ void Sys_Filesystem::close( const fileHandle_t fHandle, OpenFlags flags ) {
 read
 ============
 */
-long Sys_Filesystem::read( byte *buffer, unsigned long len, fileHandle_t fHandle, OpenFlags flags ) {
+int Sys_Filesystem::read( byte *buffer, unsigned int len, fileHandle_t fHandle, OpenFlags flags ) {
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
         com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
@@ -747,7 +747,7 @@ long Sys_Filesystem::read( byte *buffer, unsigned long len, fileHandle_t fHandle
 write
 ============
 */
-long Sys_Filesystem::write( const byte *buffer, unsigned long len, fileHandle_t fHandle, OpenFlags flags ) {
+int Sys_Filesystem::write( const byte *buffer, unsigned int len, fileHandle_t fHandle, OpenFlags flags ) {
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
         com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
@@ -786,7 +786,7 @@ long Sys_Filesystem::write( const byte *buffer, unsigned long len, fileHandle_t 
 write
 ============
 */
-long Sys_Filesystem::write( const QByteArray buffer, fileHandle_t fHandle, OpenFlags flags ) {
+int Sys_Filesystem::write( const QByteArray buffer, fileHandle_t fHandle, OpenFlags flags ) {
     return this->write( reinterpret_cast<const byte*>( buffer.constData()), buffer.length(), fHandle, flags );
 }
 
@@ -795,7 +795,7 @@ long Sys_Filesystem::write( const QByteArray buffer, fileHandle_t fHandle, OpenF
 seek
 ============
 */
-bool Sys_Filesystem::seek( fileHandle_t fHandle, long offset, OpenFlags flags, SeekModes seekMode ) {
+bool Sys_Filesystem::seek( fileHandle_t fHandle, int offset, OpenFlags flags, SeekModes seekMode ) {
     // failsafe
     if ( !this->hasInitialized() || this->searchPaths.isEmpty()) {
         com.error( StrSoftError + this->tr( "filesystem not initialized\n" ));
@@ -833,7 +833,7 @@ bool Sys_Filesystem::seek( fileHandle_t fHandle, long offset, OpenFlags flags, S
                     return false;
                 }
                 byte buffer[Filesystem::PackageSeekBuffer];
-                long remaining = offset;
+                int remaining = offset;
 
                 if( offset < 0 || seekMode == End ) {
                     com.error( StrFatalError + this->tr( "negative offsets and (End) mode not supported for packaged files\n" ));
@@ -893,7 +893,7 @@ readFile
 ============
 */
 QByteArray Sys_Filesystem::readFile( const QString &filename, OpenFlags flags ) {
-    long len;
+    int len;
     fileHandle_t fHandle;
     byte *buf = NULL;
     QByteArray buffer;
@@ -1306,7 +1306,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
 length
 ================
 */
-long Sys_Filesystem::length( fileHandle_t handle ) const {
+int Sys_Filesystem::length( fileHandle_t handle ) const {
     const pFile *filePtr = this->fileForHandle( handle );
     if ( filePtr != NULL )
         return filePtr->fHandle.size();

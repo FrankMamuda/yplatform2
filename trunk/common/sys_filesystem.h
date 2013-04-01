@@ -207,15 +207,15 @@ public:
 #ifndef MODULE_BUILD
     bool hasInitialized() const { return this->m_initialized; }
     QList <pSearchPath*> searchPaths;
-    long length( fileHandle_t ) const;
-    long open( pFile::OpenModes mode, const QString &filename, fileHandle_t &fHandle, OpenFlags flags = NoFlags );
-    long read( byte *buffer, unsigned long len, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
-    long write( const byte *buffer, unsigned long len, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
-    long write( const QByteArray buffer, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
+    int length( fileHandle_t ) const;
+    int open( pFile::OpenModes mode, const QString &filename, fileHandle_t &fHandle, OpenFlags flags = NoFlags );
+    int read( byte *buffer, unsigned int len, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
+    int write( const byte *buffer, unsigned int len, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
+    int write( const QByteArray buffer, const fileHandle_t fHandle, OpenFlags flags = NoFlags );
     void close( const fileHandle_t fHandle, OpenFlags flags = NoFlags );
     void close( const QString &filename, OpenFlags flags = NoFlags );
     void print( const fileHandle_t fHandle, const QString &msg, OpenFlags flags = NoFlags );
-    bool seek( const fileHandle_t fHandle, long offset, OpenFlags flags = NoFlags, SeekModes seekMode = Set );
+    bool seek( const fileHandle_t fHandle, int offset, OpenFlags flags = NoFlags, SeekModes seekMode = Set );
     QByteArray readFile( const QString &filename, OpenFlags flags = NoFlags );
     void touch( const QString &filename, OpenFlags flags = NoFlags );
     void defaultExtension( QString &filename, const QString &extension );
@@ -233,8 +233,8 @@ private:
     void addSearchPath( const QString &path, const QString &id = QString::null );
     void addSearchPath( pPackage *package, const QString &filename, const QString &id = QString::null );
     void openInWriteMode( const QString &filename, fileHandle_t &fHandle, OpenFlags flags = NoFlags );
-    long openInAppendMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags = NoFlags );
-    long openInReadMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags = NoFlags );
+    int openInAppendMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags = NoFlags );
+    int openInReadMode( const QString &filename, fileHandle_t &fHandle, int searchPathIndex, OpenFlags flags = NoFlags );
     int getSearchPathIndex( const QString &id ) const;
     void loadPackages();
     int numFileHandles;
