@@ -43,35 +43,31 @@ class mCvar : public QObject {
     Q_CLASSINFO( "description", "Module console variable" )
     Q_DISABLE_COPY( mCvar )
     Q_PROPERTY( QString name READ name WRITE setName )
-    Q_PROPERTY( QString description READ description WRITE setDescription )
     Q_PROPERTY( QString string READ string WRITE setString )
-    Q_FLAGS( Flags Flag )
 
 public:
     // constructors/destructors
-    mCvar( const QString &name, const QString &string, pCvar::Flags flags = pCvar::NoFlags, const QString &desc = QString::null );
+    mCvar( const QString &name, const QString &string );
     ~mCvar();
 
     // property getters
     QString name() const { return this->m_name; }
-    QString description() const { return this->m_description; }
     QString string() const { return this->m_string; }
-
-    // flags & other funcs
-    pCvar::Flags flags;
 
     // other funcs
     int     integer() const;
     float   value() const;
-    bool    set( const QString &string, pCvar::AccessFlags flags = pCvar::NoAccessFlags );
-    bool    set( int, pCvar::AccessFlags flags = pCvar::NoAccessFlags );
-    bool    set( float, pCvar::AccessFlags flags = pCvar::NoAccessFlags );
+    bool    boolean() const { return this->integer(); }
+    bool    isEnabled() { return this->boolean(); }
+    bool    isDisabled() { return !this->boolean(); }
+    bool    set( const QString &string, bool force = false );
+    bool    set( int, bool force = false );
+    bool    set( float, bool force = false );
     void    update( const QString &string );
 
 private slots:
     // property setters
     void setName( const QString &cvarName ) { this->m_name = cvarName; }
-    void setDescription( const QString &description ) { this->m_description = description; }
     void setString( const QString &string );
 
 signals:
@@ -81,7 +77,6 @@ private:
     // properties
     QString m_string;
     QString m_name;
-    QString m_description;
 };
 
 Q_DECLARE_METATYPE( mCvar* )

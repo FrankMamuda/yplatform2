@@ -32,7 +32,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 extern pCvar *gui_toolBarIconSize;
 extern pCvar *fs_debug;
-extern pCvar *fs_ignoreLinks;
+extern pCvar *fs_resolveLinks;
 extern pCvar *mod_extract;
 extern pCvar *gui_restoreSize;
 
@@ -153,7 +153,7 @@ void Gui_Settings::intializeCvars() {
 
     // set default values
     this->addCvar( fs_debug, pSettingsCvar::CheckBox, this->ui->enableFsDebug );
-    this->addCvar( fs_ignoreLinks, pSettingsCvar::CheckBox, this->ui->ignoreLinks );
+    this->addCvar( fs_resolveLinks, pSettingsCvar::CheckBox, this->ui->ignoreLinks );
     this->addCvar( mod_extract, pSettingsCvar::CheckBox, this->ui->extractModules );
     this->addCvar( gui_toolBarIconSize, pSettingsCvar::SpinBox, this->ui->iconSize );
     this->addCvar( gui_restoreSize, pSettingsCvar::CheckBox, this->ui->restoreSize );

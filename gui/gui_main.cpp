@@ -68,6 +68,19 @@ Gui_Main::Gui_Main( QWidget *parent ) : QMainWindow( parent ), ui( new Ui::Gui_M
 
 /*
 ================
+resizeEvent
+================
+*/
+void Gui_Main::resizeEvent( QResizeEvent *eventPtr ) {
+    /*
+      TODO: check new geometry against clamped gui_windowWidth/Height cvar values
+    */
+    eventPtr->accept();
+}
+
+
+/*
+================
 focus
 ================
 */
@@ -108,14 +121,14 @@ void Gui_Main::init() {
     this->loadHistory( Ui::DefaultHistoryFile );
 
     // visuals
-    gui_restoreSize = cv.create( "gui_restoreSize", "0", pCvar::Archive );
-    gui_toolBarIconSize = cv.create( "gui_toolBarIconSize", QString( "%1" ).arg( Ui::DefaultToolbarIconSize ), pCvar::Archive );
-    gui_windowWidth = cv.create( "gui_windowWidth", QString( "%1" ).arg( this->width()), pCvar::Archive );
-    gui_windowHeight = cv.create( "gui_windowHeight", QString( "%1" ).arg( this->height()), pCvar::Archive );
+    gui_restoreSize = cv.create( "gui_restoreSize", true, pCvar::Archive );
+    gui_toolBarIconSize = cv.create( "gui_toolBarIconSize", Ui::DefaultToolbarIconSize, pCvar::Archive, 8, 128 );
+    gui_windowWidth = cv.create( "gui_windowWidth", this->width(), pCvar::Archive, 320, 1024 );
+    gui_windowHeight = cv.create( "gui_windowHeight", this->height(), pCvar::Archive, 240, 768 );
     this->toolBarIconSizeModified();
 
     // restore size
-    if ( gui_restoreSize->integer())
+    if ( gui_restoreSize->isEnabled())
         this->resize( gui_windowWidth->integer(), gui_windowHeight->integer());
 
     // dynamic check on toolBar icon size
@@ -145,12 +158,7 @@ toolBarIconSizeModified
 ================
 */
 void Gui_Main::toolBarIconSizeModified() {
-    // accept only valid sizes
-    if ( gui_toolBarIconSize->integer() >= 8 && gui_toolBarIconSize->integer() <= 128 )
-        this->ui->toolBar->setIconSize( QSize( gui_toolBarIconSize->integer(), gui_toolBarIconSize->integer()));
-    else
-        gui_toolBarIconSize->set( QString( "%1" ).arg( Ui::DefaultToolbarIconSize ));
-
+    this->ui->toolBar->setIconSize( QSize( gui_toolBarIconSize->integer(), gui_toolBarIconSize->integer()));
 }
 
 /*
@@ -160,7 +168,7 @@ shutdown
 */
 void Gui_Main::shutdown() {
     // store size if needed
-    if ( gui_restoreSize->integer()) {
+    if ( gui_restoreSize->isEnabled()) {
         gui_windowWidth->set( this->width());
         gui_windowHeight->set( this->height());
     }
@@ -412,17 +420,22 @@ bool Gui_Main::completeCommand() {
 
         // perform a variable print or set
         if ( cvarPtr != NULL ) {
-            if ( !cvarPtr->description().isEmpty()) {
-                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5 - ^3%3\n" ).arg(
-                               cvarPtr->name(),
-                               cvarPtr->string(),
-                               cvarPtr->description()
-                               ));
-            } else {
-                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"\n" ).arg(
-                               cvarPtr->name(),
-                               cvarPtr->string()));
-            }
+            QString dStr;
+
+            if ( !cvarPtr->description().isEmpty())
+                dStr = QString( " - ^3%1" ).arg( cvarPtr->description());
+
+            if ( cvarPtr->type() == pCvar::Boolean ) {
+                if ( cvarPtr->boolean())
+                    com.print( this->tr( " ^3\"%1\" ^5is ^3true^5%2\n" ).arg( cvarPtr->name(), dStr ));
+                else
+                    com.print( this->tr( " ^3\"%1\" ^5is ^3false^5%2\n" ).arg( cvarPtr->name(), dStr ));
+            /*} else if ( cvarPtr->type() == pCvar::Integer && cvarPtr->isClamped()) {
+                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\" ^5min ^3\"%3\", ^5max ^3\"%4\"^5%5\n" ).arg( cvarPtr->name()).arg( cvarPtr->integer()).arg( cvarPtr->minimum().toInt()).arg( cvarPtr->maximum().toInt()).arg( dStr ));
+            } else if ( cvarPtr->type() == pCvar::Value && cvarPtr->isClamped()) {
+                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\" ^5min ^3\"%3\", ^5max ^3\"%4\"^5%5\n" ).arg( cvarPtr->name()).arg( cvarPtr->value()).arg( cvarPtr->minimum().toFloat()).arg( cvarPtr->maximum().toFloat()).arg( dStr ));
+            */} else
+                com.print( this->tr( " ^3\"%1\" ^5is ^3\"%2\"^5%3\n" ).arg( cvarPtr->name(), cvarPtr->string(), dStr ));
         }
     }
 
@@ -525,7 +538,7 @@ void Gui_Main::print( const QString &message, int fontSize ) {
     for ( i = 0; i < msg.length(); i++ ) {
         if ( msg.at( i ) == QChar( Sys::ColourEscape )) {
             // COLOUR_WHITE
-            if ( msg.at( i + 1 ) == Sys::ColourBlack ) {
+            if ( msg.at( i + 1 ) == Sys::ColourWhite ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#FFFFFF; font-size:%1pt;\">" ).arg( fontSize ));
             }
@@ -560,7 +573,7 @@ void Gui_Main::print( const QString &message, int fontSize ) {
                 msg.insert( i, QString( "</span><span style=\"color:#FF00FF; font-size:%1pt;\">" ).arg( fontSize ));
             }
             // COLOUR_BLACK
-            else if ( msg.at( i + 1 ) == Sys::ColourWhite ) {
+            else if ( msg.at( i + 1 ) == Sys::ColourBlack ) {
                 msg.remove( i, 2 );
                 msg.insert( i, QString( "</span><span style=\"color:#000000; font-size:%1pt;\">" ).arg( fontSize ));
             }

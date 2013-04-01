@@ -56,9 +56,9 @@ void R_Main::init( bool reload ) {
 
     if ( !reload ) {
         // init cvars
-        r_screenMode = cv.create( "r_screenMode", QString( "%1" ).arg( Renderer::DefaultScreenMode ), pCvar::Archive, "renderer screen dimensions" );
-        r_adjustScreen = cv.create( "r_adjustScreen", "1", pCvar::Archive, "adjust screen to virtual coordinates" );
-        r_hideOnESC = cv.create( "r_hideOnESC", "1", pCvar::NoFlags, "hide renderer upon pressing ESC key" );
+        r_screenMode = cv.create( "r_screenMode", Renderer::DefaultScreenMode, pCvar::Archive, 0, Renderer::NumScreenModes, "renderer screen dimensions" );
+        r_adjustScreen = cv.create( "r_adjustScreen", true, pCvar::Archive, "adjust screen to virtual coordinates" );
+        r_hideOnESC = cv.create( "r_hideOnESC", true, pCvar::NoFlags, "hide renderer upon pressing ESC key" );
 
         // create screen
         glImp.init();

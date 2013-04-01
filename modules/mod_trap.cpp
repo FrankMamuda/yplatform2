@@ -100,11 +100,68 @@ QStringList Mod_Filesystem::listFiles( const QString &directory, const QRegExp &
 create
 =============
 */
-mCvar *Mod_Cvar::create( const QString &name, const QString &string, pCvar::Flags flags, const QString &desc ) {
-    bool ok = mt.call( ModuleAPI::Platform, ModuleAPI::CvarCreate, name, string, static_cast<int>( flags ), desc ).toBool();
+mCvar *Mod_Cvar::create( const QString &name, const QString &string, pCvar::Flags flags, const QString &description ) {
+    bool ok;
+
+    flags |= pCvar::External;
+    ok = mt.call( ModuleAPI::Platform, ModuleAPI::CvarCreate, name, string, static_cast<int>( flags ), description ).toBool();
 
     if ( ok ) {
-        this->cvarList << new mCvar( name, cv.get( name ), flags, desc );
+        this->cvarList << new mCvar( name, cv.get( name ).toString());
+        return this->cvarList.last();
+    }
+    return NULL;
+}
+
+/*
+=============
+create
+=============
+*/
+mCvar *Mod_Cvar::create( const QString &name, int value, pCvar::Flags flags, int min, int max, const QString &description ) {
+    bool ok;
+
+    flags |= pCvar::External;
+    ok = mt.call( ModuleAPI::Platform, ModuleAPI::CvarCreateInteger, name, value, static_cast<int>( flags ), min, max, description ).toBool();
+
+    if ( ok ) {
+        this->cvarList << new mCvar( name, cv.get( name ).toString());
+        return this->cvarList.last();
+    }
+    return NULL;
+}
+
+/*
+=============
+create
+=============
+*/
+mCvar *Mod_Cvar::create( const QString &name, float value, pCvar::Flags flags, float min, float max, const QString &description ) {
+    bool ok;
+
+    flags |= pCvar::External;
+    ok = mt.call( ModuleAPI::Platform, ModuleAPI::CvarCreateValue, name, value, static_cast<int>( flags ), min, max, description ).toBool();
+
+    if ( ok ) {
+        this->cvarList << new mCvar( name, cv.get( name ).toString());
+        return this->cvarList.last();
+    }
+    return NULL;
+}
+
+/*
+=============
+create
+=============
+*/
+mCvar *Mod_Cvar::create( const QString &name, bool value, pCvar::Flags flags, const QString &description ) {
+    bool ok;
+
+    flags |= pCvar::External;
+    ok = mt.call( ModuleAPI::Platform, ModuleAPI::CvarCreateBoolean, name, value, static_cast<int>( flags ), description ).toBool();
+
+    if ( ok ) {
+        this->cvarList << new mCvar( name, cv.get( name ).toString());
         return this->cvarList.last();
     }
     return NULL;

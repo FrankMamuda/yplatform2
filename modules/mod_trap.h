@@ -109,7 +109,7 @@ class Mod_Common : public QObject {
     Q_CLASSINFO( "description", "Common function wrapper class" )
 
 public slots:
-    void print( const QString &msg, int fontSize = 10 ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComPrint, msg, fontSize ); }
+    void print( const QString &msg ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComPrint, msg ); }
     void error( int type, const QString &msg ) { mt.call( ModuleAPI::Platform, ModuleAPI::ComError, type, msg ); }
     int milliseconds() { return mt.call( ModuleAPI::Platform, ModuleAPI::ComMilliseconds ).toInt(); }
 };
@@ -167,11 +167,15 @@ private:
 public:
     void update( const QString &cvarName, const QString &string );
     void clear();
+    mCvar *create( const QString &name, const QString &string = QString( "" ), pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null );
+    mCvar *create( const QString &name, const char *string = "", pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null ) { return this->create( name, QString( string ), flags, description ); }
+    mCvar *create( const QString &name, int value = 0, pCvar::Flags flags = pCvar::NoFlags, int min = 0, int max = 0, const QString &description = QString::null );
+    mCvar *create( const QString &name, float value = 0.0f, pCvar::Flags flags = pCvar::NoFlags, float min = 0.0f, float max = 0.0f, const QString &description = QString::null );
+    mCvar *create( const QString &name, bool value = false, pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null );
 
 public slots:
-    mCvar *create( const QString &name, const QString &string, pCvar::Flags = pCvar::NoFlags, const QString &desc = QString::null );
-    bool set( const QString &name, const QString &string, pCvar::AccessFlags flags = pCvar::NoAccessFlags ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarSet, name, string, static_cast<int>( flags )).toBool(); }
-    QString get( const QString &name ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarGet, name ).toString(); }
+    bool set( const QString &name, const QString &string, bool force = false ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarSet, name, string, force ).toBool(); }
+    QVariant get( const QString &name ) { return mt.call( ModuleAPI::Platform, ModuleAPI::CvarGet, name ); }
     void reset( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::CvarReset, name ); }
     mCvar *find( const QString &name ) const;
 };
@@ -196,8 +200,8 @@ class Mod_Gui : public QObject {
 
 public:
     void removeAction( ModuleAPI::ToolBarActions id ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveAction, static_cast<ModuleAPI::ToolBarActions>( id )); }
-    void addToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddToolBar, QVariant::fromValue( toolBarPtr )); }
-    void removeToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveToolBar, QVariant::fromValue( toolBarPtr )); }
+    void addToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddToolBar, qVariantFromValue( reinterpret_cast<void*>( toolBarPtr ))); }
+    void removeToolBar( QToolBar *toolBarPtr ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveToolBar, qVariantFromValue( reinterpret_cast<void*>( toolBarPtr ))); }
     void removeMainToolBar() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveMainToolBar ); }
     void addTab( QWidget *widget, const QString &name, const QString &icon ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiAddTab, qVariantFromValue( widget ), name, icon ); }
     void removeTab( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveTab, name ); }
@@ -207,7 +211,6 @@ public:
     void removeSettingsTab( const QString &name ) { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRemoveSettingsTab, name ); }
 
 public slots:
-    void clearConsole() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiClearConsole ); }
     void raise() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiRaise ); }
     void hide() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiHide ); }
     void createSystemTray() { mt.call( ModuleAPI::Platform, ModuleAPI::GuiCreateSystray ); }
@@ -240,7 +243,7 @@ class Mod_Renderer : public QObject {
 
 public:
     void setColour( const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->setColour( colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
-    void drawText( float x, float y, QFont font, const QString &text, float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawText, x, y, qVariantFromValue( font ), text, r, g, b, a ); }
+    void drawText( float x, float y, QFont font, const QString &text, float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawText, x, y, font, text, r, g, b, a ); }
     void drawText( float x, float y, QFont font, const QString &text, const QColor &colour = QColor::fromRgbF( 1.0f, 1.0f, 1.0f, 1.0f )) { this->drawText( x, y, font, text, colour.redF(), colour.greenF(), colour.blueF(), colour.alphaF()); }
     void reload() { mt.call( ModuleAPI::Renderer, RendererAPI::Reload ); }
 
@@ -249,6 +252,7 @@ public slots:
     void drawMaterial( float x, float y, float w, float h, mtrHandle_t handle ) { mt.call( ModuleAPI::Renderer, RendererAPI::DrawMaterial, x, y, w, h, static_cast<int>( handle )); }
     void setColour( float r, float g, float b, float a = 1.0f ) { mt.call( ModuleAPI::Renderer, RendererAPI::SetColour, r, g, b, a ); }
     void setWindowTitle( const QString &title ) { mt.call( ModuleAPI::Renderer, RendererAPI::SetWindowTitle, title ); }
+    void drawText( float x, float y, const QString &fontName, int pointSize, const QString &text, float r, float g, float b, float a = 1.0f ) { QFont font( fontName ); font.setPixelSize( pointSize ); this->drawText( x, y, font, text, r, g, b, a ); }
 };
 #endif
 

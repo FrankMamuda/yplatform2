@@ -49,7 +49,11 @@ public:
     void saveConfig( const QString &filename );
     bool command( const QString &name, const QStringList &args );
     void parseConfig( const QString &filename, bool verbose = false );
-    pCvar *create( const QString &name, const QString &string, pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null, bool mCvar = false );
+    pCvar *create( const QString &name, const QString &string = QString( "" ), pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null, pCvar::Types type = pCvar::String );
+    pCvar *create( const QString &name, const char *string = "", pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null, pCvar::Types type = pCvar::String ) { return this->create( name, QString( string ), flags, description, type ); }
+    pCvar *create( const QString &name, int value = 0, pCvar::Flags flags = pCvar::NoFlags, int min = 0, int max = 0, const QString &description = QString::null );
+    pCvar *create( const QString &name, float value = 0.0f, pCvar::Flags flags = pCvar::NoFlags, float min = 0.0f, float max = 0.0f, const QString &description = QString::null );
+    pCvar *create( const QString &name, bool value = false, pCvar::Flags flags = pCvar::NoFlags, const QString &description = QString::null );
 
     // property getters
     bool hasInitialized() const { return this->m_initialized; }

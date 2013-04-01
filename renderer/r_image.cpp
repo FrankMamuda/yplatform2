@@ -364,12 +364,12 @@ byte *R_Image::loadTargaImage( const QString &filename, int len, const byte *buf
     memcpy( &header.height, &imageBuffer[14], 2 );
     header.pixelSize = imageBuffer[16];
     header.attributes = imageBuffer[17];
-    header.colourmapIndex = littleShort( header.colourmapIndex );
-    header.colourmapLength = littleShort( header.colourmapLength );
-    header.xOrigin = littleShort( header.xOrigin );
-    header.yOrigin = littleShort( header.yOrigin );
-    header.width = littleShort( header.width );
-    header.height = littleShort( header.height );
+    header.colourmapIndex = qFromLittleEndian( header.colourmapIndex );
+    header.colourmapLength = qFromLittleEndian( header.colourmapLength );
+    header.xOrigin = qFromLittleEndian( header.xOrigin );
+    header.yOrigin = qFromLittleEndian( header.yOrigin );
+    header.width = qFromLittleEndian( header.width );
+    header.height = qFromLittleEndian( header.height );
     imageBuffer += 18;
 
     if ( header.imageType != 2 && header.imageType != 10  && header.imageType != 3 )  {

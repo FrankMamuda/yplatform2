@@ -29,12 +29,10 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 construct
 ============
 */
-mCvar::mCvar( const QString &name, const QString &string, pCvar::Flags flags, const QString &desc ) {
+mCvar::mCvar( const QString &name, const QString &string ) {
     // set the defaults
-    this->flags = flags;
     this->setName( name );
     this->setString( string );
-    this->setDescription( desc );
 }
 
 /*
@@ -88,14 +86,14 @@ float mCvar::value() const {
 set
 ============
 */
-bool mCvar::set( const QString &string, pCvar::AccessFlags flags ) {
+bool mCvar::set( const QString &string, bool force ) {
     bool ret;
 
     // call platform
-    ret = cv.set( this->name(), string, flags );
+    ret = cv.set( this->name(), string, force );
 
     // set local cvar
-    this->setString( cv.get( this->name()));
+    this->setString( cv.get( this->name()).toString());
 
     // return result
     return ret;
@@ -128,8 +126,8 @@ void mCvar::setString( const QString &string ) {
 set (integer)
 ============
 */
-bool mCvar::set( int integer, pCvar::AccessFlags flags ) {
-    return this->set( QString( "%1" ).arg( integer ), flags );
+bool mCvar::set( int integer, bool force ) {
+    return this->set( QString( "%1" ).arg( integer ), force );
 }
 
 /*
@@ -137,6 +135,6 @@ bool mCvar::set( int integer, pCvar::AccessFlags flags ) {
 set (value)
 ============
 */
-bool mCvar::set( float value, pCvar::AccessFlags flags ) {
-    return this->set( QString( "%1" ).arg( value ), flags );
+bool mCvar::set( float value, bool force ) {
+    return this->set( QString( "%1" ).arg( value ), force );
 }

@@ -80,6 +80,9 @@ namespace ModuleAPI {
 
         // cvars
         CvarCreate,
+        CvarCreateInteger,
+        CvarCreateValue,
+        CvarCreateBoolean,
         CvarSet,
         CvarGet,
         CvarReset,
@@ -104,7 +107,6 @@ namespace ModuleAPI {
         GuiRemoveSettingsTab,
         GuiShowTabWidget,
         GuiHideTabWidget,
-        GuiClearConsole,
 
         // platform flags
         PlatformFlags,
