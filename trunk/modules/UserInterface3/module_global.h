@@ -30,9 +30,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // defines
 //
 #if defined( MODULE_BUILD )
-#  define UISHARED_EXPORT Q_DECL_EXPORT
+#define MODULE_EXPORT Q_DECL_EXPORT
 #else
-#  define UISHARED_EXPORT Q_DECL_IMPORT
+#define MODULE_EXPORT Q_DECL_IMPORT
 #endif
 
 // use qtscript, renderer

@@ -28,9 +28,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include <QtGui>
 
 #if defined ( R_BUILD )
-#define RENDERERSHARED_EXPORT Q_DECL_EXPORT
+#define RENDERER_EXPORT Q_DECL_EXPORT
 #else
-#define RENDERERSHARED_EXPORT Q_DECL_IMPORT
+#define RENDERER_EXPORT Q_DECL_IMPORT
 #endif
 
 #define QTSCRIPT_ENABLED

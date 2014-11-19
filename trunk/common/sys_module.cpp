@@ -28,6 +28,8 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_cvar.h"
 #include "sys_cmd.h"
 #include "applet/app_main.h"
+#include <QPushButton>
+#include <QMessageBox>
 
 //
 // classes

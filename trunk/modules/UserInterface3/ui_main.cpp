@@ -82,7 +82,7 @@ void UiMain::render() {
 modMain
 ================
 */
-extern "C" UISHARED_EXPORT QVariant modMain( ModuleAPI::ModuleAPICalls callNum, const QVariantList &args ) {
+extern "C" MODULE_EXPORT QVariant modMain( ModuleAPI::ModuleAPICalls callNum, const QVariantList &args ) {
     switch ( callNum ) {
     case ModuleAPI::ModAPI:
         // return api version
@@ -211,7 +211,7 @@ extern "C" UISHARED_EXPORT QVariant modMain( ModuleAPI::ModuleAPICalls callNum, 
 modEntry
 ================
 */
-extern "C" UISHARED_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
+extern "C" MODULE_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
     mt.setPlatformCalls( reinterpret_cast<platformSyscallDef>( syscallPtr ));
 }
 
@@ -220,6 +220,6 @@ extern "C" UISHARED_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, intptr_
 modRendererEntry
 ================
 */
-extern "C" UISHARED_EXPORT void modRendererEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
+extern "C" MODULE_EXPORT void modRendererEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
     mt.setRendererCalls( reinterpret_cast<platformSyscallDef>( syscallPtr ));
 }

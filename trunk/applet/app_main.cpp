@@ -28,6 +28,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../common/sys_filesystem.h"
 #include "../common/sys_module.h"
 #include "../gui/gui_main.h"
+#include <QApplication>
 
 //
 // classes

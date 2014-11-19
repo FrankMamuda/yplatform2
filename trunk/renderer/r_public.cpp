@@ -39,7 +39,7 @@ extern mCvar *r_adjustScreen;
 modEntry
 ================
 */
-extern "C" RENDERERSHARED_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
+extern "C" RENDERER_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, intptr_t, ... )) {
     mt.setPlatformCalls(( platformSyscallDef )syscallPtr );
 }
 
@@ -48,7 +48,7 @@ extern "C" RENDERERSHARED_EXPORT void modEntry( intptr_t ( *syscallPtr )( int, i
 modMain
 ================
 */
-extern "C" RENDERERSHARED_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls callNum, const QVariantList &args ) {
+extern "C" RENDERER_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls callNum, const QVariantList &args ) {
     switch ( callNum ) {
     case RendererAPI::ModAPI:
         // return api version

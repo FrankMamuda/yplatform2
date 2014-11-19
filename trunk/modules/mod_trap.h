@@ -41,9 +41,11 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #endif
 #endif
 #include <QObject>
+#include <QToolBar>
 #if !defined( intptr_t )
 #include <stdint.h>
 #endif
+
 
 
 //

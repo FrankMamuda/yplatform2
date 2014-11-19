@@ -24,7 +24,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // includes
 //
-#include <QtGui/QDialog>
+#include <QDialog>
 #include "ui_gui_password.h"
 
 //

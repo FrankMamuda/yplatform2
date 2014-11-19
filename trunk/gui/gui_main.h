@@ -29,7 +29,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "../modules/mod_public.h"
 #include "../gui/gui_settings.h"
 #ifndef MODULE_BUILD
-#include <QtGui>
+#include <QMainWindow>
+#include <QMenu>
+#include <QSystemTrayIcon>
 #endif
 
 //
