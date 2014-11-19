@@ -78,7 +78,7 @@ void R_GLimp::init() {
     this->widget->makeCurrent();
 
     // set default paint engine as OpenGL
-    QGL::setPreferredPaintEngine( QPaintEngine::OpenGL );
+    //QGL::setPreferredPaintEngine( QPaintEngine::OpenGL );
 
     // init widget
     this->setWindowTitle( Renderer::Title );

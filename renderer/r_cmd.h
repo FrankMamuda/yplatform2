@@ -42,8 +42,8 @@ namespace Renderer {
 class R_Cmd : public QObject {
     Q_OBJECT
     Q_CLASSINFO( "description", "Renderer command subsystem" )
-    Q_ENUMS( SrcBlend::Modes )
-    Q_ENUMS( DstBlend::Modes )
+    //Q_ENUMS( SrcBlend::Modes )
+    //..Q_ENUMS( DstBlend::Modes )
 
 public:
     struct SrcBlend {

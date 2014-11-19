@@ -27,6 +27,11 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "sys_common.h"
 #include "sys_modulefunc.h"
 #include "../modules/mod_public.h"
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QGridLayout>
+#include <QBoxLayout>
+#include <QKeyEvent>
 
 //
 // namespaces
