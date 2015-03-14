@@ -1,0 +1,39 @@
+# Introduction to Materials #
+
+Creation of JavaScript based material libraries for YPlatform's renderer is explained in this short guide.
+
+
+# Details #
+
+Material libraries reside in **materials/** folder either packaged or in **homeDir** and have **.js** extension.
+Each material can have multiple **stages** - textures so to speak, which are manipulated via **textureMods**, **alphaGens**, **colourGens** and **blendModes**.
+Materials are updated via **update()** function which is called with 50 FPS.
+
+**Syntax** (keywords)
+  * Material is constructed in the following way:
+    * _var foo = new material( mtrName )_.
+  * Stage can be initialized in multiple ways:
+    * _var bar = new stage( texture, material, (clampMode))_.
+    * _var bar = new stage( texture, (clampMode))_.
+    * _material.stage( stageNum )_ - creates/returns stage automatically as long as **stageNum** is not larger than total number of stages plus 1.
+      * _setBlendMode( src, dst )_ - "one", "zero".
+      * _setBlendMode( keyword )_ - e.g. "add", "blend".
+      * _setColourGen( type, args, .. )_ - e.g. ( "const", 1.0, 0.0, 0.0, 1.0 ).
+      * _setAlphaGen( type, args, .. )_ - e.g. "const" or "func" ( "sine", "square", etc.).
+      * _setTextureMod( type, args, .. )_ - e.g. "scale", "rotate".
+
+To see the rest, undocumented features, check **r\_mtrlib.cpp** and **r\_materialstage.h** for public slots and general scripting functions in **mod\_script**.
+
+**Example material**:
+```
+// this constructs a material named 'duck'
+var superAwesome = new material( "duck" );
+
+// this directly adds a stage to the material
+// texture is set to 'textures/duck' and clampMode is "repeat" by default
+stage( "textures/duck", superAwesome );
+
+// this selects the first stage and sets a blend mode for it
+superAwesome.stage( 0 ).setBlendMode( "add" );
+
+```

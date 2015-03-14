@@ -1,0 +1,2 @@
+![https://lh4.googleusercontent.com/-LmS0Pm-PSAY/TmM-kcuf_AI/AAAAAAAAAJA/qKL_czc2MtA/s144/yplatform_256_bw.png](https://lh4.googleusercontent.com/-LmS0Pm-PSAY/TmM-kcuf_AI/AAAAAAAAAJA/qKL_czc2MtA/s144/yplatform_256_bw.png)
+**Modular environment** for small applets
