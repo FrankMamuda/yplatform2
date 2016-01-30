@@ -76,8 +76,13 @@ Q_DECLARE_METATYPE( fileHandle_t* )
 Q_DECLARE_METATYPE( QScriptValue )
 
 // function name
+#ifdef Q_CC_MSVC
+#define ClassFuncPure QString( "%1::%2" ).arg( this->metaObject()->className()).arg( __FUNCTION__ )
+#define ClassFunc QString( "%1::%2: " ).arg( this->metaObject()->className()).arg( __FUNCTION__ )
+#else
 #define ClassFuncPure QString( "%1::%2" ).arg( this->metaObject()->className()).arg( __func__ )
 #define ClassFunc QString( "%1::%2: " ).arg( this->metaObject()->className()).arg( __func__ )
+#endif
 
 // some convenience strings
 #define StrDebug Sys::cMagenta + ClassFunc

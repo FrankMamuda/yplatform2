@@ -42,7 +42,7 @@ private:
 public:
     // property getters
     bool hasInitialized() const { return this->m_initialized; }
-    R_Image::ClampModes getClampMode( const QString & );
+    R_Texture::WrapMode getClampMode( const QString & );
 
     // scripting engine related
     Mod_ScriptEngine *mse;

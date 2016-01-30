@@ -17,6 +17,7 @@
 
 QT += opengl
 QT += script
+QT += widgets
 TARGET = Renderer
 TEMPLATE = lib
 DEFINES += R_BUILD
@@ -25,26 +26,22 @@ win32:INCLUDEPATH += ../includes
 INCLUDEPATH += ../common
 INCLUDEPATH += ../modules
 SOURCES += r_public.cpp \
-    r_glimp.cpp \
     ../modules/mod_trap.cpp \
     ../modules/mod_cvarfunc.cpp \
-    r_glimpwidget.cpp \
-    r_image.cpp \
     r_main.cpp \
     r_cmd.cpp \
     r_material.cpp \
     r_mtrlib.cpp \
     r_materialstage.cpp \
     r_settings.cpp \
-    ../modules/mod_script.cpp
+    ../modules/mod_script.cpp \
+    r_renderer.cpp \
+    r_texture.cpp
 HEADERS += r_public.h \
     renderer_global.h \
-    r_glimp.h \
     ../modules/mod_trap.h \
     ../modules/mod_public.h \
     ../modules/mod_cvarfunc.h \
-    r_glimpwidget.h \
-    r_image.h \
     r_main.h \
     r_cmd.h \
     r_shared.h \
@@ -55,7 +52,9 @@ HEADERS += r_public.h \
     ../common/sys_filesystem.h \
     ../common/sys_cvarfunc.h \
     ../common/sys_common.h \
-    ../modules/mod_script.h
+    ../modules/mod_script.h \
+    r_renderer.h \
+    r_texture.h
 OTHER_FILES += CHANGELOG.txt \
     assets/smth.qml \
     resources/materials/common.js

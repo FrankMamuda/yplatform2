@@ -25,9 +25,10 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // includes
 //
 #include "r_shared.h"
-#include "r_image.h"
+#include "r_texture.h"
 #include "r_material.h"
 #include "r_settings.h"
+#include "r_renderer.h"
 
 //
 // namespaces
@@ -48,15 +49,16 @@ class R_Main : public QObject {
     Q_ENUMS( FuncTables )
 
 public:
-    QList <R_Image*>imageList;
+    QList <R_Texture*>textureList;
     QStringList missingList;
     QList <R_Material*>mtrList;
     QList <R_MaterialStage*>mtrStageList;
-    imgHandle_t defaultImage;
+    imgHandle_t defaultTexture;
     mtrHandle_t platformLogo;
-    imgHandle_t loadImage( const QString &, R_Image::ClampModes = R_Image::Repeat );
+    imgHandle_t loadTexture( const QString &, R_Texture::WrapMode = R_Texture::Repeat );
     mtrHandle_t loadMaterial( const QString & );
     QStringList extensionList;
+    R_Renderer *renderer;
 
     // function tables
     float funcTable[Renderer::NumFuncTables][Renderer::FuncTableSize];
@@ -73,7 +75,7 @@ public slots:
     void beginFrame();
     void endFrame();
     void shutdown( bool reload = false );
-    void listImages();
+    void listTextures();
     void listMaterials();
 
     // property setters

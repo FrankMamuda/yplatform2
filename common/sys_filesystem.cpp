@@ -941,7 +941,7 @@ touch
 ============
 */
 void Sys_Filesystem::touch( const QStringList &args ) {
-    if ( args.isEmpty() < 2 ) {
+    if ( args.count() != 1 ) {
         com.print( Sys::cYellow + this->tr( "usage: ^2fs_touch ^3[^2filename^3]\n" ));
         return;
     }
@@ -1230,7 +1230,7 @@ bool Sys_Filesystem::readLink( const QString &filename, lnkInfo_t &info, OpenFla
         byte *data = new byte[size];
         char *start = reinterpret_cast<char*>( data ) - sizeof( loc );
 
-        if ( !this->read( data, size, fHandle )) {
+        if ( !this->read( data, static_cast<unsigned int>( size ), fHandle )) {
             com.error( StrSoftError + this->tr( "could not read path data for win32 link \"%1\"\n" ).arg( filename ));
             this->close( fHandle );
             return false;

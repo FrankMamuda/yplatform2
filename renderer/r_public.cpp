@@ -24,7 +24,6 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "r_public.h"
 #include "r_main.h"
 #include "r_cmd.h"
-#include "r_glimp.h"
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
 
@@ -60,6 +59,7 @@ extern "C" RENDERER_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls 
 
         return m.hasInitialized();
 
+
     case RendererAPI::UpdateCvar:
         if ( !m.hasInitialized() )
             return false;
@@ -83,30 +83,11 @@ extern "C" RENDERER_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls 
         if ( !m.hasInitialized())
             return false;
 
-        // begin frame
-        m.beginFrame();
-
-        // draw platform logo
-        rCmd.setColour( Renderer::ColourWhite );
-        if ( r_adjustScreen->integer())
-            rCmd.drawMaterial( Renderer::HorizontalScreenModes[Renderer::DefaultScreenMode]/2-256/2,
-                              Renderer::VerticalScreenModes[Renderer::DefaultScreenMode]/2-256/2,
-                              256, 256, m.platformLogo );
-        else
-            rCmd.drawMaterial( Renderer::HorizontalScreenModes[glImp.getScreenMode()]/2-256/2,
-                              Renderer::VerticalScreenModes[glImp.getScreenMode()]/2-256/2,
-                              256, 256, m.platformLogo );
+        m.renderer->begin();
         break;
 
     case RendererAPI::EndFrame:
-        if ( !m.hasInitialized())
-            return false;
-
-        // reset colour to null
-        rCmd.setColour();
-
-        // end frame
-        m.endFrame();
+        m.renderer->end();
         break;
 
     case RendererAPI::LoadMaterial:
@@ -120,11 +101,12 @@ extern "C" RENDERER_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls 
             return false;
 
         rCmd.drawMaterial( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), args.at( 2 ).toFloat(), args.at( 3 ).toFloat(),
-                          static_cast<mtrHandle_t>( args.at( 4 ).toInt()));
+                           static_cast<mtrHandle_t>( args.at( 4 ).toInt()));
         break;
 
     case RendererAPI::DrawText:
-        if ( !m.hasInitialized())
+#if 0
+        /*if ( !m.hasInitialized())
             return false;
 
         // save colour, set new font colour
@@ -135,8 +117,8 @@ extern "C" RENDERER_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls 
         glImp.drawText( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), args.at( 2 ).value<QFont>(), args.at( 3 ).toString());
 
         // restore colour
-        rCmd.restoreColour();
-
+        rCmd.restoreColour();*/
+#endif
         break;
 
     case RendererAPI::SetColour:
@@ -150,21 +132,21 @@ extern "C" RENDERER_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls 
         if ( !m.hasInitialized())
             return false;
 
-        glImp.widget->show();
+        m.renderer->show();
         break;
 
     case RendererAPI::Hide:
         if ( !m.hasInitialized())
             return false;
 
-        glImp.widget->hide();
+        m.renderer->hide();
         break;
 
     case RendererAPI::State:
         if ( !m.hasInitialized())
             return RendererAPI::Hidden;
 
-        if ( glImp.widget->isVisible())
+        if ( m.renderer->isVisible())
             return static_cast<int>( RendererAPI::Raised );
         else
             return static_cast<int>( RendererAPI::Hidden );
@@ -175,7 +157,7 @@ extern "C" RENDERER_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls 
         break;
 
     case RendererAPI::SetWindowTitle:
-        glImp.setWindowTitle( args.at( 0 ).toString());
+        m.renderer->setTitle( args.at( 0 ).toString());
         break;
     }
 

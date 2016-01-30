@@ -139,9 +139,9 @@ QScriptValue scriptTexture( QScriptContext *context, QScriptEngine *engine ) {
 
     // create new material
     if ( context->argumentCount() == 2 )
-        return engine->toScriptValue( static_cast<int>( m.loadImage( context->argument( 0 ).toString()), mLib.getClampMode( context->argument( 1 ).toString())));
+        return engine->toScriptValue( static_cast<int>( m.loadTexture( context->argument( 0 ).toString()), mLib.getClampMode( context->argument( 1 ).toString())));
     else
-        return engine->toScriptValue( static_cast<int>( m.loadImage( context->argument( 0 ).toString())));
+        return engine->toScriptValue( static_cast<int>( m.loadTexture( context->argument( 0 ).toString())));
 }
 
 /*
@@ -149,16 +149,16 @@ QScriptValue scriptTexture( QScriptContext *context, QScriptEngine *engine ) {
 getClampMode
 ===================
 */
-R_Image::ClampModes R_MtrLib::getClampMode( const QString &mode ) {
+R_Texture::WrapMode R_MtrLib::getClampMode( const QString &mode ) {
     if ( !QString::compare( mode, "repeat", Qt::CaseInsensitive )) {
-        return R_Image::Repeat;
+        return R_Texture::Repeat;
     } else if ( !QString::compare( mode, "clamp", Qt::CaseInsensitive )) {
-        return R_Image::Clamp;
+        return R_Texture::ClampToBorder;
     } else if ( !QString::compare( mode, "clampToEdge", Qt::CaseInsensitive ) || !QString::compare( mode, "edge", Qt::CaseInsensitive )) {
-        return R_Image::ClampToEdge;
+        return R_Texture::ClampToEdge;
     } else {
         com.error( StrSoftError + this->tr( "unknown clamp mode \"%1\", setting \"repeat\"\n" ).arg( mode ));
-        return R_Image::Repeat;
+        return R_Texture::Repeat;
     }
 }
 

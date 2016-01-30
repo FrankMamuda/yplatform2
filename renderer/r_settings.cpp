@@ -22,7 +22,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // includes
 //
 #include "r_settings.h"
-#include "r_glimp.h"
+#include "r_renderer.h"
 #include "ui_r_settings.h"
 
 //

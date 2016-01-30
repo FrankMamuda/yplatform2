@@ -26,7 +26,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "r_shared.h"
 #include "r_material.h"
-#include "r_image.h"
+#include "r_texture.h"
 #include <QtScript>
 
 //
@@ -203,7 +203,7 @@ public:
     float animationSpeed() const { return this->m_animationSpeed; }
     QString texture() const { return m_texture; }
     float coords( Coords texCoords ) const { return this->m_coords[texCoords]; }
-    R_Image::ClampModes clampMode() const { return this->m_clamp; }
+    R_Texture::WrapMode clampMode() const { return this->m_clamp; }
 
 private:
     TextureMod *m_textureMod;
@@ -214,7 +214,7 @@ private:
     float m_animationSpeed;
     QString m_texture;
     Renderer::Vec4D m_coords;
-    R_Image::ClampModes m_clamp;
+    R_Texture::WrapMode m_clamp;
     QStringList m_animation;
 
 private slots:
@@ -230,7 +230,7 @@ private slots:
     void stretch( const QString &func, float base, float amplitude, float phase, float frequency );
 
     // clamp modes
-    void setClampMode( R_Image::ClampModes mode ) { this->m_clamp = mode; }
+    void setClampMode( R_Texture::WrapMode mode ) { this->m_clamp = mode; }
     void setClampMode( const QString &mode );
 
 public slots:

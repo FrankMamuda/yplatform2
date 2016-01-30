@@ -44,11 +44,11 @@ typedef int fontHandle_t;
 // namespaces
 //
 namespace Renderer {
-    static const QString DefaultImage ( ":/common/default" );
+    static const QString DefaultTexture ( ":/common/default" );
     static const QString PlatformLogo ( ":/common/platform" );
-    static const QString Title        ( QObject::trUtf8( "Nu Renderer" ));
-    static const QString Copyright    ( QObject::trUtf8( "Copyright (c) 2011-2012, Edd 'Double Dee' Psycho." ));
-    static const QString Version      ( QObject::trUtf8( "v0.98.52 (beta)" ));
+    static const QString Title        ( QObject::trUtf8( "OpenGL Renderer" ));
+    static const QString Copyright    ( QObject::trUtf8( "Copyright (c) 2011-2016, Edd 'Double Dee' Psycho." ));
+    static const QString Version      ( QObject::trUtf8( "v0.99.1 (beta)" ));
     typedef float Vec2D[2];
     typedef float Vec4D[4];
 }

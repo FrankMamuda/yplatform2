@@ -23,7 +23,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "../applet/app_main.h"
 #include "sys_common.h"
+#ifndef Q_CC_MSVC
 #include <sys/time.h>
+#endif
 
 //
 // classes

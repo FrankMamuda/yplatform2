@@ -700,7 +700,7 @@ consoleInput->returnPressed
 */
 void Gui_Main::on_consoleInput_returnPressed() {
     if ( !this->ui->consoleInput->text().isEmpty()) {
-        com.print( QString( "^2\%1\n" ).arg( this->ui->consoleInput->text()));
+        com.print( QString( "^2%1\n" ).arg( this->ui->consoleInput->text()));
 
         if ( cmd.execute( this->ui->consoleInput->text())) {
             if ( !this->ui->consoleInput->text().startsWith( "sys_password" ))

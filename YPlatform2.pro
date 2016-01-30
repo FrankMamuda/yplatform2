@@ -60,6 +60,8 @@ win32:INCLUDEPATH += includes
 
 QT += xml
 QT += script
+QT += widgets
+LIBS += -lz
 
 FORMS += \
     gui/gui_main.ui \

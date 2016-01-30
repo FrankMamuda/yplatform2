@@ -419,7 +419,7 @@ setClampMode
 ===================
 */
 void R_MaterialStage::setClampMode( const QString &mode ) {
-    R_Image::ClampModes clampMode;
+    R_Texture::WrapMode clampMode;
 
     clampMode = mLib.getClampMode( mode );
     this->setClampMode( clampMode );

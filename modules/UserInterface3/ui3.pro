@@ -18,7 +18,7 @@
 win32:INCLUDEPATH += ../../includes
 TARGET = ui3
 TEMPLATE = lib
-QT += script
+QT += script widgets
 INCLUDEPATH += ../../common
 INCLUDEPATH += ../
 SOURCES += ui_main.cpp \
@@ -35,7 +35,6 @@ HEADERS += ui_main.h \
     ../mod_cvarfunc.h \
     ui_script.h \
     ui_item.h \
-    resources/ui/ui_window.h \
     ../mod_script.h \
     ../../common/sys_common.h \
     ../../common/sys_filesystem.h \

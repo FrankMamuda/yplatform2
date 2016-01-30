@@ -22,8 +22,9 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 // includes
 //
 #include "r_main.h"
-#include "r_glimp.h"
+#include "r_renderer.h"
 #include "r_mtrlib.h"
+#include "r_texture.h"
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
 #include "../common/sys_cmd.h"
@@ -43,7 +44,7 @@ extern mCvar *r_hideOnESC;
 //
 // commands
 //
-createSimpleCommand( m, listImages )
+createSimpleCommand( m, listTextures )
 createSimpleCommand( m, listMaterials )
 
 /*
@@ -61,13 +62,20 @@ void R_Main::init( bool reload ) {
         r_hideOnESC = cv.create( "r_hideOnESC", true, pCvar::NoFlags, "hide renderer upon pressing ESC key" );
 
         // create screen
-        glImp.init();
+        QSurfaceFormat format;
+        format.setSamples( 16 );
+        this->renderer = new R_Renderer();
+        this->renderer->setFormat( format );
+        this->renderer->resize( 640, 480 );
+        this->renderer->setTitle( Renderer::Title );
+        this->renderer->show();
+        this->renderer->makeContext();
 
         // add supported extensions
         this->extensionList << ".jpg" << ".tga" << ".png";
 
         // add commands
-        cmd.add( "r_listImages", listImagesCmd, this->tr( "list loaded images" ));
+        cmd.add( "r_listTextures", listTexturesCmd, this->tr( "list loaded textures" ));
         cmd.add( "r_listMaterials", listMaterialsCmd, this->tr( "list loaded materials" ));
 
         // init function tables
@@ -94,7 +102,7 @@ void R_Main::init( bool reload ) {
     }
 
     // load default image
-    m.defaultImage = this->loadImage( Renderer::DefaultImage );
+    m.defaultTexture = this->loadTexture( Renderer::DefaultTexture );
 
     // load materials
     mLib.init();
@@ -117,13 +125,13 @@ double R_Main::degreesToRadians( double degrees ) {
 
 /*
 ===================
-listImages
+listTextures
 ===================
 */
-void R_Main::listImages() {
-    com.print( Sys::ColourYellow + this->tr( "Image list:\n" ));
-    foreach ( R_Image *img, this->imageList ) {
-        com.print( this->tr( " %1: w %2 h %3 tex %4\n" ).arg( img->name()).arg( img->width()).arg( img->height()).arg(( unsigned int )img->texture ));
+void R_Main::listTextures() {
+    com.print( Sys::ColourYellow + this->tr( "Texture list:\n" ));
+    foreach ( R_Texture *t, this->textureList ) {
+        com.print( this->tr( " %1: w %2 h %3 tex %4\n" ).arg( t->filename()).arg( t->width()).arg( t->height()).arg(( unsigned int )t->textureId()));
     }
 }
 
@@ -144,7 +152,7 @@ void R_Main::listMaterials() {
 loadImage
 ===================
 */
-imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode ) {
+imgHandle_t R_Main::loadTexture( const QString &filename, R_Texture::WrapMode mode ) {
     int y = 0;
 
     // abort on empty name
@@ -156,51 +164,56 @@ imgHandle_t R_Main::loadImage( const QString &filename, R_Image::ClampModes mode
     // check if we have already marked it as missing
     foreach ( QString missing, this->missingList ) {
         if ( !QString::compare( filename, missing ))
-            return m.defaultImage;
+            return m.defaultTexture;
     }
 
     // check if it exists
-    foreach ( R_Image *imgPtr, this->imageList ) {
-        if ( !QString::compare( imgPtr->name(), QString( QFileInfo( filename ).path() + "/" + QFileInfo( filename ).baseName()))) {
+    foreach ( R_Texture *tPtr, this->textureList ) {
+        if ( !QString::compare( tPtr->filename(), QString( QFileInfo( filename ).path() + "/" + QFileInfo( filename ).baseName()))) {
+
             // might be the same image, but clamp modes differ
-            if ( imgPtr->clampMode() == mode )
+            if ( tPtr->wrapMode( QOpenGLTexture::DirectionS ) == mode )
                 return y;
         }
         y++;
     }
 
     // load directly
-    R_Image *imgPtr = new R_Image( filename, mode, this );
+    R_Texture *tPtr = new R_Texture( filename, mode );
 
     // this may happen if we have no extension or file simply does not exist
-    if ( !imgPtr->isValid()) {
+    if ( !tPtr->width() || !tPtr->height()) {
         foreach ( QString ext, this->extensionList ) {
-            imgPtr->reload( QFileInfo( filename ).path() + "/" + QFileInfo( filename ).baseName() + ext, mode );
-            if ( imgPtr->isValid())
-                break;
+            delete tPtr;
+            tPtr = new R_Texture( QFileInfo( filename ).path() + "/" + QFileInfo( filename ).baseName() + ext, mode );
+            if ( !tPtr->width() || !tPtr->height())
+                continue;
         }
     }
 
-    // giving up, set default image
-    if ( !imgPtr->isValid()) {
-        // did not find a valid texture, revert to default
-        com.print( StrWarn + this->tr( "could not find image \'%1\', setting default\n" ).arg( filename ));
-        delete imgPtr;
+    // set base filename
+    tPtr->setFilename( filename );
 
-        // ..if we have a default (should not happen since default img is in internal assets)
-        if ( !QString::compare( filename, Renderer::DefaultImage )) {
-            com.error( StrFatalError + this->tr( "cannot load default image\n" ));
+    // giving up, set default texture
+    if ( !tPtr->width() || !tPtr->height()) {
+        // did not find a valid texture, revert to default
+        com.print( StrWarn + this->tr( "could not find texture \'%1\', setting default\n" ).arg( filename ));
+        delete tPtr;
+
+        // ..if we have a default (should not happen since default texture is in internal assets)
+        if ( !QString::compare( filename, Renderer::DefaultTexture )) {
+            com.error( StrFatalError + this->tr( "cannot load default texture\n" ));
             m.shutdown();
             return -1;
         }
         this->missingList << filename;
 
         // return default image
-        return m.defaultImage;
+        return m.defaultTexture;
     }
 
-    this->imageList << imgPtr;
-    return this->imageList.count()-1;
+    this->textureList << tPtr;
+    return this->textureList.count()-1;
 }
 
 /*
@@ -236,8 +249,8 @@ beginFrame
 */
 void R_Main::beginFrame() {
     // clear screen
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glLoadIdentity();
+    //glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    //glLoadIdentity();
 
     // set time
     this->setTime( com.milliseconds() * 0.001f );
@@ -252,10 +265,10 @@ endFrame
 ===================
 */
 void R_Main::endFrame() {
-    glFlush();
+    //glFlush();
 
     // update screen
-    glImp.update();
+    //glImp.update();
 }
 
 /*
@@ -269,13 +282,13 @@ void R_Main::shutdown( bool reload ) {
 
     // clear images, materials and stages
     // assuming script takes care of its own garbage
-    this->imageList.clear();
+    this->textureList.clear();
     this->mtrStageList.clear();
     this->mtrList.clear();
 
     if ( !reload ) {
         // destroy screen
-        glImp.shutdown();
+        //glImp.shutdown();
 
         // remove commands
         cmd.remove( "r_listImages" );

@@ -23,8 +23,8 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 #include "r_cmd.h"
 #include "r_main.h"
-#include "r_glimp.h"
 #include "r_material.h"
+#include "r_texture.h"
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
 
@@ -39,27 +39,28 @@ bind
 ================
 */
 void R_Cmd::bind( imgHandle_t handle ) {
-    const R_Image *image;
+    const R_Texture *texture;
 
     // failsafe
-    if ( handle < 0 || handle >= m.imageList.count())
-        handle = m.defaultImage;
+    if ( handle < 0 || handle >= m.textureList.count())
+        handle = m.defaultTexture;
 
     // get image
-    image = m.imageList.at( handle );
+    texture = m.textureList.at( handle );
 
     // this really should not happen, but just in case
-    if ( !image ) {
+    if ( !texture ) {
         com.error( StrFatalError + this->tr( "called with NULL image\n" ));
         return;
     }
 
     // bind texture
-    if ( this->texture != image->texture ) {
-        this->texture = image->texture;
+    if ( this->texture != texture->textureId()) {
+        this->texture = texture->textureId();
 
         // bind texture
-        glBindTexture( GL_TEXTURE_2D, image->texture );
+        //texture->bind();
+        glBindTexture( GL_TEXTURE_2D, this->texture );
     }
 }
 
@@ -69,8 +70,8 @@ setCoords
 ===============
 */
 void R_Cmd::setCoords( float x, float y, float w, float h ) {
-    glImp.adjustCoords( x, y );
-    glImp.adjustCoords( w, h );
+    m.renderer->adjustCoords( x, y );
+    m.renderer->adjustCoords( w, h );
 
     // add vert coords
     if ( w > 0 && h > 0 ) {
@@ -305,8 +306,8 @@ drawImage
 */
 void R_Cmd::drawImage( float x, float y, float w, float h, float s1, float t1, float s2, float t2, imgHandle_t handle ) {
     // set rendering mode to 2D
-    if ( !glImp.widget->projection2D())
-        glImp.widget->setProjection2D();
+    //if ( !glImp.widget->projection2D())
+    //    glImp.widget->setProjection2D();
 
     // setup coords
     this->setCoords( x, y, w, h );
@@ -492,7 +493,7 @@ void R_Cmd::setAnimation( R_MaterialStage *stagePtr ) {
 
     // find/register & bind texture
     if ( stagePtr->imageList[y] == -1 )
-        stagePtr->imageList[y] = m.loadImage( stagePtr->animation()->at( y ), stagePtr->clampMode());
+        stagePtr->imageList[y] = m.loadTexture( stagePtr->animation()->at( y ), stagePtr->clampMode());
     this->bind( stagePtr->imageList[y] );
 }
 
@@ -526,8 +527,8 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
     const R_Material *mtrPtr;
 
     // set rendering mode to 2D
-    if ( !glImp.widget->projection2D())
-        glImp.widget->setProjection2D();
+    //if ( !glImp.widget->projection2D())
+    //    glImp.widget->setProjection2D();
 
     // failsafe
     if ( handle < 0 || handle >= m.mtrList.count())
@@ -543,7 +544,7 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
     // no problem, search for an image
     if ( mtrPtr->stageList.isEmpty()) {
         // draw default image and return
-        this->drawImage( x, y, w, h, m.loadImage( mtrPtr->name()));
+        this->drawImage( x, y, w, h, m.loadTexture( mtrPtr->name()));
         return;
     }
 
@@ -645,7 +646,7 @@ void R_Cmd::drawMaterial( float x, float y, float w, float h, mtrHandle_t handle
             if ( stagePtr->imageList[0] == -1 ) {
                 // no texture set
                 if ( !stagePtr->texture().isEmpty())
-                    stagePtr->imageList[0] = m.loadImage( stagePtr->texture(), stagePtr->clampMode());
+                    stagePtr->imageList[0] = m.loadTexture( stagePtr->texture(), stagePtr->clampMode());
             }
             this->bind( stagePtr->imageList[0] );
         }
