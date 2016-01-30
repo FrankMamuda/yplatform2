@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011-2012 Edd 'Double Dee' Psycho
+Copyright (C) 2011-2016 Edd 'Double Dee' Psycho
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,74 +18,76 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 ===========================================================================
 */
 
-#ifndef R_GLIMP_H
-#define R_GLIMP_H
+#ifndef R_RENDERER_H
+#define R_RENDERER_H
 
 //
 // includes
 //
 #include "r_shared.h"
-#include "r_glimpwidget.h"
+#include <QWindow>
+#include <QOpenGLFunctions>
 
 //
 // namespaces
 //
 namespace Renderer {
+    static const Vec4D ColourWhite   = { 1, 1, 1, 1 };
+    static const Vec4D ColourBlack   = { 0, 0, 0, 1 };
+    static const Vec4D ColourRed     = { 1, 0, 0, 1 };
+    static const Vec4D ColourGreen   = { 0, 1, 0, 1 };
+    static const Vec4D ColourBlue    = { 0, 0, 1, 1 };
+    static const Vec4D ColourMagenta = { 1, 0, 1, 1 };
+    static const Vec4D ColourCyan    = { 0, 1, 1, 1 };
+    static const Vec4D ColourYellow  = { 1, 1, 0, 1 };
     const static int NumScreenModes = 6;
     const static int DefaultScreenMode = 1;
     const static int MaximumTextureSize = 4096;
     const static int HorizontalScreenModes[NumScreenModes] = { 320, 640, 800, 1024, 1280, 1600 };
     const static int VerticalScreenModes[NumScreenModes]   = { 240, 480, 600,  768, 1024, 1200 };
-};
+}
 
 //
-// class:R_GLimp
+// classs: R_Renderer
 //
-class R_GLimp : public QObject {
-    Q_OBJECT
+class R_Renderer : public QWindow, protected QOpenGLFunctions {
     Q_CLASSINFO( "description", "OpenGL Implementation" )
-    Q_PROPERTY( bool initialized READ hasInitialized WRITE setInitialized )
+    Q_OBJECT
     Q_PROPERTY( float horizontalFactor READ horizontalFactor WRITE setHorizontalFactor )
     Q_PROPERTY( float verticalFactor READ verticalFactor WRITE setVerticalFactor )
 
 public:
-    void init();
-    void shutdown();
+    R_Renderer( QWindow * = 0 );
+    ~R_Renderer();
+    void initialize(); Q_DECL_OVERRIDE
+    void render() Q_DECL_OVERRIDE;
     void adjustCoords( float &x, float &y );
     int getScreenMode();
-
-    // property getters
-    bool hasInitialized() const { return this->m_initialized; }
     float horizontalFactor() const { return this->m_horizontalFactor; }
     float verticalFactor() const { return this->m_verticalFactor; }
 
-    // renderer window
-    R_GlimpWidget *widget;
-    int glVersionFlags;
-
-private:
-    // properties
-    bool m_initialized;
-    float m_horizontalFactor;
-    float m_verticalFactor;
+protected:
+    virtual void keyPressEvent( QKeyEvent * );
+    virtual void keyReleaseEvent( QKeyEvent * );
+    virtual void mousePressEvent( QMouseEvent * );
+    virtual void mouseReleaseEvent( QMouseEvent * );
+    virtual void mouseDoubleClickEvent( QMouseEvent * );
+    virtual void mouseMoveEvent( QMouseEvent * );
+    virtual void wheelEvent( QWheelEvent *);
+    virtual void closeEvent( QCloseEvent *e );
 
 public slots:
-    void resizeScreen();
-    void update();
-    void drawText( float x, float y, QFont font, const QString &text );
-    void setWindowTitle( const QString &title );
-
-    // property setters
-    void setInitialized( bool intialized = true ) { this->m_initialized = intialized; }
     void setHorizontalFactor( float value = 1.0f ) { this->m_horizontalFactor = value; }
     void setVerticalFactor( float value = 1.0f ) { this->m_verticalFactor = value; }
+    void makeContext();
+    void begin();
+    void end();
+
+private:
+    float m_horizontalFactor;
+    float m_verticalFactor;
+    QOpenGLContext *m_context;
+    QOpenGLPaintDevice *m_device;
 };
 
-//
-// externals
-//
-#ifdef R_BUILD
-extern class R_GLimp glImp;
-#endif
-
-#endif // R_GLIMP_H
+#endif // R_GLIMPWIDGET_H
