@@ -75,6 +75,7 @@ protected:
     virtual void mouseMoveEvent( QMouseEvent * );
     virtual void wheelEvent( QWheelEvent *);
     virtual void closeEvent( QCloseEvent *e );
+    virtual void resizeEvent( QResizeEvent * );
 
 public slots:
     void setHorizontalFactor( float value = 1.0f ) { this->m_horizontalFactor = value; }
@@ -82,12 +83,14 @@ public slots:
     void makeContext();
     void begin();
     void end();
+    void renderText( int x, int y, const QString &text, const QFont &font );
 
 private:
     float m_horizontalFactor;
     float m_verticalFactor;
     QOpenGLContext *m_context;
     QOpenGLPaintDevice *m_device;
+    QPainter *m_painter;
 };
 
 #endif // R_GLIMPWIDGET_H

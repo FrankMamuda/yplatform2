@@ -21,7 +21,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 //
 // includes
 //
-#include "r_image.h"
+#include "r_texture.h"
 #include "r_material.h"
 #include "r_materialstage.h"
 #include "r_mtrlib.h"

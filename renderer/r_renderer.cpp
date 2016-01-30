@@ -74,6 +74,29 @@ void R_Renderer::initialize() {
     glLoadIdentity(); // make sure that the projection stack doesn't already have anything on it
     glMatrixMode( GL_MODELVIEW ); // the rest of my app will only change MODELVIEW
     glLoadIdentity(); // make sure that the modelview stack doesn't already have anything on it
+
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+}
+
+/*
+===============
+render
+===============
+*/
+void R_Renderer::renderText( int x, int y, const QString &text, const QFont &font ) {
+    if ( text.isEmpty())
+        return;
+
+    if ( this->m_painter == NULL )
+        return;
+
+    this->m_painter->setPen( rCmd.colour );
+    this->m_painter->setFont( font );
+    this->m_painter->drawText( x, y, text );
+    this->m_painter->end();
 }
 
 /*
@@ -87,11 +110,7 @@ void R_Renderer::render() {
 
     glClearColor( 0.f, 0.f, 0.f, 1.f );
     glClear( GL_COLOR_BUFFER_BIT );
-
-    // push current matrix up one, because I'm about to do a bunch of stuff that shouldn't remain active after the end of this function
-    /* glPushMatrix();
-    {*/
-    glViewport( 0, 0, width() * this->devicePixelRatio(), height() * this->devicePixelRatio());
+    glViewport( 0, 0, this->width() * this->devicePixelRatio(), this->height() * this->devicePixelRatio());
     glScissor( 0, 0, this->width(), this->height());
     glOrtho( 0.0f, this->width(), this->height(), 0.0f, 0.0f, 1.0f );
     rCmd.setBlendMode( R_Cmd::SrcBlend::SrcAlpha, R_Cmd::DstBlend::MinusSrcAlpha );
@@ -107,97 +126,22 @@ void R_Renderer::render() {
                 Renderer::VerticalScreenModes[this->getScreenMode()]/2-256/2,
                 256, 256, m.platformLogo );
 
+    QFont font;
+    font.setPointSize( 48 );
 
-    // we don't want each object to move the camera...
-    /*  glPushMatrix();
-        {
-            if ( this->m_device == NULL )
-                this->m_device = new QOpenGLPaintDevice;
+    if ( this->m_device == NULL )
+        this->m_device = new QOpenGLPaintDevice;
 
-            //glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
+    this->m_device->setSize( this->size());
+    this->m_painter = new QPainter( this->m_device );
 
-            this->m_device->setSize( this->size());
+    // NOTE: this doesn't work in opengl es, revert to bitmap text rendering?
+    rCmd.setColour( 1, 0, 0, 1 );
 
-           // glMatrixMode( GL_MODELVIEW ); // the rest of my app will only change MODELVIEW
-           // glLoadIdentity(); // make sure that the modelview stack doesn't already have anything on it
-            glMatrixMode(GL_PROJECTION);
-            glLoadIdentity();
-            glMatrixMode(GL_MODELVIEW);
-            glLoadIdentity();
+    this->renderText( 43, 42, "AAAA", font );
 
-#ifdef QT_OPENGL_ES
-            glOrthof(-0.5, +0.5, -0.5, 0.5, 4.0, 15.0);
-#else
-            glOrtho(-0.5, +0.5, -0.5, 0.5, 4.0, 15.0);
-#endif
-
-            QPainter painter( this->m_device );
-
-            QPen pen( QColor::fromRgb( 255, 255, 255 ));
-            QFont font;
-            font.setPointSize( 48 );
-            painter.setPen( pen );
-            painter.drawText( 100, 100, "AAA" );
-            painter.drawText( 150, 150, "BBB" );
-            painter.drawText( 100, 100, "AAA" );
-            painter.drawText( 150, 150, "BBB" );
-            painter.drawText( 0.1, 0.1, "BBB" );
-            painter.drawText( -0.5, 0.5, "BBB" );
-            painter.drawText( 0.0, 0.5, "BBB" );
-            painter.drawText( 0.5, 0.5, "BBB" );
-            painter.drawText( -0.5, -0.5, "BBB" );
-
-           // painter.drawRect( 0, 0, 256, 256 );*/
-
-
-    // glPopMatrix();
-
-    // com.print( "render\n");
-
-
-    // glOrtho( 0.0f, this->width(), this->height(), 0.0f, 0.0f, 1.0f );
-
-
-
-
-
-    // glPopMatrix();
-
-
-    // glMatrixMode(GL_PROJECTION);
-    // glLoadIdentity();
-    //  glPushMatrix();
-
-    /*
-    #ifdef QT_OPENGL_ES
-        glOrthof(-0.5, +0.5, -0.5, 0.5, 4.0, 15.0);
-    #else
-        glOrtho( -0.5, +0.5,      -0.5, 0.5,       0.0, 1.0);
-    #endif
-
-        QPainter painter( this->m_device );
-
-        QPen pen( QColor::fromRgb( 255, 255, 255 ));
-        QFont font;
-        font.setPointSize( 48 );
-        painter.setPen( pen );
-        painter.drawText( 100, 100, "AAA" );
-        painter.drawText( 150, 150, "BBB" );
-        painter.drawText( 0.1, 0.1, "BBB" );
-        painter.drawText( -0.5, 0.5, "BBB" );
-        painter.drawText( 0.0, 0.5, "BBB" );
-        painter.drawText( 0.5, 0.5, "BBB" );
-        painter.drawText( -0.5, -0.5, "BBB" );
-
-       // painter.drawRect( 0, 0, 256, 256 );
-       // drawInstructions(&painter);
-        painter.end();
-
-        //glPopMatrix();
-       // glPushMatrix();*/
-    //  }
-    //  }
-    //  glPopMatrix();
+    delete this->m_painter;
+    this->m_painter = NULL;
 }
 
 /*
@@ -216,6 +160,45 @@ void R_Renderer::begin() {
 
 /*
 ===============
+resizeEvent
+===============
+*/
+void R_Renderer::resizeEvent( QResizeEvent *ePtr ) {
+
+
+    this->initialize();
+    glViewport( 0, 0, width() * this->devicePixelRatio(), height() * this->devicePixelRatio());
+    glScissor( 0, 0, this->width(), this->height());
+    glOrtho( 0.0f, this->width(), this->height(), 0.0f, 0.0f, 1.0f );
+    this->m_context->makeCurrent( this );
+
+    //glFlush();
+
+    /*
+    Q_D(QOpenGLWidget);
+    d->w = width();
+    d->h = height();
+    d->initialize();
+
+
+    d->context.makeCurrent(d->surface());
+    delete d->fbo; // recreate when resized
+    d->fbo = new QOpenGLFramebufferObject(size() * devicePixelRatio(), QOpenGLFramebufferObject::CombinedDepthStencil);
+    d->fbo->bind();
+    QOpenGLFunctions *funcs = d->context.functions();
+    funcs->glBindTexture(GL_TEXTURE_2D, d->fbo->texture());
+    funcs->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    funcs->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    funcs->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    funcs->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    resizeGL(width(), height());
+    paintGL();
+    funcs->glFlush();*/
+}
+
+/*
+===============
 destruct
 ===============
 */
@@ -229,8 +212,10 @@ end
 ===============
 */
 void R_Renderer::end() {
-    if ( this->isExposed())
+    if ( this->isExposed()) {
+        glFlush();
         this->m_context->swapBuffers( this );
+    }
 
     m.endFrame();
 }

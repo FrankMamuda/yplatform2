@@ -26,6 +26,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 #include "r_cmd.h"
 #include "../modules/mod_trap.h"
 #include "../common/sys_common.h"
+#include <QGLWidget>
 
 //
 // cvars
@@ -105,20 +106,14 @@ extern "C" RENDERER_EXPORT QVariant rendererMain( RendererAPI::RendererAPICalls 
         break;
 
     case RendererAPI::DrawText:
-#if 0
-        /*if ( !m.hasInitialized())
+        if ( !m.hasInitialized())
             return false;
 
         // save colour, set new font colour
-        rCmd.saveColour();
+       // rCmd.saveColour();
         rCmd.setColour( args.at( 4 ).toFloat(), args.at( 5 ).toFloat(), args.at( 6 ).toFloat(), args.at( 7 ).toFloat(), true );
-
-        // draw Qt font
-        glImp.drawText( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), args.at( 2 ).value<QFont>(), args.at( 3 ).toString());
-
-        // restore colour
-        rCmd.restoreColour();*/
-#endif
+        m.renderer->renderText( args.at( 0 ).toFloat(), args.at( 1 ).toFloat(), args.at( 3 ).toString(), args.at( 2 ).value<QFont>());
+       // rCmd.restoreColour();
         break;
 
     case RendererAPI::SetColour:
